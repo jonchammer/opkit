@@ -1,0 +1,14 @@
+[35m[1mScanning dependencies of target optimization_toolkit[0m
+[  8%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Functions/ActivationFunction.cpp.obj[0m
+[ 16%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Functions/ConvNeuralNetwork.cpp.obj[0m
+[ 25%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Functions/ErrorFunction.cpp.obj[0m
+[ 33%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Functions/Function.cpp.obj[0m
+[ 41%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Functions/SSEFunction.cpp.obj[0m
+[ 50%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Matrix.cpp.obj[0m
+[ 58%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Tensor3D.cpp.obj[0m
+[ 66%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Trainers/EvolutionaryOptimizer.cpp.obj[0m
+[ 75%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Trainers/HessianFreeOptimizer.cpp.obj[0m
+[ 83%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Utils/PrettyPrinter.cpp.obj[0m
+[ 91%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/main.cpp.obj[0m
+[100%] [32m[1mLinking CXX executable optimization_toolkit.exe[0m
+[100%] Built target optimization_toolkit

@@ -74,7 +74,7 @@ public:
         jacobian[1][5] = 1;
     }
     
-    void calculateHessianInputs(const vector<double>& x, const size_t outputIndex, Matrix& hessian)
+    void calculateHessianInputs(const vector<double>& /*x*/, const size_t outputIndex, Matrix& hessian)
     {
         hessian.setSize(2, 2);
         hessian.setAll(0.0);

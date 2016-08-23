@@ -28,7 +28,7 @@ public:
         output[0] = m * input[0] + b;
     }
     
-    void calculateJacobianInputs(const vector<double>& x, Matrix& jacobian)
+    void calculateJacobianInputs(const vector<double>& /*x*/, Matrix& jacobian)
     {
         jacobian.setSize(1, 1);
         jacobian[0][0] = mParameters[0];
