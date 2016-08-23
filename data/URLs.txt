@@ -1,0 +1,9 @@
+Optimization Toolkit URLS
+-------------------------
+http://www.deeplearningbook.org/contents/mlp.html
+http://bcl.hamilton.ie/~barak/papers/nc-hessian.pdf
+http://machinelearning.wustl.edu/mlpapers/paper_files/icml2010_Martens10.pdf
+http://cs229.stanford.edu/proj2011/FriendSchmerlingMittal-HessianFreeOptimizationMethodsForMachineLearningProblems.pdf
+http://andrew.gibiansky.com/blog/machine-learning/hessian-free-optimization/
+http://uaf46365.ddns.uark.edu/lab/ml.pdf
+https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/
