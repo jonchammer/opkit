@@ -11,6 +11,7 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
+// This class is an implementation of the SSE Error function.
 class SSEFunction : public ErrorFunction
 {
 public:

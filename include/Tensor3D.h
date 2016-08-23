@@ -11,19 +11,27 @@
 #include <vector>
 using namespace std;
 
+// This class provides a 3D array wrapper around a normal C++ vector. It handles
+// the math necessary to provide the user with a 3-index interface, plus range
+// checking. This is used primarily with Convolutional Models.
 class Tensor3D
 {
 public:
+    // Create a new Tensor that wraps the given vector (starting with
+    // 'parametersStart'). The virtual dimensions are 'width'x'height'x'depth'.
     Tensor3D(vector<double>& parameters, const size_t parametersStart, 
         const size_t width, const size_t height, const size_t depth);
     
+    // Retrieve and modify a given cell in the virtual 3D Tensor
     double get(const int w, const int h, const int d) const;
     void set(const int w, const int h, const int d, const double val);
     
 private:
+    // The vector that is wrapped (and where to start looking)
     vector<double>& mParameters;
     size_t mParametersStart;
     
+    // The dimensions of this tensor (x, y, z)
     size_t mWidth, mHeight, mDepth;
 };
 

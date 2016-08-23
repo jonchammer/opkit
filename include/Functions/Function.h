@@ -105,50 +105,5 @@ protected:
 void randomizeParameters(vector<double>& parameters, 
     const double mean, const double variance);
 
-
-//class Model
-//{
-//public:
-//    // Constructors / Destructors
-//    Model();
-//    Model(int numParameters);
-//    Model(const Model& orig);
-//    virtual ~Model() {}
-//    
-//    // Evaluate this function using the given input. Results are written to 'output'.
-//    virtual void evaluate(const vector<double>& input, vector<double>& output) = 0;
-//    
-//    // Calculate the gradient of the SSE function with respect to each parameter
-//    // of this model. This function should be overwritten if a more efficient implementation
-//    // is available, but the default should work regardless of the underlying model.
-//    virtual void calculateGradient(const vector<double>& feature, 
-//        const vector<double>& label, vector<double>& gradient);
-//    
-//    // Same as the other version of this function, with the exception that the gradient
-//    // terms will be summed for each feature/label pair. This can be overwritten,
-//    // but it will usually not be required, as the default implementation will
-//    // usually suffice.
-//    virtual void calculateGradient(const Matrix& features, const Matrix& labels, vector<double>& gradient);
-//    
-//    // Measure the SSE of this model against the given testing data
-//    virtual double measureSSE(const Matrix& features, const Matrix&labels);
-//    
-//    // Initialize the parameters with random values from a normal distribution
-//    // of the given mean and variance
-//    void randomizeParameters(double mean, double variance);
-//    
-//    // Getters / Setters
-//    vector<double>& getParameters()             { return mParameters;                }
-//    const vector<double>& getParameters() const { return mParameters;                }
-//    int getNumParameters()                      { return mParameters.size();         }
-//    void setNumParameters(int numParameters)    { mParameters.resize(numParameters); }
-//    
-//protected: 
-//    
-//    // Each model contains some number of parameters that need to be optimized.
-//    // For example, a linear model would need a slope and a bias (m, b).
-//    vector<double> mParameters;
-//};
-
 #endif /* MODEL_H */
 

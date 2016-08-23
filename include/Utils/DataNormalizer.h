@@ -68,7 +68,8 @@ Matrix convertColumnToOneHot(const Matrix& source, int column)
         
         // Copy the data before & after the affected column
         std::copy(sourceRow.begin(), sourceRow.begin() + column, destRow.begin());
-        std::copy(sourceRow.begin() + column + 1, sourceRow.end(), destRow.begin() + column + valueCount);
+        std::copy(sourceRow.begin() + column + 1, sourceRow.end(), 
+            destRow.begin() + column + valueCount);
         
         // Convert the affected column to 1 hot
         int val = (int) sourceRow[column];
