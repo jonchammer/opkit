@@ -6,6 +6,18 @@ double tanhDeriv(double /*x*/, double fx)
     return 1.0 - fx * fx;
 }
 
+double scaledTanh(double x)
+{
+    return 1.7159 * tanh(0.666666666 * x);
+}
+
+double scaledTanhDeriv(double /*x*/, double fx)
+{
+    // 0.58... = 1/1.7159
+    double tanhbx = 0.58278454455 * fx;
+    return 1.1439333333 * (1.0 - tanhbx * tanhbx);
+}
+
 double logistic(double x)
 {
     return 1.0 / (1.0 + std::exp(-x));
@@ -63,6 +75,7 @@ double sinDeriv(double x, double /*fx*/)
 
 // Definition of the 'extern' activations that clients will see.
 Activation tanhActivation         = {&std::tanh,    &tanhDeriv};
+Activation scaledTanhActivation   = {&scaledTanh,   &scaledTanhDeriv};
 Activation logisticActivation     = {&logistic,     &logisticDeriv};
 Activation linearActivation       = {&linear,       &linearDeriv};
 Activation reluActivation         = {&relu,         &reluDeriv};

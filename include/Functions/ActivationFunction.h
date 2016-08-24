@@ -24,6 +24,7 @@ typedef std::pair<ActivationFunc, ActivationDeriv> Activation;
 // To make things easy for clients, some common activations are defined here.
 // Clients need only reference one of these activations in order to use them.
 extern Activation tanhActivation;
+extern Activation scaledTanhActivation;
 extern Activation logisticActivation;
 extern Activation linearActivation;
 extern Activation reluActivation;

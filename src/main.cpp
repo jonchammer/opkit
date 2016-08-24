@@ -97,131 +97,143 @@ public:
     }
 };
 
-int main()
-{
-    size_t inputWidth    = 5;
-    size_t inputHeight   = 5;
-    size_t inputChannels = 3;
-    size_t filterSize    = 3;
-    size_t numFilters    = 2;
-    size_t stride        = 1;
-    size_t padding       = 0;
-    
-    ConvLayer layer(inputWidth, inputHeight, inputChannels, filterSize, numFilters, stride, padding);
-    vector<double> params = 
-    {
-        0, 1, -1, 0, 0, 1, 0, 0, 1, 
-        0, 0, -1, 0, -1, -1, 1, 0, -1, 
-        0, 1, 0, 1, -1, -1, 0, -1, -1, 
-        1,
-        0, -1, 0, -1, -1, -1, -1, -1, 1,
-        -1, -1, 1, -1, -1, 1, 0, 1, -1, 
-        -1, 1, 1, 0, 0, 0, -1, 0, 1,
-        0
-    };
-    layer.assignStorage(&params, 0);
-    
-    vector<double> input =
-    {
-        1, 0, 0, 2, 1,
-        2, 2, 0, 0, 0,
-        0, 1, 0, 0, 1,
-        2, 2, 1, 2, 0,
-        0, 0, 1, 2, 1,
-        
-        0, 2, 0, 0, 1,
-        0, 1, 0, 2, 1,
-        2, 0, 0, 1, 1,
-        1, 1, 2, 0, 1,
-        0, 2, 2, 2, 2,
-        
-        1, 0, 0, 0, 1,
-        0, 0, 1, 1, 0,
-        2, 0, 0, 2, 0,
-        1, 0, 0, 1, 1,
-        2, 2, 0, 0, 0
-    };
-    
-    vector<double> output;
-    layer.feed(input, output);
-    
-    vector<double>& net = layer.getNet();
-    size_t i = 0;
-    for (size_t l = 0; l < numFilters; ++l)
-    {
-        for (size_t j = 0; j < layer.getOutputWidth(); ++j)
-        {
-            for (size_t k = 0; k < layer.getOutputHeight(); ++k)
-                cout << net[i++] << " ";
-            cout << endl;
-        }
-        cout << endl;
-    }
-    return 0;
-}
-
 //int main()
 //{
-//    const string filename = "data/iris.arff";
-//
-//    // Define the vectors that will store our data
-//    Matrix features, labels;
-//
-//    // Fill in the arrays with the data from the file
-//    if (!loadArff(filename, features, labels, 1))
+//    size_t inputWidth    = 5;
+//    size_t inputHeight   = 5;
+//    size_t inputChannels = 3;
+//    size_t filterSize    = 3;
+//    size_t numFilters    = 2;
+//    size_t stride        = 1;
+//    size_t padding       = 0;
+//    
+//    ConvLayer layer(inputWidth, inputHeight, inputChannels, filterSize, numFilters, stride, padding);
+//    vector<double> params = 
 //    {
-//        cout << "Unable to open file: " << filename << endl;
-//        return 1;
-//    }
+//        0, 1, -1, 0, 0, 1, 0, 0, 1, 
+//        0, 0, -1, 0, -1, -1, 1, 0, -1, 
+//        0, 1, 0, 1, -1, -1, 0, -1, -1, 
+//        1,
+//        0, -1, 0, -1, -1, -1, -1, -1, 1,
+//        -1, -1, 1, -1, -1, 1, 0, 1, -1, 
+//        -1, 1, 1, 0, 0, 0, -1, 0, 1,
+//        0
+//    };
+//    layer.assignStorage(&params, 0);
 //    
-//    // Normalize the data
-//    scaleAllColumns(features, 0.0, 1.0);
-//    labels = convertColumnToOneHot(labels, 0);
-//    
-//    // Create the model
-//    NeuralNetwork* base = new NeuralNetwork();
-//    FeedforwardLayer l1(features.cols(), labels.cols());
-//    base->addLayer(&l1);
-//    
-//    
-////    vector<int> dimensions = {(int) features.cols(), (int) labels.cols()};    
-////    NeuralNetwork* base    = new NeuralNetwork(dimensions);
-////    
-//////    base->getLayer(0).setActivationFunction(sinActivation);
-//////    for (size_t i = 0; i < base->getNumLayers(); ++i)
-//////        base->getLayer(i).setActivationFunction(sinActivation);
-////    base->getOutputLayer().setActivationFunction(sinActivation);
-//    
-//    ErrorFunction* f       = new SSEFunction(*base);
-//    randomizeParameters(base->getParameters(), 0.0, 0.01);
-//    
-////    Matrix hessian;
-////    Matrix gradient;
-////    f->calculateJacobianParameters(features, labels, gradient);
-////    f->calculateHessianParameters(features, labels, hessian);
-////    
-////    printMatrix(gradient);
-////    cout << endl;
-////    printMatrix(hessian);
-//    
-//    // Create the trainer
-//    typedef GradientDescent Learner;
-//    Learner* trainer = new Learner(f);
-//    
-//    const int ITERATIONS = 100;
-//    
-//    // Optimize the model
-//    for (int i = 0; i < ITERATIONS; ++i)
+//    vector<double> input =
 //    {
-//        trainer->iterate(features, labels);
-//        cout << "SSE: " << f->evaluate(features, labels) << endl;
+//        1, 0, 0, 2, 1,
+//        2, 2, 0, 0, 0,
+//        0, 1, 0, 0, 1,
+//        2, 2, 1, 2, 0,
+//        0, 0, 1, 2, 1,
+//        
+//        0, 2, 0, 0, 1,
+//        0, 1, 0, 2, 1,
+//        2, 0, 0, 1, 1,
+//        1, 1, 2, 0, 1,
+//        0, 2, 2, 2, 2,
+//        
+//        1, 0, 0, 0, 1,
+//        0, 0, 1, 1, 0,
+//        2, 0, 0, 2, 0,
+//        1, 0, 0, 1, 1,
+//        2, 2, 0, 0, 0
+//    };
+//    
+//    vector<double> output;
+//    layer.feed(input, output);
+//    
+//    vector<double>& net = layer.getNet();
+//    size_t i = 0;
+//    for (size_t l = 0; l < numFilters; ++l)
+//    {
+//        for (size_t j = 0; j < layer.getOutputWidth(); ++j)
+//        {
+//            for (size_t k = 0; k < layer.getOutputHeight(); ++k)
+//                cout << net[i++] << " ";
+//            cout << endl;
+//        }
+//        cout << endl;
 //    }
-//    
-//    delete f;
-//    delete base;
-//    delete trainer;
-//    
 //    return 0;
 //}
+
+int main()
+{
+    const string filename = "../data/iris.arff";
+
+    // Define the vectors that will store our data
+    Matrix features, labels;
+
+    // Fill in the arrays with the data from the file
+    if (!loadArff(filename, features, labels, 1))
+    {
+        cout << "Unable to open file: " << filename << endl;
+        return 1;
+    }
+    
+    // Normalize the data
+    scaleAllColumns(features, 0.0, 1.0);
+    labels = convertColumnToOneHot(labels, 0);
+    
+    // Create the model
+    NeuralNetwork* base = new NeuralNetwork();
+//    FeedforwardLayer l1(features.cols(), labels.cols());
+//    l1.setActivationFunction(scaledTanhActivation);
+//    base->addLayer(&l1);
+    FeedforwardLayer l1(features.cols(), 10);
+    FeedforwardLayer l2(10, 10);
+    FeedforwardLayer l3(10, labels.cols());
+    
+    l1.setActivationFunction(scaledTanhActivation);
+    //l2.setActivationFunction(scaledTanhActivation);
+    //l3.setActivationFunction(scaledTanhActivation);
+    
+    base->addLayer(&l1);
+    base->addLayer(&l2);
+    base->addLayer(&l3);
+    
+//    vector<int> dimensions = {(int) features.cols(), (int) labels.cols()};    
+//    NeuralNetwork* base    = new NeuralNetwork(dimensions);
+//    
+////    for (size_t i = 0; i < base->getNumLayers(); ++i)
+////        base->getLayer(i).setActivationFunction(sinActivation);
+//    base->getOutputLayer().setActivationFunction(sinActivation);
+    
+    ErrorFunction* f       = new SSEFunction(*base);
+    randomizeParameters(base->getParameters(), 0.0, 0.01);
+    
+//    Matrix hessian;
+//    Matrix gradient;
+//    f->calculateJacobianParameters(features, labels, gradient);
+//    f->calculateHessianParameters(features, labels, hessian);
+//    
+//    printMatrix(gradient);
+//    cout << endl;
+//    printMatrix(hessian);
+    
+    // Create the trainer
+    typedef GradientDescent Learner;
+    Learner* trainer = new Learner(f);
+    
+    const int ITERATIONS = 50000;
+    
+    // Optimize the model
+    for (int i = 0; i < ITERATIONS; ++i)
+    {
+        trainer->iterate(features, labels);
+        cout << "SSE: " << f->evaluate(features, labels) << endl;
+    }
+    
+    
+    
+    delete f;
+    delete base;
+    delete trainer;
+    
+    return 0;
+}
 
 
