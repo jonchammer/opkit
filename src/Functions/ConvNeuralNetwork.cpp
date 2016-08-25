@@ -18,7 +18,7 @@ void Layer::assignStorage(vector<double>* parameters,
 FeedforwardLayer::FeedforwardLayer(size_t inputs, size_t outputs)
     : mInputs(inputs), mOutputs(outputs)
 {
-    mBlame.resize(outputs);
+    mDeltas.resize(outputs);
     mNet.resize(outputs);
     mActivation.resize(outputs);
     
@@ -58,6 +58,57 @@ void FeedforwardLayer::feed(const vector<double>& x, vector<double>& y)
     }
 }
 
+void FeedforwardLayer::calculateDeltas(Layer* downstream)
+{
+    vector<double>& downstreamDeltas = downstream->getDeltas();
+    std::fill(downstreamDeltas.begin(), downstreamDeltas.end(), 0.0);
+
+    Activation& act = downstream->getActivationFunction();
+    
+    for (size_t i = 0; i < mInputs; ++i)
+    {
+        double actDerivative = (*act.second)
+            (downstream->getNet()[i], downstream->getActivation()[i]);
+
+        for (size_t j = 0; j < mOutputs; ++j)
+        {
+            size_t index  = mParametersStartIndex + (j * mInputs + i);
+            double weight = (*mParameters)[index];
+            downstreamDeltas[i] += weight * mDeltas[j] * actDerivative;
+        }
+    }
+}
+
+void FeedforwardLayer::calculateDeltas(size_t outputIndex)
+{
+    // Blame is set to 0 for all outputs except the one we're interested in
+    std::fill(mDeltas.begin(), mDeltas.end(), 0.0);
+    
+    // Apply the derivative of the activation function to the output of this
+    // layer
+    mDeltas[outputIndex] = (*mActFunction.second)
+        (mNet[outputIndex], mActivation[outputIndex]);
+}
+
+void FeedforwardLayer::calculateGradient(const vector<double>& input, 
+    double* gradient)
+{
+    int inputSize  = getInputs();
+    int outputSize = getOutputs();
+
+    // Calculate gradient for the weights
+    size_t index = 0;
+    for (int i = 0; i < outputSize; ++i)
+    {
+        for (int j = 0; j < inputSize; ++j)
+            gradient[index++] = input[j] * mDeltas[i];
+    }
+
+    // Calculate gradient for the biases
+    for (int i = 0; i < outputSize; ++i)
+        gradient[index++] = mDeltas[i];
+}
+
 size_t FeedforwardLayer::getNumParameters()       
 { 
     return (mInputs + 1) * mOutputs; 
@@ -78,9 +129,9 @@ vector<double>& FeedforwardLayer::getActivation()
     return mActivation;              
 }
    
-vector<double>& FeedforwardLayer::getBlame()      
+vector<double>& FeedforwardLayer::getDeltas()      
 { 
-    return mBlame;      
+    return mDeltas;      
 }
 
 vector<double>& FeedforwardLayer::getNet()        
@@ -88,7 +139,7 @@ vector<double>& FeedforwardLayer::getNet()
     return mNet;        
 }
 
-Activation FeedforwardLayer::getActivationFunction()         
+Activation& FeedforwardLayer::getActivationFunction()         
 { 
     return mActFunction; 
 }
@@ -198,6 +249,27 @@ void ConvLayer::feed(const vector<double>& x, vector<double>& y)
     }
 }
     
+void ConvLayer::calculateDeltas(Layer* upstream)
+{
+    // TODO: Implement
+}
+
+void ConvLayer::calculateDeltas(size_t outputIndex)
+{
+    // Blame is set to 0 for all outputs except the one we're interested in
+    std::fill(mDeltas.begin(), mDeltas.end(), 0.0);
+    
+    // Apply the derivative of the activation function to the output of this
+    // layer
+    mDeltas[outputIndex] = (*mActFunction.second)
+        (mNet[outputIndex], mActivation[outputIndex]);
+}
+
+void ConvLayer::calculateGradient(const vector<double>& input, double* gradient)
+{
+    // TODO: Implement
+}
+
 size_t ConvLayer::getNumParameters()
 {
     size_t filterParams = mFilterSize * mFilterSize * mInputChannels + 1;
@@ -226,6 +298,11 @@ vector<double>& ConvLayer::getActivation()
 vector<double>& ConvLayer::getNet()
 {
     return mNet;
+}
+
+vector<double>& ConvLayer::getDeltas()
+{
+    return mDeltas;
 }
 
 size_t ConvLayer::getOutputWidth()
@@ -273,7 +350,7 @@ size_t ConvLayer::getZeroPadding()
     return mZeroPadding;
 }
     
-Activation ConvLayer::getActivationFunction()         
+Activation& ConvLayer::getActivationFunction()         
 { 
     return mActFunction; 
 }
@@ -322,84 +399,31 @@ void NeuralNetwork::evaluate(const vector<double>& input,
     }
 }
 
-/*
-void NeuralNetwork::calculateBlameTerms(const size_t outputIndex)
+void NeuralNetwork::calculateDeltas(const size_t outputIndex)
 {
-    // Calculate the blame terms for the output nodes
-    ConvLayer* current        = &mLayers.back();
-    vector<double>* blame = &current->getBlame();
-    vector<double>* net   = &current->getNet();
-    vector<double>* act   = &current->getActivation();
-
-    // Blame is set to 0 for all outputs except the one we're interested in
-    std::fill(blame->begin(), blame->end(), 0.0);
-    (*blame)[outputIndex] = 
-        (*current->getActivationFunction().second)  // Get the activation function's derivative
-        ((*net)[outputIndex], (*act)[outputIndex]); // Apply it to the net outputs
+    // Calculate the deltas on the last layer first
+    mLayers.back()->calculateDeltas(outputIndex);
     
-    // Calculate blame terms for the interior nodes
-    size_t weightIndex = mParameters.size();
-
-    for (size_t layer = mLayers.size() - 1; layer >= 1; --layer)
-    {
-        ConvLayer* right = &mLayers[layer];
-        ConvLayer* left  = &mLayers[layer - 1];
-
-        vector<double>* rightBlame = &right->getBlame();
-        vector<double>* leftBlame  = &left->getBlame();
-        vector<double>* leftNet    = &left->getNet();
-        vector<double>* leftAct    = &left->getActivation();
-        std::fill(leftBlame->begin(), leftBlame->end(), 0.0);
-
-        int rightInputs  = right->getInputSize();
-        int rightOutputs = right->getOutputSize();
-        weightIndex      -= (rightInputs + 1) * rightOutputs;
-        
-        for (int i = 0; i < rightInputs; ++i)
-        {
-            double actDerivative = (*left->getActivationFunction().second)
-                ((*leftNet)[i], (*leftAct)[i]);
-
-            for (int j = 0; j < rightOutputs; ++j)
-            {
-                double weight = mParameters[weightIndex + (j * rightInputs + i)];
-                (*leftBlame)[i] += weight * (*rightBlame)[j] * actDerivative;
-            }
-        }
-    }    
+    // Apply the delta process recursively for each layer, moving backwards
+    // through the network.
+    for (int i = mLayers.size() - 1; i >= 1; --i)
+        mLayers[i]->calculateDeltas(mLayers[i - 1]);
 }
 
-void NeuralNetwork::calculateGradientFromBlame(const vector<double>& feature, 
+void NeuralNetwork::calculateGradientFromDeltas(const vector<double>& feature, 
     vector<double>& gradient)
 {
-    size_t weightIndex          = 0;
-    size_t layer                = 1;
-    ConvLayer* current              = &mLayers.front();
     const vector<double>* input = &feature;
-
-    do
+    size_t weightIndex          = 0;
+    
+    for (size_t i = 0; i < mLayers.size(); ++i)
     {
-        int inputSize  = current->getInputSize();
-        int outputSize = current->getOutputSize();
+        mLayers[i]->calculateGradient(*input, &gradient[weightIndex]);
         
-        // Calculate gradient for the weights
-        vector<double>& blame = current->getBlame();
-        for (int i = 0; i < outputSize; ++i)
-        {
-            for (int j = 0; j < inputSize; ++j)
-                gradient[weightIndex++] = (*input)[j] * blame[i];
-        }
-
-        // Calculate gradient for the biases
-        for (int i = 0; i < outputSize; ++i)
-            gradient[weightIndex++] = blame[i];
-
-        // Get ready for the next layer
-        input   = &current->getActivation();
-        current = &mLayers[layer];
-        ++layer;
+        // Get ready for the next iteration
+        input = &mLayers[i]->getActivation();
+        weightIndex += mLayers[i]->getNumParameters();
     }
-    while (layer <= mLayers.size());
 }
 
 void NeuralNetwork::calculateJacobianParameters(const vector<double>& x, 
@@ -415,13 +439,14 @@ void NeuralNetwork::calculateJacobianParameters(const vector<double>& x,
     for (size_t i = 0; i < getOutputs(); ++i)
     {
         // 2. Calculate blame terms for all the nodes in the network
-        calculateBlameTerms(i);
+        calculateDeltas(i);
 
         // 3. Relate blame terms to the gradient
-        calculateGradientFromBlame(x, jacobian[i]);
+        calculateGradientFromDeltas(x, jacobian[i]);
     }
 }
 
+// TODO: Figure out what the graident formula should be for a convolutional layer.
 void NeuralNetwork::calculateJacobianInputs(const vector<double>& x, 
         Matrix& jacobian)
 {
@@ -440,20 +465,19 @@ void NeuralNetwork::calculateJacobianInputs(const vector<double>& x,
     for (size_t k = 0; k < M; ++k)
     {
         // 2. Calculate blame terms for all the nodes in the network
-        calculateBlameTerms(k);
+        calculateDeltas(k);
 
         // 3. Relate blame terms to the gradient
-        vector<double>& blame = mLayers.front().getBlame();
-        int weightIndex       = 0;
+        vector<double>& deltas = mLayers.front()->getDeltas();
+        int weightIndex        = 0;
 
-        for (size_t j = 0; j < blame.size(); ++j)
+        for (size_t j = 0; j < deltas.size(); ++j)
         {
             for (size_t i = 0; i < N; ++i)
-                jacobian[k][i] += mParameters[weightIndex++] * blame[j];
+                jacobian[k][i] += mParameters[weightIndex++] * deltas[j];
         }
     }
 }
-*/
 
 size_t NeuralNetwork::getInputs()  const
 {

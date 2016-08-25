@@ -48,7 +48,6 @@ void print3DTensor(const Tensor3D& tensor, size_t decimalPlaces, size_t spacing)
 
     std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
     
-    size_t i = 0;
     for (size_t l = 0; l < depth; ++l)
     {
         for (size_t j = 0; j < height; ++j)

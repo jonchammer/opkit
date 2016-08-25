@@ -84,8 +84,8 @@ private:
     vector<Layer> mLayers;
     
     // Gradient calculation helper functions
-    void calculateBlameTerms(const size_t outputIndex);
-    void calculateGradientFromBlame(const vector<double>& feature,
+    void calculateDeltas(const size_t outputIndex);
+    void calculateGradientFromDeltas(const vector<double>& feature,
         vector<double>& gradient);
 };
 

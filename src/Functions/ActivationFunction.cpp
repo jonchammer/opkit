@@ -6,6 +6,9 @@ double tanhDeriv(double /*x*/, double fx)
     return 1.0 - fx * fx;
 }
 
+// See http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf
+// Supposedly, the scaled tanh() function better avoids saturation when the
+// inputs are already in the range [-1, 1]
 double scaledTanh(double x)
 {
     return 1.7159 * tanh(0.666666666 * x);
@@ -13,9 +16,11 @@ double scaledTanh(double x)
 
 double scaledTanhDeriv(double /*x*/, double fx)
 {
-    // 0.58... = 1/1.7159
+    // Since fx = 1.71519 * tanh(bx), we need to divide fx by 1.7159 to get
+    // tanh(bx) by itself. We also turn the division into a multiplication
+    // for better performance. 1/1.7159 ~= 0.5827.
     double tanhbx = 0.58278454455 * fx;
-    return 1.1439333333 * (1.0 - tanhbx * tanhbx);
+    return 1.14393333333 * (1.0 - tanhbx * tanhbx);
 }
 
 double logistic(double x)

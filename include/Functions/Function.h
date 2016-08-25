@@ -103,7 +103,7 @@ protected:
 // Initialize the parameters with random values from a normal distribution
 // of the given mean and variance
 void randomizeParameters(vector<double>& parameters, 
-    const double mean, const double variance);
+    const double mean = 0.0, const double variance = 1.0);
 
 #endif /* MODEL_H */
 

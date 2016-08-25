@@ -26,14 +26,35 @@ public:
     virtual void feed(const vector<double>& x);
     virtual void feed(const vector<double>& x, vector<double>& y) = 0;
     
+    // In order to efficiently calculate the gradient of a network, we need to
+    // be able to assign 'blame' to each node. This method calculates the
+    // 'blame' terms for each output node in this layer. The first version of
+    // this function is used for all layers but the last, while the second
+    // version is only used for output layers.
+    virtual void calculateDeltas(Layer* downstream)  = 0;
+    virtual void calculateDeltas(size_t outputIndex) = 0;
+    
+    // Calculate the gradient of the network with respect to the parameters
+    // of this layer. The caller can assume that 'gradient' is a region of
+    // contiguous memory that has already been allocated to be the proper size.
+    virtual void calculateGradient(const vector<double>& input,
+        double* gradient) = 0;
+    
     // These functions provide structural information about the layer
-    virtual size_t getNumParameters() = 0;
-    virtual size_t getInputs()        = 0;
-    virtual size_t getOutputs()       = 0;
+    virtual size_t getNumParameters()           = 0;
+    virtual size_t getInputs()                  = 0;
+    virtual size_t getOutputs()                 = 0;
+    virtual Activation& getActivationFunction() = 0;
+    
+    virtual vector<double>& getNet() = 0;
     
     // All layers produce some sort of output. This method returns that output
     // to the caller.
     virtual vector<double>& getActivation() = 0;
+    
+    // This method returns the deltas that were calculated in calculateDeltas()
+    // to the user.
+    virtual vector<double>& getDeltas() = 0;
     
     // When layers are added to the network, they are assigned a segment of the
     // network's parameters to work with. This function tells the layer which
@@ -56,21 +77,26 @@ public:
     // on y = a(Wx + b)
     void feed(const vector<double>& x, vector<double>& y) override;
     
+    void calculateDeltas(Layer* downstream)  override;
+    void calculateDeltas(size_t outputIndex) override;
+    
+    void calculateGradient(const vector<double>& input, 
+        double* gradient) override;
+    
     size_t getNumParameters()       override;     
     size_t getInputs()              override;    
     size_t getOutputs()             override;     
+    
+    vector<double>& getNet()        override;
     vector<double>& getActivation() override;
+    vector<double>& getDeltas()     override;
     
-    // Getters / Setters
-    vector<double>& getBlame();
-    vector<double>& getNet();
-    
-    Activation getActivationFunction();
+    Activation& getActivationFunction() override;
     void setActivationFunction(Activation act);
  
 private:
     size_t mInputs, mOutputs;   // The dimensions of this layer
-    vector<double> mBlame;      // The errors that result from backprop
+    vector<double> mDeltas;     // The errors that result from backprop
     vector<double> mNet;        // The sum before the activation function is applied
     vector<double> mActivation; // The activation (output of this layer)
     Activation mActFunction;    // The activation function (and derivative) to be used in this layer
@@ -119,13 +145,20 @@ public:
     // each of the filters
     void feed(const vector<double>& x, vector<double>& y);
     
+    void calculateDeltas(Layer* downstream)  override;
+    void calculateDeltas(size_t outputIndex) override;
+    
+    void calculateGradient(const vector<double>& input, 
+        double* gradient) override;
+    
     size_t getNumParameters()       override;     
     size_t getInputs()              override;    
     size_t getOutputs()             override;     
+  
+    vector<double>& getNet()        override;
     vector<double>& getActivation() override;
+    vector<double>& getDeltas()     override;
     
-    // Getters / Setters    
-    vector<double>& getNet();
     size_t getOutputWidth();
     size_t getOutputHeight();
     size_t getInputWidth();
@@ -136,7 +169,7 @@ public:
     size_t getStride();
     size_t getZeroPadding();
     
-    Activation getActivationFunction();
+    Activation& getActivationFunction() override;
     void setActivationFunction(Activation act);
  
 private:
@@ -146,6 +179,7 @@ private:
     
     vector<double> mNet;        // The sum before the activation function is applied
     vector<double> mActivation; // The activation (output of this layer)
+    vector<double> mDeltas;     // The errors that result from backprop
     Activation mActFunction;    // The activation function (and derivative) to be used in this layer
     
     double convolve(Tensor3D& input, size_t x, size_t y, size_t z);
@@ -172,9 +206,9 @@ public:
     void addLayer(Layer* layer);
     
     // Functions from the "Function" interface
-    void evaluate(const vector<double>& input, vector<double>& output) override;
-//    void calculateJacobianParameters(const vector<double>& x, Matrix& jacobian) override;
-//    void calculateJacobianInputs(const vector<double>& x, Matrix& gradient) override;
+    void evaluate(const vector<double>& input, vector<double>& output)          override;
+    void calculateJacobianParameters(const vector<double>& x, Matrix& jacobian) override;
+    void calculateJacobianInputs(const vector<double>& x, Matrix& gradient)     override;
     
     size_t getInputs()  const override;
     size_t getOutputs() const override;
@@ -195,8 +229,8 @@ private:
     vector<Layer*> mLayers;
     
     // Gradient calculation helper functions
-    void calculateBlameTerms(const size_t outputIndex);
-    void calculateGradientFromBlame(const vector<double>& feature,
+    void calculateDeltas(const size_t outputIndex);
+    void calculateGradientFromDeltas(const vector<double>& feature,
         vector<double>& gradient);
 };
 
