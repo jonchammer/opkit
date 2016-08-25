@@ -34,6 +34,7 @@
       </df>
       <df name="demos">
         <in>activationTest.cpp</in>
+        <in>convolutionTest.cpp</in>
       </df>
       <df name="include">
         <df name="Functions">

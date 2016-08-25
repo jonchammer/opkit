@@ -26,6 +26,11 @@ public:
     double get(const int w, const int h, const int d) const;
     void set(const int w, const int h, const int d, const double val);
     
+    // Getters / Setters
+    size_t getWidth()  const;
+    size_t getHeight() const;
+    size_t getDepth()  const;
+    
 private:
     // The vector that is wrapped (and where to start looking)
     vector<double>& mParameters;

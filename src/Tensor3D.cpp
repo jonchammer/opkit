@@ -31,3 +31,17 @@ void Tensor3D::set(const int x, const int y, const int z, const double val)
     }
 }
 
+size_t Tensor3D::getWidth() const
+{
+    return mWidth;
+}
+
+size_t Tensor3D::getHeight() const
+{
+    return mHeight;
+}
+
+size_t Tensor3D::getDepth() const
+{
+    return mDepth;
+}        

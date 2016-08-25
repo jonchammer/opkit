@@ -128,6 +128,13 @@ public:
     vector<double>& getNet();
     size_t getOutputWidth();
     size_t getOutputHeight();
+    size_t getInputWidth();
+    size_t getInputHeight();
+    size_t getInputChannels();
+    size_t getFilterSize();
+    size_t getNumFilters();
+    size_t getStride();
+    size_t getZeroPadding();
     
     Activation getActivationFunction();
     void setActivationFunction(Activation act);

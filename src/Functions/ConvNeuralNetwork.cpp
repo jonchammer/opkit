@@ -238,6 +238,41 @@ size_t ConvLayer::getOutputHeight()
     return (mInputHeight - mFilterSize + 2 * mZeroPadding) / mStride + 1;
 }
 
+size_t ConvLayer::getInputWidth()
+{
+    return mInputWidth;
+}
+
+size_t ConvLayer::getInputHeight()
+{
+    return mInputHeight;
+}
+
+size_t ConvLayer::getInputChannels()
+{
+    return mInputChannels;
+}
+
+size_t ConvLayer::getFilterSize()
+{
+    return mFilterSize;
+}
+
+size_t ConvLayer::getNumFilters()
+{
+    return mNumFilters;
+}
+
+size_t ConvLayer::getStride()
+{
+    return mStride;
+}
+
+size_t ConvLayer::getZeroPadding()
+{
+    return mZeroPadding;
+}
+    
 Activation ConvLayer::getActivationFunction()         
 { 
     return mActFunction; 
