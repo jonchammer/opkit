@@ -1,29 +1,28 @@
 TODO List
 --------
   - Calculate Hessian exactly for NN
-  - Get HFO to work	
+  - Get HFO to work better.
 
   - More data loaders (JSON/binary/etc.)
   - More model persistence methods (ARFF/JSON/etc.)
   - Optimizations to GD/SGD
     + Momentum
-	+ Regularization
+    + Regularization
   - More Trainers
     + Particle Swarm
-	+ Conjugate Gradient
-	+ Newton's method? 
-	  - 1D: x_n+1 = x_n - f'(x_n)/f''(x_n)
-	  - ND: x_n+1 = x_n - (H(f)(x_n)^-1)*grad(f(x_n))
-	    + Invert Hessian matrix
-		+ Multiply by gradient
+    + Conjugate Gradient
+    + Newton's method? 
+      - 1D: x_n+1 = x_n - f'(x_n)/f''(x_n)
+      - ND: x_n+1 = x_n - (H(f)(x_n)^-1)*grad(f(x_n))
+        + Invert Hessian matrix
+	+ Multiply by gradient
 	  - Perhaps dampen the result a bit
-	    + x_n - alpha*(f'(x_n)/f''(x_n))
-		+ alpha in [0, 1]
-	+ Kalman Filter / EKF / UKF
+	+ x_n - alpha*(f'(x_n)/f''(x_n))
+	+ alpha in [0, 1]
+    + Kalman Filter / EKF / UKF
   - Models
     + Convolutional model
     + Recurrent Model
   - Error Functions
     + Cross-entropy error
-	  - Softmax activation
-	    + Change NN so activation functions are applied to vectors instead of scalars?
+      - Softmax layer
