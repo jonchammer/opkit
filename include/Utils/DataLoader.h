@@ -12,11 +12,15 @@
 #include <iomanip>
 #include <fstream>
 #include <cstring>
+#include <vector>
 #include "Matrix.h"
 #include "Error.h"
 
+using std::vector;
 using std::ifstream;
 using std::string;
+using std::cout;
+using std::endl;
 
 // Loads data from the given .ARFF file into 'features' and 'labels'.
 // The data will be split based on the last 'numLabels' columns.

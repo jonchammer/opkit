@@ -6,10 +6,11 @@ project(optimization_toolkit)
 if (NOT CMAKE_BUILD_TYPE)
 	set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build Type" FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
+message("Compiling in ${CMAKE_BUILD_TYPE} mode.")
 
 # Add compiler flags here (e.g. -O3, -Wall, etc.)
 # This is also needed to use C++11. "-std=c++11"
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Wall -Wextra -g")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Wall -Wextra -g -gdwarf-2")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -O3")
 
 # Set the location of the final executable to be where cmake/make are called
@@ -21,11 +22,14 @@ include_directories(include/Functions)
 include_directories(include/Trainers)
 include_directories(include/Utils)
 
-# All the code is in the src subdirectory
+# All the code is in the src subdirectory, except for the demos. Each demo has a
+# main() function defined, so only compile with one demo at a time.
 file(GLOB_RECURSE SOURCES "src/*.cpp")
+list(APPEND SOURCES "demos/activationTest.cpp")
 
 #Ignore the listed files
-list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/Functions/NeuralNetwork.cpp")
+list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/Functions/ConvNeuralNetwork.cpp")
+list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
 
 # The first argument will be the name of the executable (e.g. "[NAME].exe")
 add_executable(optimization_toolkit ${SOURCES})
