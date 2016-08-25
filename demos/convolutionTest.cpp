@@ -1,5 +1,5 @@
 /* 
- * File:    convolutionForwardPropTest.cpp
+ * File:    convolutionTest.cpp
  * Author:  Jon C. Hammer
  * Purpose: This tests the functionality (forward and backprop) of the
  *          convolutional neural network layers.

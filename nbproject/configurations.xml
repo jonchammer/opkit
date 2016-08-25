@@ -19,6 +19,7 @@
       <df name="demos">
         <in>activationTest.cpp</in>
         <in>convolutionTest.cpp</in>
+        <in>finiteDifferencesTest.cpp</in>
       </df>
       <df name="src">
         <df name="Functions">
@@ -91,6 +92,8 @@
       <item path="demos/activationTest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="demos/convolutionTest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="demos/finiteDifferencesTest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Functions/ActivationFunction.cpp"
             ex="false"
@@ -184,6 +187,8 @@
       <item path="demos/activationTest.cpp" ex="false" tool="1" flavor2="9">
       </item>
       <item path="demos/convolutionTest.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="demos/finiteDifferencesTest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="src/Functions/ActivationFunction.cpp"
             ex="false"
