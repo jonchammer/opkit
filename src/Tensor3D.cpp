@@ -2,6 +2,14 @@
 
 Tensor3D::Tensor3D(vector<double>& parameters, const size_t parametersStart, 
     const size_t width, const size_t height, const size_t depth)
+    : mParameters(&parameters[0]), mParametersStart(parametersStart),
+    mWidth(width), mHeight(height), mDepth(depth)
+{
+    // Do nothing
+}
+
+Tensor3D::Tensor3D(double* parameters, const size_t parametersStart,
+    const size_t width, const size_t height, const size_t depth)
     : mParameters(parameters), mParametersStart(parametersStart),
     mWidth(width), mHeight(height), mDepth(depth)
 {

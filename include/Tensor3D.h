@@ -22,6 +22,9 @@ public:
     Tensor3D(vector<double>& parameters, const size_t parametersStart, 
         const size_t width, const size_t height, const size_t depth);
     
+    Tensor3D(double* parameters, const size_t parametersStart,
+        const size_t width, const size_t height, const size_t depth);
+    
     // Retrieve and modify a given cell in the virtual 3D Tensor
     double get(const int w, const int h, const int d) const;
     void set(const int w, const int h, const int d, const double val);
@@ -33,7 +36,8 @@ public:
     
 private:
     // The vector that is wrapped (and where to start looking)
-    vector<double>& mParameters;
+    //vector<double>& mParameters;
+    double* mParameters;
     size_t mParametersStart;
     
     // The dimensions of this tensor (x, y, z)

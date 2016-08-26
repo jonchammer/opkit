@@ -63,12 +63,36 @@ bool testForwardProp(NeuralNetwork& network, vector<double>& input,
 // finite differences. 
 bool testBackProp(NeuralNetwork& network, vector<double>& input)
 {    
+    vector<double> test = 
+    {
+        1, 2, 3, 4, 5,
+        6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 
+        16, 17, 18, 19, 20, 
+        21, 22, 23, 24, 25,
+        
+        1, 2, 3, 4, 5,
+        6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 
+        16, 17, 18, 19, 20, 
+        21, 22, 23, 24, 25,
+        
+        1, 2, 3, 4, 5,
+        6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 
+        16, 17, 18, 19, 20, 
+        21, 22, 23, 24, 25,
+    };
+    std::copy(test.begin(), test.end(), input.begin());
+    
     cout << "Testing Backprop." << endl;
     Matrix jacobian, jacobian2;
-    //network.calculateJacobianParameters(input, jacobian);
+    network.calculateJacobianParameters(input, jacobian);
     network.Function::calculateJacobianParameters(input, jacobian2);
     
-    cout << "Gradient:" << endl;
+    cout << "Calculated Gradient:" << endl;
+    printMatrix(jacobian);
+    cout << "True Gradient:" << endl;
     printMatrix(jacobian2);
     
     for (size_t j = 0; j < jacobian.rows(); ++j)

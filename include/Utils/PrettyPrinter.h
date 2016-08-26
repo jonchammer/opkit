@@ -35,7 +35,8 @@ void printMatrix(const Matrix& mat, size_t decimalPlaces = 2, size_t width = 6);
 void print3DTensor(const std::vector<double>& vec, size_t width, size_t height, 
     size_t depth, size_t decimalPlaces = 2, size_t spacing = 6);
 
-void print3DTensor(const Tensor3D& tensor, size_t decimalPlaces = 2, size_t width = 6);
+void print3DTensor(const Tensor3D& tensor, size_t decimalPlaces = 2, 
+    size_t width = 6);
 
 #endif /* PRETTY_PRINTER_H */
 

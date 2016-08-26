@@ -61,6 +61,7 @@
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
           <executablePath>build\optimization_toolkit.exe</executablePath>
           <ccTool>
+            <standard>8</standard>
             <incDir>
               <pElem>include</pElem>
               <pElem>include/Functions</pElem>

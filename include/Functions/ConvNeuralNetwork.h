@@ -183,6 +183,15 @@ private:
     Activation mActFunction;    // The activation function (and derivative) to be used in this layer
     
     double convolve(Tensor3D& input, size_t x, size_t y, size_t z);
+    
+    // Convolves a 2D input with a 2D filter in order to produce a 2D output.
+    // The 'z' parameters specify which slice of the 3D Tensors to use. The
+    // output size will be determined by the padding and stride values.
+    // The values calculated are SUMMED to whatever is currently inside 'output'.
+    void convolve(
+        Tensor3D& input,   size_t inputZ, size_t padding, size_t stride,
+        Tensor3D& filter,  size_t filterZ,
+        Tensor3D& output,  size_t outputZ);
 };
 
 // This is a model representing a standard feedforward Artificial Neural Network

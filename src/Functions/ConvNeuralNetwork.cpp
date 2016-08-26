@@ -173,6 +173,7 @@ ConvLayer::ConvLayer(size_t inputWidth, size_t inputHeight, size_t inputChannels
     size_t outputSize = getOutputWidth() * getOutputHeight() * mNumFilters;
     mNet.resize(outputSize);
     mActivation.resize(outputSize);
+    mDeltas.resize(outputSize);
     
     // Use tanh() as the default activation function
     mActFunction = tanhActivation;
@@ -214,6 +215,40 @@ double ConvLayer::convolve(Tensor3D& input, size_t x, size_t y, size_t z)
     
     // Factor in the bias
     return sum + (*mParameters)[biasIndex];
+}
+
+void ConvLayer::convolve(
+        Tensor3D& input,   size_t inputZ, size_t padding, size_t stride,
+        Tensor3D& filter,  size_t filterZ,
+        Tensor3D& output,  size_t outputZ)
+{
+    // Go over each cell in this slice of the output volume
+    for (size_t y = 0; y < output.getHeight(); ++y)    
+    {
+        for (size_t x = 0; x < output.getWidth(); ++x)
+        {
+            // Do the actual convolution for this cell
+            double sum = 0.0;
+            
+            int lowX = -padding + x * stride;
+            int lowY = -padding + y * stride;
+            int hiX  = lowX + filter.getWidth();
+            int hiY  = lowY + filter.getHeight();
+            
+            for (int j = lowY; j <= hiY; ++j)
+            {
+                for (int i = lowX; i <= hiX; ++i)
+                {
+                    sum += input.get(i, j, inputZ) * 
+                        filter.get(i - lowX, j - lowY, filterZ);
+                }
+            }
+            
+            // Add the sum to the current value in this cell
+            double cur = output.get(x, y, outputZ);
+            output.set(x, y, outputZ, cur + sum);
+        }
+    }
 }
 
 void ConvLayer::feed(const vector<double>& x, vector<double>& y)
@@ -267,9 +302,41 @@ void ConvLayer::calculateDeltas(size_t outputIndex)
         (mNet[outputIndex], mActivation[outputIndex]);
 }
 
-void ConvLayer::calculateGradient(const vector<double>& input, double* gradient)
+void ConvLayer::calculateGradient(const vector<double>& x, double* gradient)
 {
-    // TODO: Implement
+    // TODO: Fix this. Gradient = inputWindow * deltas, where * is convolution.
+    // The input window is the part of the input used in the original forward
+    // pass, but zero padded along the right and bottom edges until the result
+    // of the convolution is the proper size. The amount of additional padding
+    // that will be needed = (filterSize - 1) / 2. A stride of 1 should be used
+    // for this convolution.
+    
+    // Calculate the output dimensions
+    size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
+    size_t outputWidth      = getOutputWidth();
+    size_t outputHeight     = getOutputHeight();
+    size_t outputDepth      = mNumFilters;
+
+    // Wrap the important vectors in Tensor3D objects so we can work with them
+    Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
+    Tensor3D deltas(mDeltas, 0, outputWidth, outputHeight, outputDepth);
+      
+    // Note: These loops can be run in any order. Each iteration is completely
+    // independent of every other iteration.
+    for (size_t filter = 0; filter < mNumFilters; ++filter)
+    {
+        Tensor3D grad(gradient + (filter * numFilterWeights), 0, 
+            mFilterSize, mFilterSize, mInputChannels);
+        
+        for (size_t channel = 0; channel < mInputChannels; ++channel)
+        {
+            convolve(input, channel, mZeroPadding, mStride,
+                deltas, filter, grad, channel);
+        }
+        
+        size_t biasIndex    = numFilterWeights * (filter + 1) - 1;
+        gradient[biasIndex] = (*mParameters)[biasIndex];
+    }
 }
 
 size_t ConvLayer::getNumParameters()

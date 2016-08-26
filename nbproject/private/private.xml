@@ -7,10 +7,11 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/include/Functions/ActivationFunction.h</file>
-            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/src/Functions/ActivationFunction.cpp</file>
-            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/src/Functions/Function.cpp</file>
-            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/src/main.cpp</file>
+            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/demos/convolutionTest.cpp</file>
+            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/src/Functions/ConvNeuralNetwork.cpp</file>
+            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/include/Utils/PrettyPrinter.h</file>
+            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/include/Functions/ConvNeuralNetwork.h</file>
+            <file>file:/C:/Users/Jon/Documents/NetBeansProjects/OptimizationToolkit/include/Matrix.h</file>
         </group>
     </open-files>
 </project-private>
