@@ -288,7 +288,8 @@ void ConvLayer::feed(const vector<double>& x, vector<double>& y)
     
 void ConvLayer::calculateDeltas(Layer* upstream)
 {
-    // TODO: Implement
+    // TODO: Implement. Convolve blame with filters to get deltas for previous
+    // layer.
 }
 
 void ConvLayer::calculateDeltas(size_t outputIndex)
