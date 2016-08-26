@@ -220,11 +220,13 @@ void ConvLayer::feed(const vector<double>& x, vector<double>& y)
 {
     Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
     
+    // Make sure the output is the correct size
     size_t outputWidth  = getOutputWidth();
     size_t outputHeight = getOutputHeight();
     size_t outputDepth  = mNumFilters;
     y.resize(outputWidth * outputHeight * outputDepth);
     
+    // Wrap the important vectors in Tensor3D objects so we can work with them
     Tensor3D net(mNet, 0, outputWidth, outputHeight, outputDepth);
     Tensor3D activation(mActivation, 0, outputWidth, outputHeight, outputDepth);
     Tensor3D output(y, 0, outputWidth, outputHeight, outputDepth);
@@ -283,7 +285,7 @@ size_t ConvLayer::getInputs()
 
 size_t ConvLayer::getOutputs()
 {
-    size_t w = (mInputWidth - mFilterSize + 2 * mZeroPadding) / mStride + 1;
+    size_t w = (mInputWidth  - mFilterSize + 2 * mZeroPadding) / mStride + 1;
     size_t h = (mInputHeight - mFilterSize + 2 * mZeroPadding) / mStride + 1;
     size_t d = mNumFilters;
     

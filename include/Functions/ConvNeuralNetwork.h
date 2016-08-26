@@ -134,7 +134,7 @@ public:
     // The output volume will be of size:
     //   outputWidth * outputHeight * numFilters
     // where 
-    // outputWidth = (inputWidth - numFilters + 2 * zeroPadding) / stride + 1
+    // outputWidth  = (inputWidth  - numFilters + 2 * zeroPadding) / stride + 1
     // outputHeight = (inputHeight - numFilters + 2 * zeroPadding) / stride + 1
     ConvLayer(size_t inputWidth, size_t inputHeight, size_t inputChannels, 
         size_t filterSize, size_t numFilters, size_t stride, size_t zeroPadding);

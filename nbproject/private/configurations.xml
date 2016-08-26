@@ -4,7 +4,7 @@
     <df root="." name="0">
       <df name="build">
         <df name="CMakeFiles">
-          <df name="3.6.1">
+          <df name="3.4.3">
             <df name="CompilerIdC">
               <in>CMakeCCompilerId.c</in>
             </df>
@@ -25,6 +25,8 @@
               <df name="Utils">
               </df>
             </df>
+          </df>
+          <df name="Progress">
           </df>
           <in>feature_tests.c</in>
           <in>feature_tests.cxx</in>
@@ -114,8 +116,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>

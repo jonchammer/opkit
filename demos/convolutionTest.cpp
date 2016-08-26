@@ -13,6 +13,7 @@
 #include "ConvNeuralNetwork.h"
 #include "PrettyPrinter.h"
 #include "Tensor3D.h"
+#include "ActivationFunction.h"
 using namespace std;
 
 // Tests forward prop by passing a known input through the network and comparing
@@ -64,14 +65,17 @@ bool testBackProp(NeuralNetwork& network, vector<double>& input)
 {    
     cout << "Testing Backprop." << endl;
     Matrix jacobian, jacobian2;
-    network.calculateJacobianParameters(input, jacobian);
+    //network.calculateJacobianParameters(input, jacobian);
     network.Function::calculateJacobianParameters(input, jacobian2);
+    
+    cout << "Gradient:" << endl;
+    printMatrix(jacobian2);
     
     for (size_t j = 0; j < jacobian.rows(); ++j)
     {
         for (size_t k = 0; k < jacobian.cols(); ++k)
         {
-            if ((jacobian[j][k] - jacobian2[j][k]) > 0.001)
+            if (abs(jacobian[j][k] - jacobian2[j][k]) > 0.001)
             {
                 cout << "Backprop - FAIL" << endl;
                 return false;
@@ -97,6 +101,7 @@ int main()
     // Create a single convolutional layer
     ConvLayer layer(inputWidth, inputHeight, inputChannels, filterSize, 
         numFilters, stride, padding);
+    layer.setActivationFunction(linearActivation);
     NeuralNetwork network;
     network.addLayer(&layer);
     
