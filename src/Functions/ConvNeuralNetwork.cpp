@@ -91,7 +91,7 @@ void FeedforwardLayer::calculateDeltas(size_t outputIndex)
 }
 
 void FeedforwardLayer::calculateGradient(const vector<double>& input, 
-    double* gradient)
+    size_t /*outputIndex*/, double* gradient)
 {
     int inputSize  = getInputs();
     int outputSize = getOutputs();
@@ -218,38 +218,83 @@ double ConvLayer::convolve(Tensor3D& input, size_t x, size_t y, size_t z)
 }
 
 void ConvLayer::convolve(
-        Tensor3D& input,   size_t inputZ, size_t padding, size_t stride,
-        Tensor3D& filter,  size_t filterZ,
-        Tensor3D& output,  size_t outputZ)
+    Tensor3D& input,  size_t ix, size_t iy, size_t iz,
+    Tensor3D& filter, size_t filterZ,
+    Tensor3D& output, size_t outputZ)
 {
-    // Go over each cell in this slice of the output volume
-    for (size_t y = 0; y < output.getHeight(); ++y)    
+    // Define the small region inside 'input' that was used during the forward
+    // convolution pass
+    int lowX = -mZeroPadding + ix * mStride;
+    int lowY = -mZeroPadding + iy * mStride;
+    int hiX  = lowX + mFilterSize - 1;
+    int hiY  = lowY + mFilterSize - 1;
+    
+    // Create a virtual window around that region that will be padded with
+    // 0's on one or more sides.
+    int virtualSize = (3 * mFilterSize + 2 * mZeroPadding - 1) / 2;
+    int minX = lowX - ix;
+    int minY = lowY - iy;
+    int maxX = minX + virtualSize - 1;
+    int maxY = minY + virtualSize - 1;
+    
+    for (size_t y = 0; y < output.getHeight(); ++y)
     {
         for (size_t x = 0; x < output.getWidth(); ++x)
         {
-            // Do the actual convolution for this cell
             double sum = 0.0;
             
-            int lowX = -padding + x * stride;
-            int lowY = -padding + y * stride;
-            int hiX  = lowX + filter.getWidth();
-            int hiY  = lowY + filter.getHeight();
-            
-            for (int j = lowY; j <= hiY; ++j)
+            for (int j = minY; j <= maxY; ++j)
             {
-                for (int i = lowX; i <= hiX; ++i)
+                for (int i = minX; i <= maxX; ++i)
                 {
-                    sum += input.get(i, j, inputZ) * 
-                        filter.get(i - lowX, j - lowY, filterZ);
+                    // Even if (i + x, j + y) would normally be a valid index,
+                    // we still have to make sure we're within the virtual window
+                    if (i + (int)x >= lowX && i + (int)x <= hiX && 
+                        j + (int)y >= lowY && j + (int)y <= hiY)
+                    {
+                        sum += input.get(i + (int)x, j + (int)y, iz) * 
+                            filter.get(i - minX, j - minY, filterZ);
+                    }
                 }
             }
             
-            // Add the sum to the current value in this cell
-            double cur = output.get(x, y, outputZ);
-            output.set(x, y, outputZ, cur + sum);
+            output.set(x, y, outputZ, sum);
         }
     }
 }
+//void ConvLayer::convolve(
+//        Tensor3D& input,   size_t inputZ, size_t padding, size_t stride,
+//        Tensor3D& filter,  size_t filterZ,
+//        Tensor3D& output,  size_t outputZ)
+//{
+//    // Go over each cell in this slice of the output volume
+//    for (size_t y = 0; y < output.getHeight(); ++y)    
+//    {
+//        for (size_t x = 0; x < output.getWidth(); ++x)
+//        {
+//            // Do the actual convolution for this cell
+//            double sum = 0.0;
+//            
+//            int lowX = -padding + x * stride;
+//            int lowY = -padding + y * stride;
+//            int hiX  = lowX + filter.getWidth();
+//            int hiY  = lowY + filter.getHeight();
+//            
+//            for (int j = lowY; j <= hiY; ++j)
+//            {
+//                for (int i = lowX; i <= hiX; ++i)
+//                {
+//                    sum += input.get(i, j, inputZ) * 
+//                        filter.get(i - lowX, j - lowY, filterZ);
+//                }
+//            }
+//            
+//            // Add the sum to the current value in this cell
+//            double cur = output.get(x, y, outputZ);
+//            output.set(x, y, outputZ, cur + sum);
+//        }
+//    }
+//}
 
 void ConvLayer::feed(const vector<double>& x, vector<double>& y)
 {
@@ -303,21 +348,20 @@ void ConvLayer::calculateDeltas(size_t outputIndex)
         (mNet[outputIndex], mActivation[outputIndex]);
 }
 
-void ConvLayer::calculateGradient(const vector<double>& x, double* gradient)
-{
-    // TODO: Fix this. Gradient = inputWindow * deltas, where * is convolution.
-    // The input window is the part of the input used in the original forward
-    // pass, but zero padded along the right and bottom edges until the result
-    // of the convolution is the proper size. The amount of additional padding
-    // that will be needed = (filterSize - 1) / 2. A stride of 1 should be used
-    // for this convolution.
-    
+void ConvLayer::calculateGradient(const vector<double>& x, size_t outputIndex, double* gradient)
+{    
     // Calculate the output dimensions
     size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
     size_t outputWidth      = getOutputWidth();
     size_t outputHeight     = getOutputHeight();
     size_t outputDepth      = mNumFilters;
 
+    // Convert the output index into a 3D coordinate for the current output point
+    size_t iz  = outputIndex / (outputWidth * outputHeight);
+    size_t i2 = outputIndex % (outputWidth * outputHeight);
+    size_t iy  = i2 / outputWidth;
+    size_t ix  = i2 % outputWidth;
+            
     // Wrap the important vectors in Tensor3D objects so we can work with them
     Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
     Tensor3D deltas(mDeltas, 0, outputWidth, outputHeight, outputDepth);
@@ -329,14 +373,20 @@ void ConvLayer::calculateGradient(const vector<double>& x, double* gradient)
         Tensor3D grad(gradient + (filter * numFilterWeights), 0, 
             mFilterSize, mFilterSize, mInputChannels);
         
+        // Convolve the appropriate region in the input with the deltas
+        // in order to calculate the gradient for the weights
         for (size_t channel = 0; channel < mInputChannels; ++channel)
-        {
-            convolve(input, channel, mZeroPadding, mStride,
-                deltas, filter, grad, channel);
-        }
+            convolve(input, ix, iy, iz, deltas, filter, grad, channel);
         
+        // Sum over the deltas for this filter to calculate the bias gradient
+        double bias = 0.0;
+        for (size_t i = 0; i < outputWidth; ++i)
+        {
+            for (size_t j = 0; j < outputHeight; ++j)
+                bias += deltas.get(i, j, filter);
+        }
         size_t biasIndex    = numFilterWeights * (filter + 1) - 1;
-        gradient[biasIndex] = (*mParameters)[biasIndex];
+        gradient[biasIndex] = bias;
     }
 }
 
@@ -481,14 +531,14 @@ void NeuralNetwork::calculateDeltas(const size_t outputIndex)
 }
 
 void NeuralNetwork::calculateGradientFromDeltas(const vector<double>& feature, 
-    vector<double>& gradient)
+    size_t outputIndex, vector<double>& gradient)
 {
     const vector<double>* input = &feature;
     size_t weightIndex          = 0;
     
     for (size_t i = 0; i < mLayers.size(); ++i)
     {
-        mLayers[i]->calculateGradient(*input, &gradient[weightIndex]);
+        mLayers[i]->calculateGradient(*input, outputIndex, &gradient[weightIndex]);
         
         // Get ready for the next iteration
         input = &mLayers[i]->getActivation();
@@ -512,7 +562,7 @@ void NeuralNetwork::calculateJacobianParameters(const vector<double>& x,
         calculateDeltas(i);
 
         // 3. Relate blame terms to the gradient
-        calculateGradientFromDeltas(x, jacobian[i]);
+        calculateGradientFromDeltas(x, i, jacobian[i]);
     }
 }
 

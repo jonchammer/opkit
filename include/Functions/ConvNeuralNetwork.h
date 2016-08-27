@@ -38,7 +38,7 @@ public:
     // of this layer. The caller can assume that 'gradient' is a region of
     // contiguous memory that has already been allocated to be the proper size.
     virtual void calculateGradient(const vector<double>& input,
-        double* gradient) = 0;
+        size_t outputIndex, double* gradient) = 0;
     
     // These functions provide structural information about the layer
     virtual size_t getNumParameters()           = 0;
@@ -81,7 +81,7 @@ public:
     void calculateDeltas(size_t outputIndex) override;
     
     void calculateGradient(const vector<double>& input, 
-        double* gradient) override;
+        size_t outputIndex, double* gradient) override;
     
     size_t getNumParameters()       override;     
     size_t getInputs()              override;    
@@ -149,7 +149,7 @@ public:
     void calculateDeltas(size_t outputIndex) override;
     
     void calculateGradient(const vector<double>& input, 
-        double* gradient) override;
+        size_t outputIndex, double* gradient) override;
     
     size_t getNumParameters()       override;     
     size_t getInputs()              override;    
@@ -188,10 +188,9 @@ private:
     // The 'z' parameters specify which slice of the 3D Tensors to use. The
     // output size will be determined by the padding and stride values.
     // The values calculated are SUMMED to whatever is currently inside 'output'.
-    void convolve(
-        Tensor3D& input,   size_t inputZ, size_t padding, size_t stride,
-        Tensor3D& filter,  size_t filterZ,
-        Tensor3D& output,  size_t outputZ);
+    void convolve(Tensor3D& input,  size_t ix, size_t iy, size_t iz,
+        Tensor3D& filter, size_t filterZ,
+        Tensor3D& output, size_t outputZ);
 };
 
 // This is a model representing a standard feedforward Artificial Neural Network
@@ -240,7 +239,7 @@ private:
     // Gradient calculation helper functions
     void calculateDeltas(const size_t outputIndex);
     void calculateGradientFromDeltas(const vector<double>& feature,
-        vector<double>& gradient);
+        size_t outputIndex, vector<double>& gradient);
 };
 
 #endif /* CONVNEURALNETWORK_H */
