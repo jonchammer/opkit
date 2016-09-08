@@ -28,7 +28,6 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 list(APPEND SOURCES "demos/multiLayerConvolutionBackpropTest.cpp")
 
 #Ignore the listed files
-list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/Functions/NeuralNetwork.cpp")
 list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
 
 # The first argument will be the name of the executable (e.g. "[NAME].exe")

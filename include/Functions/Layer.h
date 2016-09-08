@@ -1,22 +1,22 @@
 /* 
- * File:   ConvNeuralNetwork.h
+ * File:   Layer.h
  * Author: Jon C. Hammer
  *
- * Created on August 20, 2016, 10:21 AM
+ * Created on September 8, 2016, 5:26 PM
  */
 
-#ifndef CONVNEURALNETWORK_H
-#define CONVNEURALNETWORK_H
+#ifndef LAYER_H
+#define LAYER_H
 
 #include <vector>
-#include "PrettyPrinter.h"
-#include "Function.h"
-#include "Matrix.h"
-#include "Error.h"
-#include "ActivationFunction.h"
+#include <iostream>
 #include "Tensor3D.h"
+#include "ActivationFunction.h"
+#include "Error.h"
 using namespace std;
 
+// A neural network consists of a set of layers. All layers have some functionality
+// in common, so they all derive from this superclass.
 class Layer
 {
 public:
@@ -37,8 +37,7 @@ public:
     // Calculate the gradient of the network with respect to the parameters
     // of this layer. The caller can assume that 'gradient' is a region of
     // contiguous memory that has already been allocated to be the proper size.
-    virtual void calculateGradient(const vector<double>& input,
-        size_t outputIndex, double* gradient) = 0;
+    virtual void calculateGradient(const vector<double>& input, double* gradient) = 0;
     
     // These functions provide structural information about the layer
     virtual size_t getNumParameters()           = 0;
@@ -67,6 +66,8 @@ protected:
     size_t mParametersStartIndex;
 };
 
+// Feedforward layers are traditional, fully connected layers. They take vectors
+// as input, and produce vectors as output.
 class FeedforwardLayer : public Layer
 {
 public:
@@ -80,8 +81,7 @@ public:
     void calculateDeltas(Layer* downstream)  override;
     void calculateDeltas(size_t outputIndex) override;
     
-    void calculateGradient(const vector<double>& input, 
-        size_t outputIndex, double* gradient) override;
+    void calculateGradient(const vector<double>& input, double* gradient) override;
     
     size_t getNumParameters()       override;     
     size_t getInputs()              override;    
@@ -102,8 +102,13 @@ private:
     Activation mActFunction;    // The activation function (and derivative) to be used in this layer
 };
 
-// A Neural Network consists of Layers.
-class ConvLayer : public Layer
+// Convolutional layers are often used for image processing. They take as input
+// a 3D volume of numbers and produce as output another 3D volume. Typically,
+// the three dimensions will correspond to the width of an image, the height of
+// an image, and the number of channels in the image. Convolutional layers use
+// weights that are connected to a small area, in addition to weight sharing.
+// A set of 1 or more kernels are what are learned during training.
+class Convolutional2DLayer : public Layer
 {
 public:
     // Constructors
@@ -136,9 +141,9 @@ public:
     // where 
     // outputWidth  = (inputWidth  - numFilters + 2 * zeroPadding) / stride + 1
     // outputHeight = (inputHeight - numFilters + 2 * zeroPadding) / stride + 1
-    ConvLayer(size_t inputWidth, size_t inputHeight, size_t inputChannels, 
+    Convolutional2DLayer(size_t inputWidth, size_t inputHeight, size_t inputChannels, 
         size_t filterSize, size_t numFilters, size_t stride, size_t zeroPadding);
-    virtual ~ConvLayer() {}
+    virtual ~Convolutional2DLayer() {}
     
     // Used for evaluating this layer. This updates the activation based 
     // on y = a(W*x + b), where * represents convolution of the inputs with
@@ -148,8 +153,7 @@ public:
     void calculateDeltas(Layer* downstream)  override;
     void calculateDeltas(size_t outputIndex) override;
     
-    void calculateGradient(const vector<double>& input, 
-        size_t outputIndex, double* gradient) override;
+    void calculateGradient(const vector<double>& input, double* gradient) override;
     
     size_t getNumParameters()       override;     
     size_t getInputs()              override;    
@@ -176,6 +180,7 @@ private:
     size_t mInputWidth, mInputHeight, mInputChannels;
     size_t mFilterSize, mNumFilters;
     size_t mStride, mZeroPadding;
+    size_t mOutputWidth, mOutputHeight;
     
     vector<double> mNet;        // The sum before the activation function is applied
     vector<double> mActivation; // The activation (output of this layer)
@@ -191,60 +196,7 @@ private:
     void convolve(Tensor3D& input,  size_t ix, size_t iy, size_t iz,
         Tensor3D& filter, size_t filterZ,
         Tensor3D& output, size_t outputZ);
-    
-    void convolve2(Tensor3D& input, size_t inputZ, size_t padding, size_t stride,
-        Tensor3D& filter,  size_t filterZ,
-        Tensor3D& output,  size_t outputZ);
 };
 
-// This is a model representing a standard feedforward Artificial Neural Network
-// (ANN). A Neural Network consists of a set of neurons arranged in layers. Each
-// neuron calculates a weighted sum of its inputs, applies a nonlinear activation
-// function (e.g. tanh(x)), and outputs a result. The network topology can be
-// adjusted in order to mimic any traditional function.
-//
-// When a Neural Network is created, the user provides the topology in the form
-// of a vector of integers. Each number represents the number of neurons in the
-// corresponding layer. So <4, 2, 6> would represent a network with 4 inputs,
-// 2 nodes in the hidden layer, and 6 outputs.
-class NeuralNetwork : public Function
-{
-public:
-    // Constructors
-    NeuralNetwork();
-    virtual ~NeuralNetwork() {};
-    
-    // Layer modification
-    void addLayer(Layer* layer);
-    
-    // Functions from the "Function" interface
-    void evaluate(const vector<double>& input, vector<double>& output)          override;
-    void calculateJacobianParameters(const vector<double>& x, Matrix& jacobian) override;
-    void calculateJacobianInputs(const vector<double>& x, Matrix& gradient)     override;
-    
-    size_t getInputs()  const override;
-    size_t getOutputs() const override;
-    
-    vector<double>& getParameters() override;
-    const vector<double>& getParameters() const override;
-    size_t getNumParameters() const override;
-    
-    // Getters / Setters
-    size_t getNumLayers() const;
-    Layer* getLayer(const size_t index);
-    const Layer* getLayer(const size_t index) const;
-    Layer* getOutputLayer();
-    const Layer* getOutputLayer() const;
-    
-private:
-    vector<double> mParameters;
-    vector<Layer*> mLayers;
-    
-    // Gradient calculation helper functions
-    void calculateDeltas(const size_t outputIndex);
-    void calculateGradientFromDeltas(const vector<double>& feature,
-        size_t outputIndex, vector<double>& gradient);
-};
-
-#endif /* CONVNEURALNETWORK_H */
+#endif /* LAYER_H */
 

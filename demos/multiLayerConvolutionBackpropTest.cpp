@@ -9,7 +9,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include "ConvNeuralNetwork.h"
+#include "Layer.h"
+#include "NeuralNetwork.h"
 #include "PrettyPrinter.h"
 #include "Tensor3D.h"
 #include "ActivationFunction.h"
@@ -44,71 +45,36 @@ bool testBackProp(NeuralNetwork& network, vector<double>& input)
     return true;
 }
 
-// Test setup from: http://cs231n.github.io/convolutional-networks/
 int main()
 {
-    // Create a network with two convolutional layers
-    ConvLayer layer(5, 5, 3, 3, 2, 4, 1);
+    // Create a network with three convolutional layers
+    Convolutional2DLayer layer(20, 20, 3, 3, 10, 3, 2);
     layer.setActivationFunction(linearActivation);
     printf("Layer 1: (%zux%zux%zu) -> (%zux%zux%zu)\n",
         layer.getInputWidth(), layer.getInputHeight(), layer.getInputChannels(),
         layer.getOutputWidth(), layer.getOutputHeight(), layer.getNumFilters());
 
-    ConvLayer layer2(3, 3, 2, 3, 2, 1, 0);
+    Convolutional2DLayer layer2(8, 8, 10, 3, 5, 1, 0);
     layer.setActivationFunction(linearActivation);
     printf("Layer 2: (%zux%zux%zu) -> (%zux%zux%zu)\n",
         layer2.getInputWidth(), layer2.getInputHeight(), layer2.getInputChannels(),
         layer2.getOutputWidth(), layer2.getOutputHeight(), layer2.getNumFilters());
     
+    Convolutional2DLayer layer3(6, 6, 5, 3, 5, 1, 0);
+    layer.setActivationFunction(linearActivation);
+    printf("Layer 3: (%zux%zux%zu) -> (%zux%zux%zu)\n",
+        layer3.getInputWidth(), layer3.getInputHeight(), layer3.getInputChannels(),
+        layer3.getOutputWidth(), layer3.getOutputHeight(), layer3.getNumFilters());
+    
     NeuralNetwork network;
     network.addLayer(&layer);
     network.addLayer(&layer2);
+    network.addLayer(&layer3);
     randomizeParameters(network.getParameters(), 0.0, 0.01);
     
-    // Test case
-//    vector<double> input =
-//    {
-//        2, 2, 2, 2, 0,
-//        0, 0, 2, 2, 1,
-//        2, 0, 1, 1, 2,
-//        1, 0, 1, 1, 0,
-//        2, 1, 0, 1, 2,
-//        
-//        2, 1, 0, 1, 1,
-//        2, 2, 1, 2, 0,
-//        2, 2, 1, 1, 0,
-//        2, 2, 1, 1, 1,
-//        0, 0, 0, 1, 0,
-//        
-//        1, 2, 2, 0, 0,
-//        2, 0, 0, 1, 0,
-//        1, 0, 2, 1, 2,
-//        0, 2, 1, 1, 1,
-//        2, 2, 2, 2, 1
-//    };
-        
-//    vector<double> input = 
-//    {
-//        1, 2, 3, 4, 5,
-//        6, 7, 8, 9, 10,
-//        11, 12, 13, 14, 15, 
-//        16, 17, 18, 19, 20, 
-//        21, 22, 23, 24, 25,
-//        
-//        1, 2, 3, 4, 5,
-//        6, 7, 8, 9, 10,
-//        11, 12, 13, 14, 15, 
-//        16, 17, 18, 19, 20, 
-//        21, 22, 23, 24, 25,
-//        
-//        1, 2, 3, 4, 5,
-//        6, 7, 8, 9, 10,
-//        11, 12, 13, 14, 15, 
-//        16, 17, 18, 19, 20, 
-//        21, 22, 23, 24, 25,
-//    };
-    
-    vector<double> input(layer.getInputWidth() * layer.getInputHeight() * layer.getInputChannels(), 0.0);
+    // Create a test input randomly
+    size_t inputSize = layer.getInputWidth() * layer.getInputHeight() * layer.getInputChannels();
+    vector<double> input(inputSize, 0.0);
     randomizeParameters(input, 0.0, 2.0);
     
     if (!testBackProp(network, input))

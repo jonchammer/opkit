@@ -10,7 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include "ConvNeuralNetwork.h"
+#include "NeuralNetwork.h"
 #include "PrettyPrinter.h"
 #include "Tensor3D.h"
 using namespace std;

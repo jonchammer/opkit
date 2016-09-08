@@ -10,7 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include "ConvNeuralNetwork.h"
+#include "NeuralNetwork.h"
 #include "PrettyPrinter.h"
 #include "Tensor3D.h"
 #include "ActivationFunction.h"
@@ -24,7 +24,7 @@ bool testForwardProp(NeuralNetwork& network, vector<double>& input,
      // Run through the convolution to get output
     cout << "Testing Feedforward." << endl;
     vector<double> output;
-    ConvLayer* layer  = (ConvLayer*) network.getLayer(0);
+    Convolutional2DLayer* layer  = (Convolutional2DLayer*) network.getLayer(0);
     size_t numFilters = layer->getNumFilters();
     
     network.evaluate(input, output);
@@ -123,7 +123,7 @@ int main()
     size_t padding       = 1;
     
     // Create a single convolutional layer
-    ConvLayer layer(inputWidth, inputHeight, inputChannels, filterSize, 
+    Convolutional2DLayer layer(inputWidth, inputHeight, inputChannels, filterSize, 
         numFilters, stride, padding);
     layer.setActivationFunction(linearActivation);
     NeuralNetwork network;

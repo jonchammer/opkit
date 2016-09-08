@@ -12,15 +12,10 @@
 #include "Matrix.h"
 #include "DataLoader.h"
 #include "DataNormalizer.h"
-
 #include "SSEFunction.h"
 #include "GradientDescent.h"
-
-// Old API
 #include "NeuralNetwork.h"
 
-// New API
-//#include "ConvNeuralNetwork.h"
 using namespace std;
 
 //-----------------------------------------------//
@@ -62,7 +57,6 @@ bool loadIris(Matrix& features, Matrix& labels)
     return true;
 }
 
-// Old API - Neural Network defined in NeuralNetwork.h. Feedforward only.
 int main()
 {
     // Load the data
@@ -71,42 +65,52 @@ int main()
         return 1;
     
     // Create the model
-   
+    NeuralNetwork base;
+
     // One layer Neural network
     #if defined ONE_LAYER
-        vector<int> dimensions = {(int) features.cols(), (int) labels.cols()};
-        NeuralNetwork base(dimensions);
-        base.getLayer(0).setActivationFunction(TEST_ACTIVATION);
+
+        FeedforwardLayer l1(features.cols(), labels.cols());
+        base.addLayer(&l1);
+        l1.setActivationFunction(TEST_ACTIVATION); 
 
     // Two layer Neural Network
     #elif defined TWO_LAYER
 
-        vector<int> dimensions = {(int) features.cols(), 10, (int) labels.cols()};
-        NeuralNetwork base(dimensions);
+        FeedforwardLayer l1(features.cols(), 10);
+        FeedforwardLayer l2(10, labels.cols());
+
+        base.addLayer(&l1);
+        base.addLayer(&l2);
 
         #if defined FIRST_LAYER
-            base.getLayer(0).setActivationFunction(TEST_ACTIVATION);
+            l1.setActivationFunction(TEST_ACTIVATION);
         #elif defined ALL_LAYERS
-            base.getLayer(0).setActivationFunction(TEST_ACTIVATION);
-            base.getLayer(1).setActivationFunction(TEST_ACTIVATION);
+            l1.setActivationFunction(TEST_ACTIVATION);
+            l2.setActivationFunction(TEST_ACTIVATION);
         #else
-            base.getLayer(1).setActivationFunction(TEST_ACTIVATION);
+            l2.setActivationFunction(TEST_ACTIVATION);
         #endif
 
     // Three layer Neural Network
     #else
 
-        vector<int> dimensions = {(int) features.cols(), 10, 10, (int) labels.cols()};
-        NeuralNetwork base(dimensions);
+        FeedforwardLayer l1(features.cols(), 10);
+        FeedforwardLayer l2(10, 10);
+        FeedforwardLayer l3(10, labels.cols());
+
+        base.addLayer(&l1);
+        base.addLayer(&l2);
+        base.addLayer(&l3);
 
         #if defined FIRST_LAYER
-            base.getLayer(0).setActivationFunction(TEST_ACTIVATION);
+            l1.setActivationFunction(TEST_ACTIVATION);
         #elif defined ALL_LAYERS
-            base.getLayer(0).setActivationFunction(TEST_ACTIVATION);
-            base.getLayer(1).setActivationFunction(TEST_ACTIVATION);
-            base.getLayer(2).setActivationFunction(TEST_ACTIVATION);
+            l1.setActivationFunction(TEST_ACTIVATION);
+            l2.setActivationFunction(TEST_ACTIVATION);
+            l3.setActivationFunction(TEST_ACTIVATION);
         #else
-            base.getLayer(2).setActivationFunction(TEST_ACTIVATION);
+            l3.setActivationFunction(TEST_ACTIVATION);
         #endif
 
     #endif
@@ -127,80 +131,4 @@ int main()
     delete f;    
     return 0;
 }
-
-// New API - Modular Neural Network defined in ConvNeuralNetwork.h
-//int main()
-//{
-//    // Load the data
-//    Matrix features, labels;
-//    if (!loadIris(features, labels))
-//        return 1;
-//    
-//    // Create the model
-//    NeuralNetwork base;
-//
-//    // One layer Neural network
-//    #if defined ONE_LAYER
-//
-//        FeedforwardLayer l1(features.cols(), labels.cols());
-//        base.addLayer(&l1);
-//        l1.setActivationFunction(TEST_ACTIVATION); 
-//
-//    // Two layer Neural Network
-//    #elif defined TWO_LAYER
-//
-//        FeedforwardLayer l1(features.cols(), 10);
-//        FeedforwardLayer l2(10, labels.cols());
-//
-//        base.addLayer(&l1);
-//        base.addLayer(&l2);
-//
-//        #if defined FIRST_LAYER
-//            l1.setActivationFunction(TEST_ACTIVATION);
-//        #elif defined ALL_LAYERS
-//            l1.setActivationFunction(TEST_ACTIVATION);
-//            l2.setActivationFunction(TEST_ACTIVATION);
-//        #else
-//            l2.setActivationFunction(TEST_ACTIVATION);
-//        #endif
-//
-//    // Three layer Neural Network
-//    #else
-//
-//        FeedforwardLayer l1(features.cols(), 10);
-//        FeedforwardLayer l2(10, 10);
-//        FeedforwardLayer l3(10, labels.cols());
-//
-//        base.addLayer(&l1);
-//        base.addLayer(&l2);
-//        base.addLayer(&l3);
-//
-//        #if defined FIRST_LAYER
-//            l1.setActivationFunction(TEST_ACTIVATION);
-//        #elif defined ALL_LAYERS
-//            l1.setActivationFunction(TEST_ACTIVATION);
-//            l2.setActivationFunction(TEST_ACTIVATION);
-//            l3.setActivationFunction(TEST_ACTIVATION);
-//        #else
-//            l3.setActivationFunction(TEST_ACTIVATION);
-//        #endif
-//
-//    #endif
-//    
-//    ErrorFunction* f = new SSEFunction(base);
-//    randomizeParameters(base.getParameters(), 0.0, 0.01);
-//        
-//    cout << "Working..." << endl;
-//    
-//    // Optimize the model
-//    GradientDescent trainer(f);
-//    for (int i = 0; i < NUM_ITERATIONS; ++i)
-//    {
-//        trainer.iterate(features, labels); 
-//    }
-//    cout << "SSE: " << f->evaluate(features, labels) << endl;
-//    
-//    delete f;    
-//    return 0;
-//}
 

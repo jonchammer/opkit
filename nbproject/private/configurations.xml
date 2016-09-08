@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="95">
+<configurationDescriptor version="97">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="0">
       <df name="build">
         <df name="CMakeFiles">
-          <df name="3.6.2">
+          <df name="3.6.1">
             <df name="CompilerIdC">
               <in>CMakeCCompilerId.c</in>
             </df>
@@ -43,9 +43,9 @@
         <df name="Functions">
           <in>ActivationFunction.h</in>
           <in>CommonFunctions.h</in>
-          <in>ConvNeuralNetwork.h</in>
           <in>ErrorFunction.h</in>
           <in>Function.h</in>
+          <in>Layer.h</in>
           <in>NeuralNetwork.h</in>
           <in>SSEFunction.h</in>
         </df>
@@ -71,9 +71,9 @@
       <df name="src">
         <df name="Functions">
           <in>ActivationFunction.cpp</in>
-          <in>ConvNeuralNetwork.cpp</in>
           <in>ErrorFunction.cpp</in>
           <in>Function.cpp</in>
+          <in>Layer.cpp</in>
           <in>NeuralNetwork.cpp</in>
           <in>SSEFunction.cpp</in>
         </df>
