@@ -79,7 +79,6 @@ bool testBackpropInputs(NeuralNetwork& network, vector<double>& input)
     return true;
 }
 
-// Test setup from: http://cs231n.github.io/convolutional-networks/
 int main()
 {    
     // Create a test network

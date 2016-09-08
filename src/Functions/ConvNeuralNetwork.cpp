@@ -157,6 +157,12 @@ ConvLayer::ConvLayer(size_t inputWidth, size_t inputHeight, size_t inputChannels
     mInputChannels(inputChannels), mFilterSize(filterSize), 
     mNumFilters(numFilters), mStride(stride), mZeroPadding(zeroPadding)
 {
+    if (stride < 1)
+    {
+        cerr << "Error: Stride must be at least 1." << endl;
+        throw Ex("Unable to create convolutional layer.");
+    }
+    
     // Check to make sure the given metaparameters are actually a valid
     // configuration. We have to make sure that this equation:
     // (inputWidth - filterSize + (2 * zeroPadding)) / stride
@@ -384,6 +390,9 @@ void ConvLayer::calculateDeltas(Layer* downstream)
         }
     }
     
+    // TODO Multiply targetDeltas by derivative of activation function
+    
+    
     // TODO: Implement. Convolve blame with filters to get deltas for previous
     // layer. deltas_l = weights_l+1 * deltas_l+1 * actD(net_l)
 //    vector<double>& downstreamDeltas = downstream->getDeltas();
@@ -433,46 +442,92 @@ void ConvLayer::calculateDeltas(size_t outputIndex)
         (mNet[outputIndex], mActivation[outputIndex]);
 }
 
-void ConvLayer::calculateGradient(const vector<double>& x, size_t outputIndex, double* gradient)
+void ConvLayer::calculateGradient(const vector<double>& x, size_t /*outputIndex*/, double* gradient)
 {    
-    // Calculate the output dimensions
     size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
-    size_t outputWidth      = getOutputWidth();
-    size_t outputHeight     = getOutputHeight();
-    size_t outputDepth      = mNumFilters;
-
-    // Convert the output index into a 3D coordinate for the current output point
-    size_t iz  = outputIndex / (outputWidth * outputHeight);
-    size_t i2 = outputIndex % (outputWidth * outputHeight);
-    size_t iy  = i2 / outputWidth;
-    size_t ix  = i2 % outputWidth;
-            
-    // Wrap the important vectors in Tensor3D objects so we can work with them
+    size_t outputRows       = getOutputHeight();
+    size_t outputCols       = getOutputWidth();
+    
     Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
-    Tensor3D deltas(mDeltas, 0, outputWidth, outputHeight, outputDepth);
-      
-    // Note: These loops can be run in any order. Each iteration is completely
-    // independent of every other iteration.
-    for (size_t filter = 0; filter < mNumFilters; ++filter)
+    Tensor3D deltas(mDeltas, 0, outputCols, outputRows, mNumFilters);
+    
+    for (size_t k = 0; k < mNumFilters; ++k)
     {
-        Tensor3D grad(gradient + (filter * numFilterWeights), 0, 
-            mFilterSize, mFilterSize, mInputChannels);
+        Tensor3D grad(gradient, k * numFilterWeights, mFilterSize, mFilterSize, mInputChannels);
         
-        // Convolve the appropriate region in the input with the deltas
-        // in order to calculate the gradient for the weights
-        for (size_t channel = 0; channel < mInputChannels; ++channel)
-            convolve(input, ix, iy, iz, deltas, filter, grad, channel);
-        
-        // Sum over the deltas for this filter to calculate the bias gradient
-        double bias = 0.0;
-        for (size_t i = 0; i < outputWidth; ++i)
+        size_t outChannelOffset = k * outputRows * outputCols;
+        for (size_t j = 0; j < outputRows; ++j)
         {
-            for (size_t j = 0; j < outputHeight; ++j)
-                bias += deltas.get(i, j, filter);
+            size_t outRowOffset = j * outputCols;
+            int inRowOffset     = j * mStride - mZeroPadding;
+            for (size_t i = 0; i < outputCols; ++i)
+            {
+                size_t index    = outChannelOffset + outRowOffset + i;
+                int inColOffset = i * mStride - mZeroPadding;
+                
+                // bias[filter k] += mDeltas[index];
+                gradient[(k + 1) * numFilterWeights - 1] += mDeltas[index];
+                for (size_t z = 0; z < mInputChannels; ++z)
+                {
+                    //size_t kernelChannelOffset = z * mFilterSize * mFilterSize;
+                    //size_t inChannelOffset     = z * mInputHeight * mInputWidth;
+                    for (size_t y = 0; y < mFilterSize; ++y)
+                    {
+                        //size_t kernelRowOffset = y * mFilterSize;
+                        int inRow              = inRowOffset + y;
+                        for (size_t x = 0; x < mFilterSize; ++x)
+                        {
+                            int inCol = inColOffset + x;
+                            if (inRow >= 0 && inRow < (int) mInputHeight && inCol >= 0 && inCol < (int) mInputWidth)
+                            {
+                                //size_t idx = inChannelOffset + mInputWidth * inRow + inCol;
+                                double val = deltas.get(i, j, k) * input.get(inCol, inRow, z);
+                                grad.add(x, y, z, val);
+                            }
+                        }
+                    }
+                }
+            }
         }
-        size_t biasIndex    = numFilterWeights * (filter + 1) - 1;
-        gradient[biasIndex] = bias;
     }
+//    // Calculate the output dimensions
+//    size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
+//    size_t outputWidth      = getOutputWidth();
+//    size_t outputHeight     = getOutputHeight();
+//    size_t outputDepth      = mNumFilters;
+//
+//    // Convert the output index into a 3D coordinate for the current output point
+//    size_t iz  = outputIndex / (outputWidth * outputHeight);
+//    size_t i2 = outputIndex % (outputWidth * outputHeight);
+//    size_t iy  = i2 / outputWidth;
+//    size_t ix  = i2 % outputWidth;
+//            
+//    // Wrap the important vectors in Tensor3D objects so we can work with them
+//    Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
+//    Tensor3D deltas(mDeltas, 0, outputWidth, outputHeight, outputDepth);
+//      
+//    // Note: These loops can be run in any order. Each iteration is completely
+//    // independent of every other iteration.
+//    for (size_t filter = 0; filter < mNumFilters; ++filter)
+//    {
+//        Tensor3D grad(gradient + (filter * numFilterWeights), 0, 
+//            mFilterSize, mFilterSize, mInputChannels);
+//        
+//        // Convolve the appropriate region in the input with the deltas
+//        // in order to calculate the gradient for the weights
+//        for (size_t channel = 0; channel < mInputChannels; ++channel)
+//            convolve(input, ix, iy, iz, deltas, filter, grad, channel);
+//        
+//        // Sum over the deltas for this filter to calculate the bias gradient
+//        double bias = 0.0;
+//        for (size_t i = 0; i < outputWidth; ++i)
+//        {
+//            for (size_t j = 0; j < outputHeight; ++j)
+//                bias += deltas.get(i, j, filter);
+//        }
+//        size_t biasIndex    = numFilterWeights * (filter + 1) - 1;
+//        gradient[biasIndex] = bias;
+//    }
 }
 
 size_t ConvLayer::getNumParameters()
@@ -571,6 +626,14 @@ NeuralNetwork::NeuralNetwork() {}
 
 void NeuralNetwork::addLayer(Layer* layer)
 {
+    // Make sure this layer is compatible with the rest of the network
+    if (!mLayers.empty() && mLayers.back()->getOutputs() != layer->getInputs())
+    {
+        cerr << "This number of inputs to this layer must match the number of"
+             << " outputs in the layer before." << endl;
+        throw Ex("Unable to add layer.");
+    }
+    
     // Increase the network's storage to accommodate the new layer. Give the
     // new layer a share of the parameters to work with.
     size_t numParams = layer->getNumParameters();
