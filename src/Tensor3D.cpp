@@ -1,4 +1,5 @@
 #include "Tensor3D.h"
+#include "ActivationFunction.h"
 
 Tensor3D::Tensor3D(vector<double>& parameters, const size_t parametersStart, 
     const size_t width, const size_t height, const size_t depth)
@@ -36,6 +37,16 @@ void Tensor3D::set(const int x, const int y, const int z, const double val)
     {
         size_t index = mParametersStart + (mWidth * mHeight * z + mWidth * y + x);
         mParameters[index] = val;
+    }
+}
+
+void Tensor3D::add(const int x, const int y, const int z, const double val)
+{
+    if (x >= 0 && y >= 0 && z >= 0 && 
+        x < (int)mWidth && y < (int)mHeight && z < (int)mDepth)
+    {
+        size_t index = mParametersStart + (mWidth * mHeight * z + mWidth * y + x);
+        mParameters[index] += val;
     }
 }
 

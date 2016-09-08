@@ -262,39 +262,40 @@ void ConvLayer::convolve(
         }
     }
 }
-//void ConvLayer::convolve(
-//        Tensor3D& input,   size_t inputZ, size_t padding, size_t stride,
-//        Tensor3D& filter,  size_t filterZ,
-//        Tensor3D& output,  size_t outputZ)
-//{
-//    // Go over each cell in this slice of the output volume
-//    for (size_t y = 0; y < output.getHeight(); ++y)    
-//    {
-//        for (size_t x = 0; x < output.getWidth(); ++x)
-//        {
-//            // Do the actual convolution for this cell
-//            double sum = 0.0;
-//            
-//            int lowX = -padding + x * stride;
-//            int lowY = -padding + y * stride;
-//            int hiX  = lowX + filter.getWidth();
-//            int hiY  = lowY + filter.getHeight();
-//            
-//            for (int j = lowY; j <= hiY; ++j)
-//            {
-//                for (int i = lowX; i <= hiX; ++i)
-//                {
-//                    sum += input.get(i, j, inputZ) * 
-//                        filter.get(i - lowX, j - lowY, filterZ);
-//                }
-//            }
-//            
-//            // Add the sum to the current value in this cell
-//            double cur = output.get(x, y, outputZ);
-//            output.set(x, y, outputZ, cur + sum);
-//        }
-//    }
-//}
+
+void ConvLayer::convolve2(
+    Tensor3D& input,   size_t inputZ, size_t padding, size_t stride,
+    Tensor3D& filter,  size_t filterZ,
+    Tensor3D& output,  size_t outputZ)
+{
+    // Go over each cell in this slice of the output volume
+    for (size_t y = 0; y < output.getHeight(); ++y)    
+    {
+        for (size_t x = 0; x < output.getWidth(); ++x)
+        {
+            // Do the actual convolution for this cell
+            double sum = 0.0;
+            
+            int lowX = -padding + x * stride;
+            int lowY = -padding + y * stride;
+            int hiX  = lowX + filter.getWidth();
+            int hiY  = lowY + filter.getHeight();
+            
+            for (int j = lowY; j <= hiY; ++j)
+            {
+                for (int i = lowX; i <= hiX; ++i)
+                {
+                    sum += input.get(i, j, inputZ) * 
+                        //filter.get(i - lowX, j - lowY, filterZ);
+                        filter.get(j - lowY, i - lowX, filterZ);
+                }
+            }
+            
+            // Add the sum to the current value in this cell
+            output.add(x, y, outputZ, sum);
+        }
+    }
+}
 
 void ConvLayer::feed(const vector<double>& x, vector<double>& y)
 {
@@ -331,10 +332,94 @@ void ConvLayer::feed(const vector<double>& x, vector<double>& y)
     }
 }
     
-void ConvLayer::calculateDeltas(Layer* upstream)
+void ConvLayer::calculateDeltas(Layer* downstream)
 {
+    vector<double>& downstreamDeltas = downstream->getDeltas();
+    std::fill(downstreamDeltas.begin(), downstreamDeltas.end(), 0.0);
+    
+    size_t outputRows       = getOutputHeight();
+    size_t outputCols       = getOutputWidth();
+    size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
+    
+    Tensor3D currentDeltas(mDeltas, 0, outputCols, outputRows, mNumFilters);
+    Tensor3D targetDeltas(downstreamDeltas, 0, mInputWidth, mInputHeight, mInputChannels);
+    
+    for (size_t k = 0; k < mNumFilters; ++k)
+    {
+        Tensor3D currentFilter(*mParameters, mParametersStartIndex + (k * numFilterWeights), 
+            mFilterSize, mFilterSize, mInputChannels);
+        
+        //size_t outChannelOffset = k * outputRows * outputCols;
+        for (size_t j = 0; j < outputRows; ++j)
+        {
+            //size_t outRowOffset = j * outputCols;
+            int inRowOffset     = j * mStride - mZeroPadding;
+            for (size_t i = 0; i < outputCols; ++i)
+            {
+                //size_t index    = outChannelOffset + outRowOffset + i;
+                int inColOffset = i * mStride - mZeroPadding;
+                for (size_t z = 0; z < mInputChannels; ++z)
+                {
+                    //size_t kernelChannelOffset = z * mFilterSize * mFilterSize;
+                    //size_t inChannelOffset     = z * mInputHeight * mInputWidth;
+                    for (size_t y = 0; y < mFilterSize; ++y)
+                    {
+                        //size_t kernelRowOffset = y * mFilterSize;
+                        int inRow              = inRowOffset + y;
+                        for (size_t x = 0; x < mFilterSize; ++x)
+                        {
+                            int inCol = inColOffset + x;
+                            if (inRow >= 0 && inRow < (int)mInputHeight && inCol >= 0 && inCol < (int) mInputWidth)
+                            {
+                                //size_t idx = inChannelOffset + mInputWidth * inRow + inCol;
+                                
+                                double val = currentFilter.get(x, y, z) * currentDeltas.get(i, j, k);
+                                targetDeltas.add(inCol, inRow, z, val);
+                                //downstreamDeltas[idx] += mKernels[k][kernelChannelOffset + kernelRowOffset + x] * mDeltas[index];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     // TODO: Implement. Convolve blame with filters to get deltas for previous
-    // layer.
+    // layer. deltas_l = weights_l+1 * deltas_l+1 * actD(net_l)
+//    vector<double>& downstreamDeltas = downstream->getDeltas();
+//    std::fill(downstreamDeltas.begin(), downstreamDeltas.end(), 0.0);
+//
+//    size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
+//    Activation& act = downstream->getActivationFunction();
+//    
+//    Tensor3D currentDeltas(mDeltas, 0, getOutputWidth(), getOutputHeight(), mNumFilters);
+//    Tensor3D targetDeltas(downstreamDeltas, 0, mInputWidth, mInputHeight, mInputChannels);
+//    
+//    size_t padding = (mFilterSize - 1) / 2;
+//    for (size_t channel = 0; channel < mInputChannels; ++channel)
+//    {
+//        for (size_t filter = 0; filter < mNumFilters; ++filter)
+//        {
+//            Tensor3D currentFilter(*mParameters, mParametersStartIndex + (filter * numFilterWeights), 
+//                mFilterSize, mFilterSize, mInputChannels);
+//            convolve2(currentDeltas, filter, padding, 1, currentFilter, channel, targetDeltas, channel);
+//        }
+//    }
+    
+    
+//    
+//    for (size_t i = 0; i < mInputs; ++i)
+//    {
+//        double actDerivative = (*act.second)
+//            (downstream->getNet()[i], downstream->getActivation()[i]);
+//
+//        for (size_t j = 0; j < mOutputs; ++j)
+//        {
+//            size_t index  = mParametersStartIndex + (j * mInputs + i);
+//            double weight = (*mParameters)[index];
+//            downstreamDeltas[i] += weight * mDeltas[j] * actDerivative;
+//        }
+//    }
 }
 
 void ConvLayer::calculateDeltas(size_t outputIndex)

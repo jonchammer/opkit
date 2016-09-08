@@ -34,9 +34,10 @@
       </df>
       <df name="demos">
         <in>activationTest.cpp</in>
-        <in>convolutionTest.cpp</in>
         <in>finiteDifferencesTest.cpp</in>
         <in>fullyConnectedBackpropTest.cpp</in>
+        <in>multiLayerConvolutionBackpropTest.cpp</in>
+        <in>singleLayerConvolutionTest.cpp</in>
       </df>
       <df name="include">
         <df name="Functions">
@@ -114,8 +115,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>

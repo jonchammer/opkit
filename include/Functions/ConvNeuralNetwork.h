@@ -191,6 +191,10 @@ private:
     void convolve(Tensor3D& input,  size_t ix, size_t iy, size_t iz,
         Tensor3D& filter, size_t filterZ,
         Tensor3D& output, size_t outputZ);
+    
+    void convolve2(Tensor3D& input, size_t inputZ, size_t padding, size_t stride,
+        Tensor3D& filter,  size_t filterZ,
+        Tensor3D& output,  size_t outputZ);
 };
 
 // This is a model representing a standard feedforward Artificial Neural Network

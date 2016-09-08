@@ -26,8 +26,9 @@ public:
         const size_t width, const size_t height, const size_t depth);
     
     // Retrieve and modify a given cell in the virtual 3D Tensor
-    double get(const int w, const int h, const int d) const;
-    void set(const int w, const int h, const int d, const double val);
+    double get(const int x, const int y, const int z) const;
+    void set(const int x, const int y, const int z, const double val);
+    void add(const int x, const int y, const int z, const double val);
     
     // Getters / Setters
     size_t getWidth()  const;
