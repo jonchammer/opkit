@@ -22,8 +22,8 @@ bool testBackProp(NeuralNetwork& network, vector<double>& input)
 {    
     cout << "Testing Backprop." << endl;
     Matrix jacobian, jacobian2;
-    network.calculateJacobianParameters(input, jacobian);
-    network.Function::calculateJacobianParameters(input, jacobian2);
+    network.calculateJacobianInputs(input, jacobian);
+    network.Function::calculateJacobianInputs(input, jacobian2);
     
     for (size_t j = 0; j < jacobian.rows(); ++j)
     {
