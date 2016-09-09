@@ -36,6 +36,7 @@
         <in>activationTest.cpp</in>
         <in>finiteDifferencesTest.cpp</in>
         <in>fullyConnectedBackpropTest.cpp</in>
+        <in>heterogeneousLayerBackpropTest.cpp</in>
         <in>multiLayerConvolutionBackpropTest.cpp</in>
         <in>singleLayerConvolutionTest.cpp</in>
       </df>

@@ -301,7 +301,15 @@ void Convolutional2DLayer::calculateDeltas(Layer* downstream)
         }
     }
     
-    // TODO Multiply targetDeltas by derivative of activation function
+    // Multiply targetDeltas by the derivative of activation function to 
+    // finish deactivating them.
+    Activation& act = downstream->getActivationFunction();
+    for (size_t i = 0; i < mOutputWidth * mOutputHeight * mNumFilters; ++i)
+    {
+        double actDerivative = (*act.second)
+            (downstream->getNet()[i], downstream->getActivation()[i]);
+        downstreamDeltas[i] *= actDerivative;
+    }
 }
 
 void Convolutional2DLayer::calculateDeltas(size_t outputIndex)

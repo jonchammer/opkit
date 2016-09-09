@@ -25,7 +25,7 @@ include_directories(include/Utils)
 # All the code is in the src subdirectory, except for the demos. Each demo has a
 # main() function defined, so only compile with one demo at a time.
 file(GLOB_RECURSE SOURCES "src/*.cpp")
-list(APPEND SOURCES "demos/multiLayerConvolutionBackpropTest.cpp")
+list(APPEND SOURCES "demos/heterogeneousLayerBackpropTest.cpp")
 
 #Ignore the listed files
 list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")

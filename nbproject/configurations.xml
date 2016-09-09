@@ -6,6 +6,7 @@
         <in>activationTest.cpp</in>
         <in>finiteDifferencesTest.cpp</in>
         <in>fullyConnectedBackpropTest.cpp</in>
+        <in>heterogeneousLayerBackpropTest.cpp</in>
         <in>multiLayerConvolutionBackpropTest.cpp</in>
         <in>singleLayerConvolutionTest.cpp</in>
       </df>
@@ -90,6 +91,11 @@
       <item path="demos/finiteDifferencesTest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="demos/fullyConnectedBackpropTest.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="demos/heterogeneousLayerBackpropTest.cpp"
             ex="false"
             tool="1"
             flavor2="0">
@@ -202,6 +208,11 @@
       <item path="demos/finiteDifferencesTest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="demos/fullyConnectedBackpropTest.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="demos/heterogeneousLayerBackpropTest.cpp"
             ex="false"
             tool="1"
             flavor2="0">
