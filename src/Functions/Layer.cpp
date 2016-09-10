@@ -303,17 +303,6 @@ void Convolutional2DLayer::calculateDeltas(vector<double>& destination)
             }
         }
     }
-<<<<<<< HEAD
-    
-    // Multiply targetDeltas by the derivative of activation function to 
-    // finish deactivating them.
-    Activation& act = downstream->getActivationFunction();
-    for (size_t i = 0; i < mOutputWidth * mOutputHeight * mNumFilters; ++i)
-    {
-        double actDerivative = (*act.second)
-            (downstream->getNet()[i], downstream->getActivation()[i]);
-        downstreamDeltas[i] *= actDerivative;
-    }
 }
 
 void Convolutional2DLayer::calculateDeltas(size_t outputIndex)
@@ -324,8 +313,6 @@ void Convolutional2DLayer::calculateDeltas(size_t outputIndex)
     // Apply the derivative of the activation function to the output of this layer
     mDeltas[outputIndex] = (*mActFunction.second)
         (mNet[outputIndex], mActivation[outputIndex]);
-=======
->>>>>>> origin/master
 }
 
 void Convolutional2DLayer::calculateGradient(const vector<double>& x, double* gradient)
