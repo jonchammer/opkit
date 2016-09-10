@@ -6,6 +6,27 @@ void Layer::feed(const vector<double>& x)
     feed(x, getActivation());
 }
 
+void Layer::deactivateDelta(size_t outputIndex)
+{
+    Activation& func       = getActivationFunction();
+    vector<double>& net    = getNet();
+    vector<double>& act    = getActivation();
+    vector<double>& deltas = getDeltas();
+
+    deltas[outputIndex] *= (*func.second)(net[outputIndex], act[outputIndex]);
+}
+
+void Layer::deactivateDeltas()
+{
+    Activation& func       = getActivationFunction();
+    vector<double>& net    = getNet();
+    vector<double>& act    = getActivation();
+    vector<double>& deltas = getDeltas();
+
+    for (size_t i = 0; i < getOutputs(); ++i)
+        deltas[i] *= (*func.second)(net[i], act[i]);
+}
+
 void Layer::assignStorage(vector<double>* parameters, 
     const size_t parametersStartIndex)
 {
@@ -58,36 +79,19 @@ void FeedforwardLayer::feed(const vector<double>& x, vector<double>& y)
     }
 }
 
-void FeedforwardLayer::calculateDeltas(Layer* downstream)
+void FeedforwardLayer::calculateDeltas(vector<double>& destination)
 {
-    vector<double>& downstreamDeltas = downstream->getDeltas();
-    std::fill(downstreamDeltas.begin(), downstreamDeltas.end(), 0.0);
+    std::fill(destination.begin(), destination.end(), 0.0);
 
-    Activation& act = downstream->getActivationFunction();
-    
     for (size_t i = 0; i < mInputs; ++i)
     {
-        double actDerivative = (*act.second)
-            (downstream->getNet()[i], downstream->getActivation()[i]);
-
         for (size_t j = 0; j < mOutputs; ++j)
         {
             size_t index  = mParametersStartIndex + (j * mInputs + i);
             double weight = (*mParameters)[index];
-            downstreamDeltas[i] += weight * mDeltas[j] * actDerivative;
+            destination[i] += weight * mDeltas[j];
         }
     }
-}
-
-void FeedforwardLayer::calculateDeltas(size_t outputIndex)
-{
-    // Blame is set to 0 for all outputs except the one we're interested in
-    std::fill(mDeltas.begin(), mDeltas.end(), 0.0);
-    
-    // Apply the derivative of the activation function to the output of this
-    // layer
-    mDeltas[outputIndex] = (*mActFunction.second)
-        (mNet[outputIndex], mActivation[outputIndex]);
 }
 
 void FeedforwardLayer::calculateGradient(const vector<double>& input, double* gradient)
@@ -256,16 +260,15 @@ void Convolutional2DLayer::feed(const vector<double>& x, vector<double>& y)
     }
 }
     
-void Convolutional2DLayer::calculateDeltas(Layer* downstream)
+void Convolutional2DLayer::calculateDeltas(vector<double>& destination)
 {
-    vector<double>& downstreamDeltas = downstream->getDeltas();
-    std::fill(downstreamDeltas.begin(), downstreamDeltas.end(), 0.0);
+    std::fill(destination.begin(), destination.end(), 0.0);
     
     size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
     
     // Wrap the important vectors in Tensor3D objects so access is easier
     Tensor3D currentDeltas(mDeltas, 0, mOutputWidth, mOutputHeight, mNumFilters);
-    Tensor3D targetDeltas(downstreamDeltas, 0, mInputWidth, mInputHeight, mInputChannels);
+    Tensor3D targetDeltas(destination, 0, mInputWidth, mInputHeight, mInputChannels);
     
     // Convolve the filters with the deltas for this layer to get the
     // deltas for the next layer downstream (to the left)
@@ -300,6 +303,7 @@ void Convolutional2DLayer::calculateDeltas(Layer* downstream)
             }
         }
     }
+<<<<<<< HEAD
     
     // Multiply targetDeltas by the derivative of activation function to 
     // finish deactivating them.
@@ -320,6 +324,8 @@ void Convolutional2DLayer::calculateDeltas(size_t outputIndex)
     // Apply the derivative of the activation function to the output of this layer
     mDeltas[outputIndex] = (*mActFunction.second)
         (mNet[outputIndex], mActivation[outputIndex]);
+=======
+>>>>>>> origin/master
 }
 
 void Convolutional2DLayer::calculateGradient(const vector<double>& x, double* gradient)

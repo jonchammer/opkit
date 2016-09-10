@@ -50,12 +50,18 @@ void NeuralNetwork::evaluate(const vector<double>& input, vector<double>& output
 void NeuralNetwork::calculateDeltas(const size_t outputIndex)
 {
     // Calculate the deltas on the last layer first
-    mLayers.back()->calculateDeltas(outputIndex);
+    vector<double>& outputDeltas = mLayers.back()->getDeltas();
+    std::fill(outputDeltas.begin(), outputDeltas.end(), 0.0);
+    outputDeltas[outputIndex] = 1.0;
+    mLayers.back()->deactivateDelta(outputIndex);
     
     // Apply the delta process recursively for each layer, moving backwards
     // through the network.
     for (int i = mLayers.size() - 1; i >= 1; --i)
-        mLayers[i]->calculateDeltas(mLayers[i - 1]);
+    {
+        mLayers[i]->calculateDeltas(mLayers[i - 1]->getDeltas());
+        mLayers[i - 1]->deactivateDeltas();
+    }
 }
 
 void NeuralNetwork::calculateGradientFromDeltas(const vector<double>& feature,
@@ -94,7 +100,6 @@ void NeuralNetwork::calculateJacobianParameters(const vector<double>& x,
     }
 }
 
-// TODO: Figure out what the gradient formula should be for a convolutional layer.
 void NeuralNetwork::calculateJacobianInputs(const vector<double>& x, 
         Matrix& jacobian)
 {
@@ -115,15 +120,10 @@ void NeuralNetwork::calculateJacobianInputs(const vector<double>& x,
         // 2. Calculate blame terms for all the nodes in the network
         calculateDeltas(k);
 
-        // 3. Relate blame terms to the gradient
-        vector<double>& deltas = mLayers.front()->getDeltas();
-        int weightIndex        = 0;
-
-        for (size_t j = 0; j < deltas.size(); ++j)
-        {
-            for (size_t i = 0; i < N; ++i)
-                jacobian[k][i] += mParameters[weightIndex++] * deltas[j];
-        }
+        // 3. Relate blame terms to the gradient. This operation is the
+        // same as backpropagating the deltas in the first layer to the
+        // inputs (x).
+        mLayers.front()->calculateDeltas(jacobian[k]);
     }
 }
 

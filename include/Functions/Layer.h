@@ -28,12 +28,22 @@ public:
     
     // In order to efficiently calculate the gradient of a network, we need to
     // be able to assign 'blame' to each node. This method calculates the
-    // 'blame' terms for each output node in this layer. The first version of
-    // this function is used for all layers but the last, while the second
-    // version is only used for output layers.
-    virtual void calculateDeltas(Layer* downstream)  = 0;
-    virtual void calculateDeltas(size_t outputIndex) = 0;
-    
+    // 'blame' terms for each node in the previous (left) layer. Therefore, the
+    // destination will usually be the deltas of the previous layer. 
+    //
+    // This method can also be used to calculate the gradient with respect to the 
+    // inputs. In this case, the method will be called on the first layer in the
+    // network, and the destination will be a location to store the gradient.
+    virtual void calculateDeltas(vector<double>& destination) = 0;
+
+    // Multiplies a single delta value by the derivative of the activation function 
+    // in order to deactivate it. (Used in the output layer)
+    virtual void deactivateDelta(size_t outputIndex);
+
+    // Multiplies the deltas by the derivative of the activation function in
+    // order to deactivate them. (Used in inner layers)
+    virtual void deactivateDeltas();
+
     // Calculate the gradient of the network with respect to the parameters
     // of this layer. The caller can assume that 'gradient' is a region of
     // contiguous memory that has already been allocated to be the proper size.
@@ -78,9 +88,7 @@ public:
     // on y = a(Wx + b)
     void feed(const vector<double>& x, vector<double>& y) override;
     
-    void calculateDeltas(Layer* downstream)  override;
-    void calculateDeltas(size_t outputIndex) override;
-    
+    void calculateDeltas(vector<double>& destination)                     override;
     void calculateGradient(const vector<double>& input, double* gradient) override;
     
     size_t getNumParameters()       override;     
@@ -149,10 +157,8 @@ public:
     // on y = a(W*x + b), where * represents convolution of the inputs with
     // each of the filters
     void feed(const vector<double>& x, vector<double>& y);
-    
-    void calculateDeltas(Layer* downstream)  override;
-    void calculateDeltas(size_t outputIndex) override;
-    
+        
+    void calculateDeltas(vector<double>& destination)                     override;
     void calculateGradient(const vector<double>& input, double* gradient) override;
     
     size_t getNumParameters()       override;     
