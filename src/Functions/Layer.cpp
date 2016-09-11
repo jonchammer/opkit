@@ -305,16 +305,6 @@ void Convolutional2DLayer::calculateDeltas(vector<double>& destination)
     }
 }
 
-void Convolutional2DLayer::calculateDeltas(size_t outputIndex)
-{
-    // Blame is set to 0 for all outputs except the one we're interested in
-    std::fill(mDeltas.begin(), mDeltas.end(), 0.0);
-    
-    // Apply the derivative of the activation function to the output of this layer
-    mDeltas[outputIndex] = (*mActFunction.second)
-        (mNet[outputIndex], mActivation[outputIndex]);
-}
-
 void Convolutional2DLayer::calculateGradient(const vector<double>& x, double* gradient)
 {    
     size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
