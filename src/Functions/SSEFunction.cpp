@@ -11,7 +11,8 @@ double SSEFunction::evaluate(const Matrix& features, const Matrix& labels)
 {
     // Initialize variables
     double sum = 0.0;
-    vector<double> prediction(labels.cols(), 0.0);
+    static vector<double> prediction(labels.cols(), 0.0);
+    prediction.resize(labels.cols());
     
     // Calculate the SSE
     for (size_t i = 0; i < features.rows(); ++i)
@@ -24,8 +25,8 @@ double SSEFunction::evaluate(const Matrix& features, const Matrix& labels)
             double d = row[j] - prediction[j];
             
             // For categorical columns, use Hamming distance instead
-            if (d != 0.0 && labels.valueCount(j) > 0)
-                d = 1.0;
+            //if (d != 0.0 && labels.valueCount(j) > 0)
+            //    d = 1.0;
 
             sum += (d * d);
         }
@@ -46,10 +47,12 @@ void SSEFunction::calculateJacobianInputs(const Matrix& features,
     jacobian.setSize(1, N);
     jacobian.setAll(0.0);
 
-    Matrix baseJacobian;
-    vector<double> evaluation(M);
-    vector<double> error(M);
-
+    static Matrix baseJacobian;
+    static vector<double> evaluation(M);
+    static vector<double> error(M);
+    evaluation.resize(M);
+    error.resize(M);
+    
     for (size_t i = 0; i < labels.rows(); ++i)
     {
         // Calculate the Jacobian matrix of the base function at this point with
@@ -86,10 +89,12 @@ void SSEFunction::calculateJacobianParameters(const Matrix& features,
     jacobian.setSize(1, N);
     jacobian.setAll(0.0);
     
-    Matrix baseJacobian;
-    vector<double> evaluation(M);
-    vector<double> error(M);
-
+    static Matrix baseJacobian;
+    static vector<double> evaluation(M);
+    static vector<double> error(M);
+    evaluation.resize(M);
+    error.resize(M);
+    
     for (size_t i = 0; i < labels.rows(); ++i)
     {
         // Calculate the Jacobian matrix of the base function at this point with

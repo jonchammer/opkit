@@ -1,0 +1,10 @@
+# Ignore all files in this directory
+mnist_test_features.arff
+mnist_test_labels.arff
+mnist_train_features.arff
+mnist_train_labels.arff
+mnist_train_features_small.arff
+mnist_train_labels_small.arff
+
+#... Except for this one
+!.gitignore

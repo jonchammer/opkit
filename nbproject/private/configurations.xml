@@ -37,12 +37,14 @@
         <in>finiteDifferencesTest.cpp</in>
         <in>fullyConnectedBackpropTest.cpp</in>
         <in>heterogeneousLayerBackpropTest.cpp</in>
+        <in>mnistConvolutionExample.cpp</in>
         <in>multiLayerConvolutionBackpropTest.cpp</in>
         <in>singleLayerConvolutionTest.cpp</in>
       </df>
       <df name="include">
         <df name="Functions">
           <in>ActivationFunction.h</in>
+          <in>CategoricalErrorFunction.h</in>
           <in>CommonFunctions.h</in>
           <in>ErrorFunction.h</in>
           <in>Function.h</in>
@@ -72,6 +74,7 @@
       <df name="src">
         <df name="Functions">
           <in>ActivationFunction.cpp</in>
+          <in>CategoricalErrorFunction.cpp</in>
           <in>ErrorFunction.cpp</in>
           <in>Function.cpp</in>
           <in>Layer.cpp</in>
