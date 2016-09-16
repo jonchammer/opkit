@@ -29,10 +29,10 @@ public:
     // still be a good idea for child classes to provide better implementations
     // of all of these functions if it is possible to do so.
     // --- Use the default implementations at your own risk. ---
-    virtual void calculateJacobianInputs(const Matrix& features, 
-        const Matrix& labels, Matrix& jacobian);
-    virtual void calculateJacobianParameters(const Matrix& features, 
-        const Matrix& labels, Matrix& jacobian);
+    virtual void calculateGradientInputs(const Matrix& features, 
+        const Matrix& labels, vector<double>& gradient);
+    virtual void calculateGradientParameters(const Matrix& features, 
+        const Matrix& labels, vector<double>& gradient);
     virtual void calculateHessianInputs(const Matrix& features,
         const Matrix& labels, Matrix& hessian);
     virtual void calculateHessianParameters(const Matrix& features, 

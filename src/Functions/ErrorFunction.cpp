@@ -30,18 +30,18 @@ size_t ErrorFunction::getNumParameters() const
     return mBaseFunction.getNumParameters(); 
 }
 
-void ErrorFunction::calculateJacobianInputs(const Matrix& features, 
-    const Matrix& labels, Matrix& jacobian)
+void ErrorFunction::calculateGradientInputs(const Matrix& features, 
+    const Matrix& labels, vector<double>& gradient)
 {
-    cout << "ErrorFunction::calculateJacobianInputs()" << endl;
+    cout << "ErrorFunction::calculateGradientInputs()" << endl;
     
     // Constants used in the finite differences approximation
     const double EPSILON = 1.0E-10;
     const size_t N       = getInputs();
     
-    // Ensure the Jacobian matrix is large enough
-    jacobian.setSize(1, N);
-    jacobian.setAll(0.0);
+    // Ensure the gradient vector is large enough
+    gradient.resize(N);
+    std::fill(gradient.begin(), gradient.end(), 0.0);
     
      // Start by evaluating the function without any modifications
     double y = evaluate(features, labels);
@@ -65,7 +65,7 @@ void ErrorFunction::calculateJacobianInputs(const Matrix& features,
             row[p] += EPSILON;
             double y2 = evaluate(features, labels);
 
-            jacobian[0][p] += (y2 - y) / EPSILON;
+            gradient[p] += (y2 - y) / EPSILON;
 
             // Change the parameter back to its original value
             row[p] = orig;
@@ -73,17 +73,17 @@ void ErrorFunction::calculateJacobianInputs(const Matrix& features,
     }
 }
 
-void ErrorFunction::calculateJacobianParameters(const Matrix& features, 
-    const Matrix& labels, Matrix& jacobian)
+void ErrorFunction::calculateGradientParameters(const Matrix& features, 
+    const Matrix& labels, vector<double>& gradient)
 {
-    cout << "ErrorFunction::calculateJacobianParameters()" << endl;
+    cout << "ErrorFunction::calculateGradientParameters()" << endl;
     
     // Constants used in the finite differences approximation
     const double EPSILON = 1.0E-10;
     const size_t N       = getNumParameters();
     
-    // Ensure the Jacobian matrix is large enough
-    jacobian.setSize(1, N);
+    // Ensure the gradient vector is large enough
+    gradient.resize(N);
     
      // Start by evaluating the function without any modifications
     vector<double>& parameters = getParameters();
@@ -100,7 +100,7 @@ void ErrorFunction::calculateJacobianParameters(const Matrix& features,
         parameters[p] += EPSILON;
         double y2 = evaluate(features, labels);
 
-        jacobian[0][p] = (y2 - y) / EPSILON;
+        gradient[p] = (y2 - y) / EPSILON;
         
         // Change the parameter back to its original value
         parameters[p] = orig;

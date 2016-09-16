@@ -26,6 +26,8 @@
               </df>
             </df>
           </df>
+          <df name="Progress">
+          </df>
           <in>feature_tests.c</in>
           <in>feature_tests.cxx</in>
         </df>
@@ -37,6 +39,7 @@
         <in>finiteDifferencesTest.cpp</in>
         <in>fullyConnectedBackpropTest.cpp</in>
         <in>heterogeneousLayerBackpropTest.cpp</in>
+        <in>irisExample.cpp</in>
         <in>mnistConvolutionExample.cpp</in>
         <in>multiLayerConvolutionBackpropTest.cpp</in>
         <in>singleLayerConvolutionTest.cpp</in>
@@ -66,6 +69,7 @@
           <in>DataNormalizer.h</in>
           <in>ModelPersistence.h</in>
           <in>PrettyPrinter.h</in>
+          <in>Timer.h</in>
         </df>
         <in>Error.h</in>
         <in>Matrix.h</in>

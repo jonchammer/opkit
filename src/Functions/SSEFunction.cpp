@@ -35,17 +35,17 @@ double SSEFunction::evaluate(const Matrix& features, const Matrix& labels)
     return sum;
 }
 
-void SSEFunction::calculateJacobianInputs(const Matrix& features, 
-    const Matrix& labels, Matrix& jacobian)
+void SSEFunction::calculateGradientInputs(const Matrix& features, 
+    const Matrix& labels, vector<double>& gradient)
 {
-    // When SSE is the error function, the Jacobian is simply the error vector
+    // When SSE is the error function, the gradient is simply the error vector
     // multiplied by the model's Jacobian.
     const size_t N = mBaseFunction.getInputs();
     const size_t M = mBaseFunction.getOutputs();
     
-    // Set the Jacobian to the zero vector
-    jacobian.setSize(1, N);
-    jacobian.setAll(0.0);
+    // Set the gradient to the zero vector
+    gradient.resize(N);
+    std::fill(gradient.begin(), gradient.end(), 0.0);
 
     static Matrix baseJacobian;
     static vector<double> evaluation(M);
@@ -72,22 +72,22 @@ void SSEFunction::calculateJacobianInputs(const Matrix& features,
                 sum += error[k] * baseJacobian[k][j];
             
             // Add the result to the running total for the gradient
-            jacobian[0][j] += -2.0 * sum;
+            gradient[j] += -2.0 * sum;
         }
     }
 }
 
-void SSEFunction::calculateJacobianParameters(const Matrix& features, 
-    const Matrix& labels, Matrix& jacobian)
+void SSEFunction::calculateGradientParameters(const Matrix& features, 
+    const Matrix& labels, vector<double>& gradient)
 {
     // When SSE is the error function, the gradient is simply the error vector
     // multiplied by the model's Jacobian.
     const size_t N = mBaseFunction.getNumParameters();
     const size_t M = mBaseFunction.getOutputs();
     
-    // Set the Jacobian to the zero vector
-    jacobian.setSize(1, N);
-    jacobian.setAll(0.0);
+    // Set the gradient to the zero vector
+    gradient.resize(N);
+    std::fill(gradient.begin(), gradient.end(), 0.0);
     
     static Matrix baseJacobian;
     static vector<double> evaluation(M);
@@ -114,7 +114,7 @@ void SSEFunction::calculateJacobianParameters(const Matrix& features,
                 sum += error[k] * baseJacobian[k][j];
             
             // Add the result to the running total for the gradient
-            jacobian[0][j] += -2.0 * sum;
+            gradient[j] += -2.0 * sum;
         }
     }
 }

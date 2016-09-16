@@ -7,4 +7,17 @@
         <activeConfTypeElem>0</activeConfTypeElem>
         <activeConfIndexElem>1</activeConfIndexElem>
     </data>
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/include/Functions/SSEFunction.h</file>
+            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/include/Functions/CategoricalErrorFunction.h</file>
+            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/include/Functions/Layer.h</file>
+            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/demos/mnistConvolutionExample.cpp</file>
+            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/src/Functions/CategoricalErrorFunction.cpp</file>
+            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/src/Functions/SSEFunction.cpp</file>
+            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/include/Trainers/GradientDescent.h</file>
+            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/src/Functions/NeuralNetwork.cpp</file>
+        </group>
+    </open-files>
 </project-private>

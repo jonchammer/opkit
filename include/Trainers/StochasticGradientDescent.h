@@ -44,10 +44,10 @@ public:
         
         // Allocate space for the gradient and the sample gradient
         static vector<double> gradient(function->getNumParameters());
-        static Matrix sampleGradient;
+        static vector<double> sampleGradient;
         
         std::fill(gradient.begin(), gradient.end(), 0.0);
-        sampleGradient.setSize(1, function->getNumParameters());
+        sampleGradient.resize(function->getNumParameters());
         
         // Cache this for later
         vector<double>& params = function->getParameters();
@@ -70,7 +70,7 @@ public:
                 mBatchLabels[0].swap(origLabel);
                 
                 // Calculate the gradient based on this one sample
-                function->calculateJacobianParameters(mBatchFeatures, 
+                function->calculateGradientParameters(mBatchFeatures, 
                     mBatchLabels, sampleGradient);
                 
                 // Swap the feature/label pair back into their original
@@ -82,7 +82,7 @@ public:
                 
                 // Add the results to the running total
                 std::transform(gradient.begin(), gradient.end(), 
-                    sampleGradient[0].begin(), gradient.begin(), std::plus<double>());
+                    sampleGradient.begin(), gradient.begin(), std::plus<double>());
 
                 // On the last batch, signal that we're ready to be done with this epoch
                 if (index >= features.rows())

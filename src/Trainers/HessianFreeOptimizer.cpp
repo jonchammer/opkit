@@ -27,14 +27,13 @@ void HessianFreeOptimizer::iterate(const Matrix& features, const Matrix& labels)
     size_t N          = x.size();
 
     // Calculate the initial direction (the negative of the gradient)
-    Matrix gradient;
-    gradient.setSize(1, N);
+    vector<double> gradient(N);
     vector<double> direction(N);
 
     //model.calculateGradient(x, gradient, gradient);
-    function->calculateJacobianParameters(features, labels, gradient);
+    function->calculateGradientParameters(features, labels, gradient);
     for (size_t i = 0; i < N; ++i)
-        direction[i] = -gradient[0][i];
+        direction[i] = -gradient[i];
     
     for (size_t j = 0; j < N; ++j)
     {       
@@ -48,7 +47,7 @@ void HessianFreeOptimizer::iterate(const Matrix& features, const Matrix& labels)
         //         direction * Hessian * direction
         double num = 0.0;
         for (size_t i = 0; i < N; ++i)
-            num += direction[i] * gradient[0][i];
+            num += direction[i] * gradient[i];
 
         vector<double> Ad(N);
         multiplyHessian(x, direction, features, labels, Ad);
@@ -68,11 +67,11 @@ void HessianFreeOptimizer::iterate(const Matrix& features, const Matrix& labels)
 
         // Calculate beta, used for updating the current direction
         //model.calculateGradient(x, gradient, gradient);
-        function->calculateJacobianParameters(features, labels, gradient);
+        function->calculateGradientParameters(features, labels, gradient);
 
         num = 0.0;
         for (size_t i = 0; i < N; ++i)
-            num += gradient[0][i] * Ad[i];
+            num += gradient[i] * Ad[i];
 
         // Calculate beta and ensure it's reasonable. Unreasonable beta values
         // are replaced with 0, allowing the algorithm to degenerate to normal
@@ -82,7 +81,7 @@ void HessianFreeOptimizer::iterate(const Matrix& features, const Matrix& labels)
         
         // Update the current direction
         for (size_t i = 0; i < N; ++i)
-            direction[i] = -gradient[0][i] + beta * direction[i];
+            direction[i] = -gradient[i] + beta * direction[i];
         
         cout << "SSE: " << function->evaluate(features, labels) << endl;
     }
@@ -95,11 +94,10 @@ void HessianFreeOptimizer::multiplyHessian(vector<double>& x, const vector<doubl
     const size_t N       = function->getNumParameters();
 
     // Calculate gradient 1 - grad(f(x))
-    Matrix grad1;
-    grad1.setSize(1, N);
+    vector<double> grad1(N);
     function->getParameters().swap(x);
     //model.calculateGradient(x, result, grad1);
-    function->calculateJacobianParameters(features, labels, grad1);
+    function->calculateGradientParameters(features, labels, grad1);
     function->getParameters().swap(x);
 
     // Calculate gradient 2 - grad(f(x + epsilon * v))
@@ -107,17 +105,16 @@ void HessianFreeOptimizer::multiplyHessian(vector<double>& x, const vector<doubl
     for (size_t i = 0; i < N; ++i)
         x2[i] = x[i] + EPSILON * v[i];
 
-    Matrix grad2;
-    grad2.setSize(1, N);
+    vector<double> grad2(N);
     function->getParameters().swap(x2);
     //model.calculateGradient(x, result, grad2);
-    function->calculateJacobianParameters(features, labels, grad2);  
+    function->calculateGradientParameters(features, labels, grad2);  
     function->getParameters().swap(x2);
 
     // Estimate H * v using finite differences
     result.resize(N);
     for (size_t i = 0; i < N; ++i)
-        result[i] = (grad2[0][i] - grad1[0][i]) / EPSILON;
+        result[i] = (grad2[i] - grad1[i]) / EPSILON;
     
     // Add a damping term to improve stability
 //    static double lambda = 1.0;

@@ -25,13 +25,13 @@ public:
     void iterate(const Matrix& features, const Matrix& labels)
     {
         // Estimate the complete gradient
-        Matrix gradient;
-        function->calculateJacobianParameters(features, labels, gradient);
+        vector<double> gradient;
+        function->calculateGradientParameters(features, labels, gradient);
 
         // Descend the gradient
         vector<double>& params = function->getParameters();
-        for (size_t i = 0; i < gradient.cols(); ++i)
-            params[i] -= mLearningRate * gradient[0][i];
+        for (size_t i = 0; i < gradient.size(); ++i)
+            params[i] -= mLearningRate * gradient[i];
     }
 
     // Setters / Getters

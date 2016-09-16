@@ -2,28 +2,9 @@
 <configurationDescriptor version="97">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="0">
-      <df name="build">
-        <df name="CMakeFiles">
-          <df name="3.6.1">
-            <df name="CompilerIdC">
-              <in>CMakeCCompilerId.c</in>
-            </df>
-            <df name="CompilerIdCXX">
-              <in>CMakeCXXCompilerId.cpp</in>
-            </df>
-          </df>
-          <in>feature_tests.c</in>
-          <in>feature_tests.cxx</in>
-        </df>
-      </df>
       <df name="demos">
-        <in>activationTest.cpp</in>
-        <in>finiteDifferencesTest.cpp</in>
-        <in>fullyConnectedBackpropTest.cpp</in>
         <in>heterogeneousLayerBackpropTest.cpp</in>
         <in>mnistConvolutionExample.cpp</in>
-        <in>multiLayerConvolutionBackpropTest.cpp</in>
-        <in>singleLayerConvolutionTest.cpp</in>
       </df>
       <df name="include">
         <df name="Functions">
@@ -49,7 +30,6 @@
         </df>
         <in>Matrix.cpp</in>
         <in>Tensor3D.cpp</in>
-        <in>main.cpp</in>
       </df>
     </df>
     <logicalFolder name="ExternalFiles"
@@ -85,6 +65,7 @@
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
           <executablePath>build\optimization_toolkit.exe</executablePath>
           <ccTool>
+            <standard>8</standard>
             <incDir>
               <pElem>include</pElem>
               <pElem>include/Functions</pElem>
@@ -190,6 +171,7 @@
           <cleanCommand>${MAKE} -f Makefile clean</cleanCommand>
           <executablePath>build\optimization_toolkit.exe</executablePath>
           <ccTool>
+            <standard>8</standard>
             <incDir>
               <pElem>include</pElem>
               <pElem>include/Functions</pElem>
