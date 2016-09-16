@@ -8,6 +8,16 @@
 #include "Function.h"
 #include "PrettyPrinter.h"
 
+bool Function::cachesLastEvaluation() const
+{
+    return false;
+}
+
+void Function::getLastEvaluation(vector<double>& output)
+{
+    throw Ex("Function::getLastEvaluation not implemented.");
+}
+
 void Function::calculateJacobianInputs(const vector<double>& x, 
         Matrix& jacobian)
 {

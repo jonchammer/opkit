@@ -25,7 +25,7 @@ public:
     void iterate(const Matrix& features, const Matrix& labels)
     {
         // Estimate the complete gradient
-        vector<double> gradient;
+        static vector<double> gradient;
         function->calculateGradientParameters(features, labels, gradient);
 
         // Descend the gradient

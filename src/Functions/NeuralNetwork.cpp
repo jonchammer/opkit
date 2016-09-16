@@ -151,7 +151,18 @@ size_t NeuralNetwork::getNumParameters() const
 {
     return mParameters.size();
 }
-    
+ 
+bool NeuralNetwork::cachesLastEvaluation() const
+{
+    return true;
+}
+
+void NeuralNetwork::getLastEvaluation(vector<double>& output)
+{
+    vector<double>& lastActivation = mLayers.back()->getActivation();
+    std::copy(lastActivation.begin(), lastActivation.end(), output.begin());
+}
+
 size_t NeuralNetwork::getNumLayers() const
 {
     return mLayers.size();

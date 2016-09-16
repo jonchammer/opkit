@@ -60,7 +60,10 @@ void SSEFunction::calculateGradientInputs(const Matrix& features,
         mBaseFunction.calculateJacobianInputs(features[i], baseJacobian);
   
         // Calculate the error for this sample
-        mBaseFunction.evaluate(features[i], evaluation);
+        if (mBaseFunction.cachesLastEvaluation())
+            mBaseFunction.getLastEvaluation(evaluation);
+        else mBaseFunction.evaluate(features[i], evaluation);
+        
         for (size_t j = 0; j < M; ++j)
             error[j] = labels[i][j] - evaluation[j];
                
@@ -102,7 +105,10 @@ void SSEFunction::calculateGradientParameters(const Matrix& features,
         mBaseFunction.calculateJacobianParameters(features[i], baseJacobian);
         
         // Calculate the error for this sample
-        mBaseFunction.evaluate(features[i], evaluation);
+        if (mBaseFunction.cachesLastEvaluation())
+            mBaseFunction.getLastEvaluation(evaluation);
+        else mBaseFunction.evaluate(features[i], evaluation);
+        
         for (size_t j = 0; j < M; ++j)
             error[j] = labels[i][j] - evaluation[j];
                
@@ -171,7 +177,10 @@ void SSEFunction::calculateHessianInputs(const Matrix& features,
         }
         
         // Calculate the error for this sample
-        mBaseFunction.evaluate(features[i], evaluation);
+        if (mBaseFunction.cachesLastEvaluation())
+            mBaseFunction.getLastEvaluation(evaluation);
+        else mBaseFunction.evaluate(features[i], evaluation);
+        
         for (size_t j = 0; j < M; ++j)
             error[j] = labels[i][j] - evaluation[j];
         
@@ -254,7 +263,10 @@ void SSEFunction::calculateHessianParameters(const Matrix& features,
         }
         
         // Calculate the error for this sample
-        mBaseFunction.evaluate(features[i], evaluation);
+        if (mBaseFunction.cachesLastEvaluation())
+            mBaseFunction.getLastEvaluation(evaluation);
+        else mBaseFunction.evaluate(features[i], evaluation);
+        
         for (size_t j = 0; j < M; ++j)
             error[j] = labels[i][j] - evaluation[j];
         

@@ -48,6 +48,9 @@ public:
     const vector<double>& getParameters() const override;
     size_t getNumParameters() const override;
     
+    bool cachesLastEvaluation() const override;
+    void getLastEvaluation(vector<double>& output) override;
+    
     // Getters / Setters
     size_t getNumLayers() const;
     Layer* getLayer(const size_t index);
