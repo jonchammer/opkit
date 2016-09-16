@@ -21,7 +21,7 @@ class GradientDescent : public Trainer
 {
 public:
     GradientDescent(ErrorFunction* function) : Trainer(function), mLearningRate(0.0001) {}
-    
+
     void iterate(const Matrix& features, const Matrix& labels)
     {
         // Estimate the complete gradient
@@ -33,11 +33,11 @@ public:
         for (size_t i = 0; i < gradient.cols(); ++i)
             params[i] -= mLearningRate * gradient[0][i];
     }
-    
+
     // Setters / Getters
     void setLearningRate(double learningRate) { mLearningRate = learningRate; }
     double getLearningRate()                  { return mLearningRate;         }
-    
+
 private:
     double mLearningRate;
 };

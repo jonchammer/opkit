@@ -65,8 +65,7 @@ int main()
         //printf("%zu\t%f\t%f\n", i, misclassifications.evaluate(trainFeatures, trainLabels), 
         //    errorFunc.evaluate(trainFeatures, trainLabels));
     }
-    cout << timer.getElapsedTimeMilliseconds() << endl;
-    
+    cout << timer.getElapsedTimeSeconds() << endl;
     return 0;
 }
 
