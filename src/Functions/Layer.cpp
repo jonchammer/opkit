@@ -104,12 +104,12 @@ void FeedforwardLayer::calculateGradient(const vector<double>& input, double* gr
     for (int i = 0; i < outputSize; ++i)
     {
         for (int j = 0; j < inputSize; ++j)
-            gradient[index++] = input[j] * mDeltas[i];
+            gradient[index++] += input[j] * mDeltas[i];
     }
 
     // Calculate gradient for the biases
     for (int i = 0; i < outputSize; ++i)
-        gradient[index++] = mDeltas[i];
+        gradient[index++] += mDeltas[i];
 }
 
 size_t FeedforwardLayer::getNumParameters()       

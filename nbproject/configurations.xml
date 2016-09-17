@@ -14,16 +14,9 @@
       <df name="src">
         <df name="Functions">
           <in>ActivationFunction.cpp</in>
-          <in>CategoricalErrorFunction.cpp</in>
-          <in>ErrorFunction.cpp</in>
           <in>Function.cpp</in>
           <in>Layer.cpp</in>
           <in>NeuralNetwork.cpp</in>
-          <in>SSEFunction.cpp</in>
-        </df>
-        <df name="Trainers">
-          <in>EvolutionaryOptimizer.cpp</in>
-          <in>HessianFreeOptimizer.cpp</in>
         </df>
         <df name="Utils">
           <in>PrettyPrinter.cpp</in>
@@ -101,15 +94,6 @@
         <ccTool flags="0">
         </ccTool>
       </item>
-      <item path="src/Functions/CategoricalErrorFunction.cpp"
-            ex="false"
-            tool="1"
-            flavor2="0">
-      </item>
-      <item path="src/Functions/ErrorFunction.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
       <item path="src/Functions/Function.cpp" ex="false" tool="1" flavor2="8">
         <ccTool flags="0">
         </ccTool>
@@ -122,29 +106,11 @@
         <ccTool flags="0">
         </ccTool>
       </item>
-      <item path="src/Functions/SSEFunction.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
       <item path="src/Matrix.cpp" ex="false" tool="1" flavor2="8">
         <ccTool flags="0">
         </ccTool>
       </item>
       <item path="src/Tensor3D.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Trainers/EvolutionaryOptimizer.cpp"
-            ex="false"
-            tool="1"
-            flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Trainers/HessianFreeOptimizer.cpp"
-            ex="false"
-            tool="1"
-            flavor2="8">
         <ccTool flags="0">
         </ccTool>
       </item>
@@ -208,15 +174,6 @@
         <ccTool flags="0">
         </ccTool>
       </item>
-      <item path="src/Functions/CategoricalErrorFunction.cpp"
-            ex="false"
-            tool="1"
-            flavor2="0">
-      </item>
-      <item path="src/Functions/ErrorFunction.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
       <item path="src/Functions/Function.cpp" ex="false" tool="1" flavor2="8">
         <ccTool flags="0">
         </ccTool>
@@ -229,29 +186,11 @@
         <ccTool flags="0">
         </ccTool>
       </item>
-      <item path="src/Functions/SSEFunction.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
       <item path="src/Matrix.cpp" ex="false" tool="1" flavor2="8">
         <ccTool flags="0">
         </ccTool>
       </item>
       <item path="src/Tensor3D.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Trainers/EvolutionaryOptimizer.cpp"
-            ex="false"
-            tool="1"
-            flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Trainers/HessianFreeOptimizer.cpp"
-            ex="false"
-            tool="1"
-            flavor2="8">
         <ccTool flags="0">
         </ccTool>
       </item>

@@ -12,6 +12,7 @@
 #include "Matrix.h"
 
 // TODO: Add error reporting
+template <class T>
 class Trainer
 {
 public:
@@ -19,7 +20,7 @@ public:
      * Every Trainer must have a function on which to operate.
      * @param function. The function to be optimized.
      */
-    Trainer(ErrorFunction* function) : function(function) {};
+    Trainer(ErrorFunction<T>* function) : function(function) {};
     
     /**
      * Default destructor
@@ -34,10 +35,10 @@ public:
     virtual void iterate(const Matrix& features, const Matrix& labels) = 0;
     
     // Setters / Getters
-    ErrorFunction* getFunction() {return function;}
+    ErrorFunction<T>* getFunction() {return function;}
     
 protected:
-    ErrorFunction* function; // The function we are working with
+    ErrorFunction<T>* function; // The function we are working with
 };
 
 #endif /* TRAINER_H */

@@ -24,11 +24,12 @@
 // sample. This is fastest, but also noisiest. When the batch size equals the 
 // number of data points, this method is equivalent to traditional gradient 
 // descent.
-class StochasticGradientDescent : public Trainer
+template <class T>
+class StochasticGradientDescent : public Trainer<T>
 {
 public:
-    StochasticGradientDescent(ErrorFunction* function, int batchSize) : 
-        Trainer(function), mLearningRate(0.0001), mBatchSize(batchSize), 
+    StochasticGradientDescent(ErrorFunction<T>* function, int batchSize) : 
+        Trainer<T>(function), mLearningRate(0.0001), mBatchSize(batchSize), 
         mRand(0.0, 1.0) {} 
     
     // Makes one pass through the complete dataset
@@ -43,14 +44,14 @@ public:
             std::swap(mOrder[i], mOrder[i * mRand(mRandGenerator)]);
         
         // Allocate space for the gradient and the sample gradient
-        static vector<double> gradient(function->getNumParameters());
+        static vector<double> gradient(Trainer<T>::function->getNumParameters());
         static vector<double> sampleGradient;
         
         std::fill(gradient.begin(), gradient.end(), 0.0);
-        sampleGradient.resize(function->getNumParameters());
+        sampleGradient.resize(Trainer<T>::function->getNumParameters());
         
         // Cache this for later
-        vector<double>& params = function->getParameters();
+        vector<double>& params = Trainer<T>::function->getParameters();
         
         // Prepare the loop
         size_t index = 0;
@@ -70,7 +71,7 @@ public:
                 mBatchLabels[0].swap(origLabel);
                 
                 // Calculate the gradient based on this one sample
-                function->calculateGradientParameters(mBatchFeatures, 
+                Trainer<T>::function->calculateGradientParameters(mBatchFeatures, 
                     mBatchLabels, sampleGradient);
                 
                 // Swap the feature/label pair back into their original

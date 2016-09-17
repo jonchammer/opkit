@@ -17,19 +17,20 @@
 // sample in order to calculate the best possible estimate of the gradient of 
 // the error surface before taking a single step. This is better suited for
 // noisy error surfaces, but is generally slower than Stochastic Gradient Descent.
-class GradientDescent : public Trainer
+template <class T>
+class GradientDescent : public Trainer<T>
 {
 public:
-    GradientDescent(ErrorFunction* function) : Trainer(function), mLearningRate(0.0001) {}
+    GradientDescent(ErrorFunction<T>* function) : Trainer<T>(function), mLearningRate(0.0001) {}
 
     void iterate(const Matrix& features, const Matrix& labels)
     {
         // Estimate the complete gradient
         static vector<double> gradient;
-        function->calculateGradientParameters(features, labels, gradient);
+        Trainer<T>::function->calculateGradientParameters(features, labels, gradient);
 
         // Descend the gradient
-        vector<double>& params = function->getParameters();
+        vector<double>& params = Trainer<T>::function->getParameters();
         for (size_t i = 0; i < gradient.size(); ++i)
             params[i] -= mLearningRate * gradient[i];
     }

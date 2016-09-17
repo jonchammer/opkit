@@ -19,10 +19,11 @@
 // dimension and chooses the one that produces the best results. This method 
 // converges extremely quickly for convex functions, but is more susceptible to 
 // getting stuck in local minima than some other approaches.
-class HillClimber : public Trainer
+template <class T>
+class HillClimber : public Trainer<T>
 {
 public:
-    HillClimber(ErrorFunction* function) : Trainer(function)
+    HillClimber(ErrorFunction<T>* function) : Trainer(function)
     {
         mStepSize.resize(function->getNumParameters());
         std::fill(mStepSize.begin(), mStepSize.end(), 0.1);
@@ -34,18 +35,18 @@ public:
         
         // Try 4 change values and pick the one that does the best
         // for each parameter
-        vector<double>& params = function->getParameters();
+        vector<double>& params = Trainer<T>::function->getParameters();
         for (size_t i = 0; i < params.size(); ++i)
         {
             double orig     = params[i];
             int minIndex    = -1;
-            double minError = function->evaluate(features, labels);
+            double minError = Trainer<T>::function->evaluate(features, labels);
 
             // Try each change and record the best one.
             for (int j = 0; j < 4; ++j)
             {
                 params[i]   += (CHANGES[j] * mStepSize[i]);
-                double error = function->evaluate(features, labels);
+                double error = Trainer<T>::function->evaluate(features, labels);
                 params[i]    = orig;
 
                 if (error < minError)

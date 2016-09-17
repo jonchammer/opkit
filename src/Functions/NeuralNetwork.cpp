@@ -80,6 +80,22 @@ void NeuralNetwork::calculateGradientFromDeltas(const vector<double>& feature,
     }
 }
 
+void NeuralNetwork::calculateGradientParameters(const vector<double>& input, 
+    vector<double>& gradient)
+{
+    const vector<double>* x = &input;
+    size_t weightIndex      = 0;
+    
+    for (size_t i = 0; i < mLayers.size(); ++i)
+    {
+        mLayers[i]->calculateGradient(*x, &gradient[weightIndex]);
+        
+        // Get ready for the next iteration
+        x = &mLayers[i]->getActivation();
+        weightIndex += mLayers[i]->getNumParameters();
+    }
+}
+
 void NeuralNetwork::calculateJacobianParameters(const vector<double>& x, 
     Matrix& jacobian)
 {

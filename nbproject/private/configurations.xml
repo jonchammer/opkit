@@ -20,8 +20,6 @@
             <df name="src">
               <df name="Functions">
               </df>
-              <df name="Trainers">
-              </df>
               <df name="Utils">
               </df>
             </df>
@@ -76,16 +74,11 @@
       <df name="src">
         <df name="Functions">
           <in>ActivationFunction.cpp</in>
-          <in>CategoricalErrorFunction.cpp</in>
-          <in>ErrorFunction.cpp</in>
           <in>Function.cpp</in>
           <in>Layer.cpp</in>
           <in>NeuralNetwork.cpp</in>
-          <in>SSEFunction.cpp</in>
         </df>
         <df name="Trainers">
-          <in>EvolutionaryOptimizer.cpp</in>
-          <in>HessianFreeOptimizer.cpp</in>
         </df>
         <df name="Utils">
           <in>PrettyPrinter.cpp</in>

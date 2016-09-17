@@ -115,13 +115,13 @@ int main()
 
     #endif
     
-    ErrorFunction* f = new SSEFunction(base);
+    ErrorFunction<NeuralNetwork>* f = new SSEFunction<NeuralNetwork>(base);
     randomizeParameters(base.getParameters(), 0.0, 0.01);
         
     cout << "Working..." << endl;
     
     // Optimize the model
-    GradientDescent trainer(f);
+    GradientDescent<NeuralNetwork> trainer(f);
     for (int i = 0; i < NUM_ITERATIONS; ++i)
     {
         trainer.iterate(features, labels); 

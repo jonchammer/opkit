@@ -29,29 +29,53 @@ using namespace std;
 class NeuralNetwork : public Function
 {
 public:
-    // Constructors
+    // Create an empty Neural Network. Layers need to be added by calling
+    // 'addLayer' before anything useful can be done with it.
     NeuralNetwork();
+    
+    // Destroy the Neural Network
     virtual ~NeuralNetwork() {};
     
-    // Layer modification
+    // Add a new layer to this Neural Network. Layers are added to the end of
+    // the network, so add the layers from input layer to output layer. The 
+    // caller of this function retains ownership of the layer--it will NOT be
+    // destroyed (if necessary) by the network.
     void addLayer(Layer* layer);
     
-    // Functions from the "Function" interface
-    void evaluate(const vector<double>& input, vector<double>& output)          override;
-    void calculateJacobianParameters(const vector<double>& x, Matrix& jacobian) override;
-    void calculateJacobianInputs(const vector<double>& x, Matrix& gradient)     override;
+    // Execute one forward pass through the network in order to produce an output.
+    void evaluate(const vector<double>& input, vector<double>& output) override;
     
+    // Calculates the Jacobian of the network with respect to the weights and
+    // biases. This involves one forward pass and one backwards pass for each
+    // output of the network.
+    void calculateJacobianParameters(const vector<double>& x, Matrix& jacobian) override;
+    
+    // Calculates the Jacobian of the network with respect to the inputs. This
+    // involves one forward pass and one backwards pass for each output of the 
+    // network.
+    void calculateJacobianInputs(const vector<double>& x, Matrix& gradient) override;
+    
+    // Neural networks do cache the last evaluation, so this function will 
+    // always return true.
+    bool cachesLastEvaluation() const override;
+    
+    // Returns the most recent output of the network.
+    void getLastEvaluation(vector<double>& output) override;
+    
+    // Calculates the gradient of the network with respect to the parameters,
+    // under the assumption that the deltas have already been calculated for
+    // every applicable node in the network. The calculated gradient is added
+    // to the value already in the appropriate cell in 'gradient', so make sure
+    // the vector is initialized to 0 ahead of time if a fresh calculation is
+    // desired.
+    void calculateGradientParameters(const vector<double>& input, vector<double>& gradient);
+    
+    // Getters / Setters
     size_t getInputs()  const override;
     size_t getOutputs() const override;
-    
     vector<double>& getParameters() override;
     const vector<double>& getParameters() const override;
     size_t getNumParameters() const override;
-    
-    bool cachesLastEvaluation() const override;
-    void getLastEvaluation(vector<double>& output) override;
-    
-    // Getters / Setters
     size_t getNumLayers() const;
     Layer* getLayer(const size_t index);
     const Layer* getLayer(const size_t index) const;

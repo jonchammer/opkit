@@ -47,9 +47,9 @@ int main()
     network.addLayer(&layer2);
     
     // Create a trainer
-    SSEFunction errorFunc(network);
-    CategoricalErrorFunction misclassifications(network);
-    GradientDescent trainer(&errorFunc);
+    SSEFunction<NeuralNetwork> errorFunc(network);
+    CategoricalErrorFunction<NeuralNetwork> misclassifications(network);
+    GradientDescent<NeuralNetwork> trainer(&errorFunc);
     //trainer.setLearningRate(1E-5);
     
     printf("%f\t%f\n", misclassifications.evaluate(testFeatures, testLabels), errorFunc.evaluate(testFeatures, testLabels));

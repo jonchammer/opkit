@@ -50,9 +50,9 @@ int main()
     randomizeParameters(network.getParameters(), 0.0, 0.001);    
 
     // Create a trainer
-    SSEFunction errorFunc(network);
-    CategoricalErrorFunction misclassifications(network);
-    GradientDescent trainer(&errorFunc);
+    SSEFunction<NeuralNetwork> errorFunc(network);
+    CategoricalErrorFunction<NeuralNetwork> misclassifications(network);
+    GradientDescent<NeuralNetwork> trainer(&errorFunc);
     trainer.setLearningRate(1E-4);
     
     //printf("%s\t%s\t%s\n", "Epoch", "Misclassifications", "SSE");

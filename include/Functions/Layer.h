@@ -41,12 +41,14 @@ public:
     virtual void deactivateDelta(size_t outputIndex);
 
     // Multiplies the deltas by the derivative of the activation function in
-    // order to deactivate them. (Used in inner layers)
+    // order to deactivate them. (Used in the inner and output layers)
     virtual void deactivateDeltas();
 
     // Calculate the gradient of the network with respect to the parameters
     // of this layer. The caller can assume that 'gradient' is a region of
     // contiguous memory that has already been allocated to be the proper size.
+    // The calculated gradient is added to whatever value is already in that cell,
+    // so make sure 'gradient' is initialized with 0's if that behavior is desired.
     virtual void calculateGradient(const vector<double>& input, double* gradient) = 0;
     
     // These functions provide structural information about the layer

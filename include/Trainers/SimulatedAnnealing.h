@@ -37,7 +37,8 @@
 // This implementation also maintains the best value that has been seen so far.
 // The optimal value will always be returned, even if the algorithm is currently
 // searching a different part of the search space.
-class SimulatedAnnealing : public Trainer
+template <class T>
+class SimulatedAnnealing : public Trainer<T>
 {
 public:
     
@@ -49,7 +50,7 @@ public:
     constexpr static double DEFAULT_VARIANCE_COOLING_RATE    = 0.9;
     constexpr static int    DEFAULT_EQUILIBRIUM_ITERATIONS   = 1000;
         
-    SimulatedAnnealing(ErrorFunction* function) :
+    SimulatedAnnealing(ErrorFunction<T>* function) :
         // Superclass initialization
         Trainer(function),
     
@@ -79,7 +80,7 @@ public:
     void iterate(const Matrix& features, const Matrix& labels)
     {
         // Initialization
-        vector<double>& params = function->getParameters();
+        vector<double>& params = Trainer<T>::function->getParameters();
         mCurrentCost           = function->evaluate(features, labels);
         mTemperature           = mInitialTemperature;
         mCurrentVariance       = mInitialVariance;
@@ -98,7 +99,7 @@ public:
                 
                 // Evaluate the new point
                 params.swap(candidate);
-                double proposedCost = function->evaluate(features, labels);
+                double proposedCost = Trainer<T>::function->evaluate(features, labels);
 
                 // Save this solution if it is the best we've seen so far
                 if (proposedCost < mOptimalCost)
