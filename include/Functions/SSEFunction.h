@@ -401,9 +401,12 @@ public:
             // Calculate the gradient based on the deltas. Values are summed
             // for each pattern.
             nn.getLayer(0)->calculateDeltas(tempGradient);
-            std::transform(gradient.begin(), gradient.end(), tempGradient.begin(), 
-                gradient.begin(), std::plus<double>());
-        }
+            
+            // Technically, we need to multiply the final gradient by a factor
+            // of -2 to get the true gradient with respect to the SSE function.
+            for (size_t j = 0; j < tempGradient.size(); ++j)
+                gradient[j] += -2.0 * tempGradient[j];
+        } 
     }
     
     void calculateGradientParameters(const Matrix& features, 
@@ -452,6 +455,11 @@ public:
             // for each pattern.
             nn.calculateGradientParameters(feature, gradient);
         }
+        
+        // Technically, we need to multiply the final gradient by a factor
+        // of -2 to get the true gradient with respect to the SSE function.
+        for (size_t j = 0; j < gradient.size(); ++j)
+            gradient[j] *= -2.0;
     }
     
     void calculateHessianInputs(const Matrix& features, const Matrix& labels,

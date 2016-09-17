@@ -126,7 +126,7 @@ void ErrorFunction<T>::calculateGradientInputs(const Matrix& features,
             row[p] += EPSILON;
             double y2 = evaluate(features, labels);
 
-            gradient[p] += (y2 - y) / EPSILON;
+            gradient[p] += ((y2 - y) / EPSILON);
 
             // Change the parameter back to its original value
             row[p] = orig;

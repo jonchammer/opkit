@@ -8,8 +8,9 @@
 #ifndef NORMALIZER_H
 #define NORMALIZER_H
 
+#include <vector>
 #include "Matrix.h"
-
+using std::vector;
 
 // Scale an individual column from the range [min, max] to the new
 // range [desiredMin, desiredMax].

@@ -5,6 +5,7 @@
       <df name="demos">
         <in>heterogeneousLayerBackpropTest.cpp</in>
         <in>mnistConvolutionExample.cpp</in>
+        <in>sseNeuralNetworkTest.cpp</in>
       </df>
       <df name="include">
         <df name="Functions">
@@ -81,6 +82,8 @@
         </ccTool>
       </item>
       <item path="demos/mnistConvolutionExample.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="demos/sseNeuralNetworkTest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="include/Functions/CategoricalErrorFunction.h"
             ex="false"
@@ -161,6 +164,8 @@
         </ccTool>
       </item>
       <item path="demos/mnistConvolutionExample.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="demos/sseNeuralNetworkTest.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="include/Functions/CategoricalErrorFunction.h"
             ex="false"

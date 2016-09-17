@@ -39,6 +39,7 @@
         <in>mnistConvolutionExample.cpp</in>
         <in>multiLayerConvolutionBackpropTest.cpp</in>
         <in>singleLayerConvolutionTest.cpp</in>
+        <in>sseNeuralNetworkTest.cpp</in>
       </df>
       <df name="include">
         <df name="Functions">
