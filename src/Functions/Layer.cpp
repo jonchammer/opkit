@@ -355,6 +355,29 @@ void Convolutional2DLayer::calculateGradient(const vector<double>& x, double* gr
     }
 }
 
+void Convolutional2DLayer::normalizeKernels()
+{
+    vector<double>& params = *mParameters;
+    size_t filterParams    = mFilterSize * mFilterSize * mInputChannels + 1;
+    size_t start           = mParametersStartIndex;
+    
+    for (size_t filter = 0; filter < mNumFilters; ++filter)
+    {
+        double sum = 0.0;
+        for (size_t j = 0; j < filterParams - 1; ++j)
+        {
+            double val = params[start + j];
+            sum += val * val;
+        }
+
+        double invMagnitude = 1.0 / sqrt(sum);
+        for (size_t j = 0; j < filterParams - 1; ++j)
+            params[start + j] *= invMagnitude;
+            
+        start += filterParams;
+    }
+}
+
 size_t Convolutional2DLayer::getNumParameters()
 {
     size_t filterParams = mFilterSize * mFilterSize * mInputChannels + 1;

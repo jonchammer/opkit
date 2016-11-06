@@ -163,6 +163,9 @@ public:
     void calculateDeltas(vector<double>& destination)                     override;
     void calculateGradient(const vector<double>& input, double* gradient) override;
     
+    // Adjusts all of the kernels such that they sum to 1.0.
+    void normalizeKernels();
+    
     size_t getNumParameters()       override;     
     size_t getInputs()              override;    
     size_t getOutputs()             override;     

@@ -32,6 +32,7 @@ double CategoricalErrorFunction<T>::evaluate(const Matrix& features, const Matri
     // Initialize variables
     int misclassifications = 0;
     static vector<double> prediction(labels.cols(), 0.0);
+    std::fill(prediction.begin(), prediction.end(), 0.0);
     prediction.resize(labels.cols());
     
     // Calculate the SSE

@@ -11,6 +11,9 @@
         <df name="Functions">
           <in>CategoricalErrorFunction.h</in>
         </df>
+        <df name="Trainers">
+          <in>RMSProp.h</in>
+        </df>
       </df>
       <df name="src">
         <df name="Functions">
@@ -89,6 +92,8 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="include/Trainers/RMSProp.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/Functions/ActivationFunction.cpp"
             ex="false"
@@ -171,6 +176,8 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <item path="include/Trainers/RMSProp.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="src/Functions/ActivationFunction.cpp"
             ex="false"

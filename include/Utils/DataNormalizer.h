@@ -9,23 +9,27 @@
 #define NORMALIZER_H
 
 #include <vector>
+#include <cmath>
 #include "Matrix.h"
 using std::vector;
 
 // Scale an individual column from the range [min, max] to the new
 // range [desiredMin, desiredMax].
-void scaleColumn(Matrix& matrix, int column, double min, double max, 
+void scaleColumn(Matrix& matrix, size_t column, double min, double max, 
     double desiredMin, double desiredMax)
 {
-    double multiplier = (desiredMax - desiredMin) / (max - min);
-    double bias       = (max * desiredMin - min * desiredMax) / (max - min);
+    double denom = max - min;
+    if (denom < 1E-6) denom = 1.0;
     
+    double multiplier = (desiredMax - desiredMin) / denom;
+    double bias       = (max * desiredMin - min * desiredMax) / denom;
+
     for (size_t row = 0; row < matrix.rows(); ++row)
         matrix[row][column] = matrix[row][column] * multiplier + bias;
 }
 
 // Scale an individual column to the new range [desiredMin, desiredMax].
-void scaleColumn(Matrix& matrix, int column, double desiredMin, double desiredMax)
+void scaleColumn(Matrix& matrix, size_t column, double desiredMin, double desiredMax)
 {
     scaleColumn(matrix, column, 
         matrix.columnMin(column), matrix.columnMax(column), 
@@ -51,11 +55,40 @@ void scaleAllColumns(Matrix& matrix, double desiredMin, double desiredMax)
     }
 }
 
+// Adjusts a given column in a matrix such that it has a variance of 1.0.
+void normalizeVarianceColumn(Matrix& matrix, size_t column)
+{
+    // Calculate the variance
+    double sum  = 0.0;
+    double mean = matrix.columnMean(column);
+    for (size_t i = 0; i < matrix.rows(); ++i)
+    {
+        double temp = matrix[i][column] - mean;
+        sum += temp * temp;
+    }
+    
+    // Divide by the standard deviation so the data now has a variance of 1.0. 
+    // For uniform columns, we leave the data alone.
+    if (sum > 1E-6)
+    {
+        double invSqrt = std::sqrt((matrix.rows() - 1) / sum);
+        for (size_t i = 0; i < matrix.rows(); ++i)
+            matrix[i][column] *= invSqrt; 
+    }
+}
+
+// Adjusts all columns of the given matrix such that they have a variance of 1.0.
+void normalizeVarianceAllColumns(Matrix& matrix)
+{
+    for (size_t i = 0; i < matrix.cols(); ++i)
+        normalizeVarianceColumn(matrix, i);
+}
+
 // Returns a new matrix resembling the source, with the exception that the
 // given column is expanded based to a 1-hot representation. In other words,
 // a categorical column will be converted into N continuous columns, where N
 // is the number of categories.
-Matrix convertColumnToOneHot(const Matrix& source, int column)
+Matrix convertColumnToOneHot(const Matrix& source, size_t column)
 {
     int valueCount = source.valueCount(column);
     if (valueCount == 0) return source;

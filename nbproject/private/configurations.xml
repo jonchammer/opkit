@@ -57,6 +57,7 @@
           <in>GradientDescent.h</in>
           <in>HessianFreeOptimizer.h</in>
           <in>HillClimber.h</in>
+          <in>RMSProp.h</in>
           <in>SimulatedAnnealing.h</in>
           <in>StochasticGradientDescent.h</in>
           <in>Trainer.h</in>

@@ -29,7 +29,7 @@ public:
     double get(const int x, const int y, const int z) const;
     void set(const int x, const int y, const int z, const double val);
     void add(const int x, const int y, const int z, const double val);
-    
+
     // Getters / Setters
     size_t getWidth()  const;
     size_t getHeight() const;
