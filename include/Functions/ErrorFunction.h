@@ -30,6 +30,7 @@ public:
     // still be a good idea for child classes to provide better implementations
     // of all of these functions if it is possible to do so.
     // --- Use the default implementations at your own risk. ---
+    // NOTE: Gradients are averaged over each sample in the matrix.
     virtual void calculateGradientInputs(const Matrix& features, 
         const Matrix& labels, vector<double>& gradient);
     virtual void calculateGradientParameters(const Matrix& features, 
@@ -107,6 +108,7 @@ void ErrorFunction<T>::calculateGradientInputs(const Matrix& features,
      // Start by evaluating the function without any modifications
     double y = evaluate(features, labels);
 
+    size_t rows = features.rows();
     for (size_t r = 0; r < features.rows(); ++r)
     {
         // Yes, 'features' is declared const. We temporarily change one value in
@@ -132,6 +134,10 @@ void ErrorFunction<T>::calculateGradientInputs(const Matrix& features,
             row[p] = orig;
         }
     }
+    
+    // Calculate the average gradient for the batch
+    for (size_t i = 0; i < N; ++i)
+        gradient[i] /= rows;
 }
 
 template <class T>
@@ -162,7 +168,8 @@ void ErrorFunction<T>::calculateGradientParameters(const Matrix& features,
         parameters[p] += EPSILON;
         double y2 = evaluate(features, labels);
 
-        gradient[p] = (y2 - y) / EPSILON;
+        // Divide by the number of rows to get the average gradient
+        gradient[p] = (y2 - y) / (EPSILON * features.rows());
         
         // Change the parameter back to its original value
         parameters[p] = orig;

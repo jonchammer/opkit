@@ -57,9 +57,10 @@ public:
     {
         // When SSE is the error function, the gradient is simply the error vector
         // multiplied by the model's Jacobian.
-        const size_t N = ErrorFunction<T>::mBaseFunction.getInputs();
-        const size_t M = ErrorFunction<T>::mBaseFunction.getOutputs();
-
+        const size_t N    = ErrorFunction<T>::mBaseFunction.getInputs();
+        const size_t M    = ErrorFunction<T>::mBaseFunction.getOutputs();
+        const size_t rows = features.rows();
+        
         // Set the gradient to the zero vector
         gradient.resize(N);
         std::fill(gradient.begin(), gradient.end(), 0.0);
@@ -70,7 +71,7 @@ public:
         evaluation.resize(M);
         error.resize(M);
 
-        for (size_t i = 0; i < labels.rows(); ++i)
+        for (size_t i = 0; i < rows; ++i)
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the inputs
@@ -95,6 +96,10 @@ public:
                 gradient[j] += -2.0 * sum;
             }
         }
+        
+        // Divide by the batch size to get the average gradient
+        for (size_t i = 0; i < N; ++i)
+            gradient[i] /= rows;
     }
     
     void calculateGradientParameters(const Matrix& features, 
@@ -102,9 +107,10 @@ public:
     {
         // When SSE is the error function, the gradient is simply the error vector
         // multiplied by the model's Jacobian.
-        const size_t N = ErrorFunction<T>::mBaseFunction.getNumParameters();
-        const size_t M = ErrorFunction<T>::mBaseFunction.getOutputs();
-
+        const size_t N    = ErrorFunction<T>::mBaseFunction.getNumParameters();
+        const size_t M    = ErrorFunction<T>::mBaseFunction.getOutputs();
+        const size_t rows = features.rows();
+        
         // Set the gradient to the zero vector
         gradient.resize(N);
         std::fill(gradient.begin(), gradient.end(), 0.0);
@@ -115,7 +121,7 @@ public:
         evaluation.resize(M);
         error.resize(M);
 
-        for (size_t i = 0; i < labels.rows(); ++i)
+        for (size_t i = 0; i < rows; ++i)
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
@@ -140,6 +146,9 @@ public:
                 gradient[j] += -2.0 * sum;
             }
         }
+        
+        for (size_t i = 0; i < N; ++i)
+            gradient[i] /= rows;
     }
     
     void calculateHessianInputs(const Matrix& features, const Matrix& labels,
@@ -360,6 +369,7 @@ public:
         NeuralNetwork& nn = ErrorFunction<NeuralNetwork>::mBaseFunction;
         const size_t N    = nn.getInputs();
         const size_t M    = nn.getOutputs();
+        const size_t rows = features.rows();
         
         gradient.resize(N);
         std::fill(gradient.begin(), gradient.end(), 0.0);
@@ -370,7 +380,7 @@ public:
         tempGradient.resize(N);
         
         // Calculate a partial gradient for each row in the training data
-        for (size_t i = 0; i < labels.rows(); ++i)
+        for (size_t i = 0; i < rows; ++i)
         {
             const vector<double>& feature = features[i];
             const vector<double>& label   = labels[i];
@@ -407,6 +417,10 @@ public:
             for (size_t j = 0; j < tempGradient.size(); ++j)
                 gradient[j] += -2.0 * tempGradient[j];
         } 
+        
+        // Divide by the batch size to get the average gradient
+        for (size_t i = 0; i < N; ++i)
+            gradient[i] /= rows;
     }
     
     void calculateGradientParameters(const Matrix& features, 
@@ -415,6 +429,7 @@ public:
         NeuralNetwork& nn = ErrorFunction<NeuralNetwork>::mBaseFunction;
         const size_t N    = nn.getNumParameters();
         const size_t M    = nn.getOutputs();
+        const size_t rows = features.rows();
         
         gradient.resize(N);
         std::fill(gradient.begin(), gradient.end(), 0.0);
@@ -423,7 +438,7 @@ public:
         evaluation.resize(M);
         
         // Calculate a partial gradient for each row in the training data
-        for (size_t i = 0; i < labels.rows(); ++i)
+        for (size_t i = 0; i < rows; ++i)
         {
             const vector<double>& feature = features[i];
             const vector<double>& label   = labels[i];
@@ -458,8 +473,11 @@ public:
         
         // Technically, we need to multiply the final gradient by a factor
         // of -2 to get the true gradient with respect to the SSE function.
+        // We also need to divide by the batch size to get an average gradient.
         for (size_t j = 0; j < gradient.size(); ++j)
-            gradient[j] *= -2.0;
+        {
+            gradient[j] *= (-2.0 / rows);
+        }
     }
     
     void calculateHessianInputs(const Matrix& features, const Matrix& labels,

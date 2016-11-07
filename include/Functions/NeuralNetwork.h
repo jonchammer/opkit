@@ -53,7 +53,7 @@ public:
     // Calculates the Jacobian of the network with respect to the inputs. This
     // involves one forward pass and one backwards pass for each output of the 
     // network.
-    void calculateJacobianInputs(const vector<double>& x, Matrix& gradient) override;
+    void calculateJacobianInputs(const vector<double>& x, Matrix& jacobian) override;
     
     // Neural networks do cache the last evaluation, so this function will 
     // always return true.

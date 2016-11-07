@@ -85,11 +85,11 @@ int main()
     CategoricalErrorFunction<NeuralNetwork> misclassifications(network);
     //GradientDescent<NeuralNetwork> trainer(&errorFunc);
     RMSProp<NeuralNetwork> trainer(&errorFunc);
-    trainer.setLearningRate(1E-2);
+    trainer.setLearningRate(1E-4);
     trainer.setDecay(0.0);
     trainer.setMomentum(0.0);
     
-    printf("%5zu: %.0f\t%f\n", 
+    printf("%5d: %.0f\t%f\n", 
         0,
         misclassifications.evaluate(testFeatures, testLabels), 
         errorFunc.evaluate(testFeatures, testLabels));
