@@ -17,6 +17,8 @@
 #include "DataNormalizer.h"
 #include "ActivationFunction.h"
 #include "PrettyPrinter.h"
+#include "BatchIterator.h"
+
 using namespace std;
 
 double variance(const Matrix& matrix, size_t column)
@@ -54,6 +56,8 @@ int main()
     testLabels  = convertColumnToOneHot(testLabels, 0);
     cout << "Data ready!" << endl;
     
+    
+    
     // Create a testing network
     FeedforwardLayer layer1(784, 300);
     FeedforwardLayer layer2(300, 100);
@@ -87,7 +91,11 @@ int main()
     RMSProp<NeuralNetwork> trainer(&errorFunc);
     trainer.setLearningRate(1E-4);
     trainer.setDecay(0.0);
-    trainer.setMomentum(0.0);
+    trainer.setMomentum(0.001);
+    
+    BatchIterator it(trainFeatures, trainLabels, 3);
+    Matrix* batchFeatures;
+    Matrix* batchLabels;
     
     printf("%5d: %.0f\t%f\n", 
         0,
@@ -96,7 +104,15 @@ int main()
     cout.flush();
     for (size_t i = 0; i < 1000; ++i)
     {
-        trainer.iterate(trainFeatures, trainLabels);
+        
+        while (it.hasNext())
+        {
+            it.lock(batchFeatures, batchLabels);
+            trainer.iterate(*batchFeatures, *batchLabels);
+            it.unlock();
+        }
+        it.reset();
+        //trainer.iterate(trainFeatures, trainLabels);
         
         //printVector(network.getParameters(), 4);
         //layer1.normalizeKernels();
