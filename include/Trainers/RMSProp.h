@@ -29,6 +29,8 @@ const double DEFAULT_MOMENTUM      = 1E-3;
 //       can cause destabilization, so this value should be reasonably small.
 //
 // This implementation reduces to Adagrad when Decay = 0.0 and Momentum = 0.0.
+// See: http://climin.readthedocs.io/en/latest/rmsprop.html
+//      http://sebastianruder.com/optimizing-gradient-descent/index.html
 template <class T>
 class RMSProp : public Trainer<T>
 {

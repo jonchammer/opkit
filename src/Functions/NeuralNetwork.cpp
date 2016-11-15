@@ -143,6 +143,22 @@ void NeuralNetwork::calculateJacobianInputs(const vector<double>& x,
     }
 }
 
+void NeuralNetwork::initializeParameters()
+{
+    std::default_random_engine generator;
+    std::normal_distribution<> normal(0.0, 1.0);
+    
+    size_t index = 0;
+    for (size_t i = 0; i < mLayers.size(); ++i)
+    {
+        double mag = max(0.03, 1.0 / mLayers[i]->getInputs());
+        const size_t N = mLayers[i]->getNumParameters();
+        
+        for (size_t j = 0; j < N; ++j)
+            mParameters[index++] = normal(generator) * mag;
+    }
+}
+
 size_t NeuralNetwork::getInputs()  const
 {
     return mLayers.front()->getInputs();

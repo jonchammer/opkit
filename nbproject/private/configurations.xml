@@ -63,6 +63,7 @@
           <in>Trainer.h</in>
         </df>
         <df name="Utils">
+          <in>BatchIterator.h</in>
           <in>DataLoader.h</in>
           <in>DataNormalizer.h</in>
           <in>ModelPersistence.h</in>

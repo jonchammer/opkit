@@ -70,6 +70,9 @@ public:
     // desired.
     void calculateGradientParameters(const vector<double>& input, vector<double>& gradient);
     
+    // Initializes the weights and biases with random values
+    void initializeParameters();
+    
     // Getters / Setters
     size_t getInputs()  const override;
     size_t getOutputs() const override;

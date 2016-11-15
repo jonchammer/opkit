@@ -221,7 +221,7 @@ void randomizeParameters(vector<double>& parameters,
     const double mean, const double variance)
 {
     std::default_random_engine generator;
-	std::normal_distribution<> rand(mean, variance);
+    std::normal_distribution<> rand(mean, variance);
     
     for (size_t i = 0; i < parameters.size(); ++i)
         parameters[i] = rand(generator);
