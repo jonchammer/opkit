@@ -14,10 +14,6 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
-const double DEFAULT_DECAY         = 0.90;
-const double DEFAULT_LEARNING_RATE = 1E-4;
-const double DEFAULT_MOMENTUM      = 1E-3;
-
 // An implementation of batch RMS prop that includes Nesterov momentum. Three
 // parameters are used to adjust the performance:
 //   1 - Learning Rate - same as for traditional gradient descent.
@@ -35,6 +31,10 @@ template <class T>
 class RMSProp : public Trainer<T>
 {
 public:
+    const double DEFAULT_DECAY         = 0.90;
+    const double DEFAULT_LEARNING_RATE = 1E-4;
+    const double DEFAULT_MOMENTUM      = 1E-3;
+    
     RMSProp(ErrorFunction<T>* function) : 
         Trainer<T>(function), 
         mRMS(function->getNumParameters(), 1.0),
