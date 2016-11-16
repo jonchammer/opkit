@@ -46,14 +46,15 @@ public:
     void iterate(const Matrix& features, const Matrix& labels)
     {
         vector<double>& params = Trainer<T>::function->getParameters();
+        const size_t N         = params.size();
         
-        for (size_t i = 0; i < params.size(); ++i)
+        for (size_t i = 0; i < N; ++i)
             params[i] -= mMomentum * mVelocity[i];
         
         static vector<double> gradient;
         Trainer<T>::function->calculateGradientParameters(features, labels, gradient);
         
-        for (size_t i = 0; i < params.size(); ++i)
+        for (size_t i = 0; i < N; ++i)
         {
             mRMS[i]      = (1.0 - mDecay) * gradient[i] * gradient[i] + mDecay * mRMS[i];
             double oldV  = mVelocity[i];

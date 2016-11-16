@@ -18,6 +18,7 @@
 #include "ActivationFunction.h"
 #include "PrettyPrinter.h"
 #include "BatchIterator.h"
+#include "Timer.h"
 
 using namespace std;
 
@@ -40,18 +41,21 @@ int main()
     // Load the data
     cout << "Loading data..." << endl;
     Matrix trainFeatures, trainLabels, testFeatures, testLabels;
-    trainFeatures.loadARFF("../data/mnist_train_features_small.arff");
-    trainLabels.loadARFF("../data/mnist_train_labels_small.arff");
+    trainFeatures.loadARFF("../data/mnist_train_features.arff");
+    trainLabels.loadARFF("../data/mnist_train_labels.arff");
     testFeatures.loadARFF("../data/mnist_test_features.arff");
     testLabels.loadARFF("../data/mnist_test_labels.arff");
+    
+    cout << "Train samples: " << trainFeatures.rows() << endl;
+    cout << "Test samples:  " << testFeatures.rows()  << endl;
     cout << "Data loaded!" << endl;
     
     // Process the data
     cout << "Preprocessing the data..." << endl;
     scaleAllColumns(trainFeatures, 0.0, 255.0, -1.0, 1.0);
     scaleAllColumns(testFeatures,  0.0, 255.0, -1.0, 1.0);
-    normalizeVarianceAllColumns(trainFeatures);
-    normalizeVarianceAllColumns(testFeatures);
+    //normalizeVarianceAllColumns(trainFeatures);
+    //normalizeVarianceAllColumns(testFeatures);
     trainLabels = convertColumnToOneHot(trainLabels, 0);
     testLabels  = convertColumnToOneHot(testLabels, 0);
     cout << "Data ready!" << endl;
@@ -59,15 +63,16 @@ int main()
     
     
     // Create a testing network
-    FeedforwardLayer layer1(784, 300);
-    FeedforwardLayer layer2(300, 100);
-    FeedforwardLayer layer3(100, 10);
+    FeedforwardLayer layer1(784, 80);
+    FeedforwardLayer layer2(80, 30);
+    FeedforwardLayer layer3(30, 10);
+    
     //FeedforwardLayer layer1(784, 300);
-//    Convolutional2DLayer layer1(28, 28, 1, 3, 5, 3, 1);
+    //Convolutional2DLayer layer1(28, 28, 1, 3, 32, 3, 1);
 //    layer1.setActivationFunction(reluActivation);
-//    Convolutional2DLayer layer2(layer1.getOutputWidth(), layer1.getOutputHeight(), layer1.getNumFilters(), 3, 5, 3, 1);
+    //Convolutional2DLayer layer2(layer1.getOutputWidth(), layer1.getOutputHeight(), layer1.getNumFilters(), 3, 32, 3, 1);
 //    layer2.setActivationFunction(reluActivation);
-//    FeedforwardLayer layer3(layer2.getOutputs(), 10);
+    //FeedforwardLayer layer3(layer2.getOutputs(), 10);
     //layer3.setActivationFunction(reluActivation);
     
     NeuralNetwork network;
@@ -87,22 +92,30 @@ int main()
     // Create a trainer
     SSEFunction<NeuralNetwork> errorFunc(network);
     CategoricalErrorFunction<NeuralNetwork> misclassifications(network);
-    //GradientDescent<NeuralNetwork> trainer(&errorFunc);
-    RMSProp<NeuralNetwork> trainer(&errorFunc);
-    trainer.setLearningRate(1E-4);
-    trainer.setDecay(0.0);
-    trainer.setMomentum(0.001);
     
-    BatchIterator it(trainFeatures, trainLabels, 3);
+    GradientDescent<NeuralNetwork> trainer(&errorFunc);
+    trainer.setLearningRate(0.01);
+    
+    
+    /*RMSProp<NeuralNetwork> trainer(&errorFunc);
+    trainer.setLearningRate(0.001);
+    trainer.setDecay(0.9);
+    trainer.setMomentum(0.0001);*/
+    
+    BatchIterator it(trainFeatures, trainLabels, 1);
     Matrix* batchFeatures;
     Matrix* batchLabels;
     
-    printf("%5d: %.0f\t%f\n", 
+    printf("%5d: %0.2f\t%.0f\t%f\n", 
         0,
+        0.0,
         misclassifications.evaluate(testFeatures, testLabels), 
         errorFunc.evaluate(testFeatures, testLabels));
     cout.flush();
-    for (size_t i = 0; i < 1000; ++i)
+    
+    Timer timer;
+    
+    for (size_t i = 0; i < 10; ++i)
     {
         
         while (it.hasNext())
@@ -116,14 +129,18 @@ int main()
         
         //printVector(network.getParameters(), 4);
         //layer1.normalizeKernels();
+        //layer2.normalizeKernels();
         //printVector(network.getParameters(), 4);
         
-        printf("%5zu: %.0f\t%f\n", 
+        printf("%5zu: %0.2f\t%.0f\t%f\n", 
             (i+1),
+            timer.getElapsedTimeSeconds(),
             misclassifications.evaluate(testFeatures, testLabels), 
             errorFunc.evaluate(testFeatures, testLabels));
         cout.flush();
+        
+        //trainer.setLearningRate(trainer.getLearningRate() * 0.9);
     }
-    
+
     return 0;
 }
