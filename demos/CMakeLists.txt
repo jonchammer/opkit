@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project(optimization_toolkit)
+project(demo)
 
 # If the user doesn't specify a build type (e.g. with -DCMAKE_BUILD_TYPE=Release),
 # choose Release as the default value.
@@ -16,23 +16,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -O3")
 # Set the location of the final executable to be where cmake/make are called
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-# Tell the compiler where to find the headers
-include_directories(include)
-include_directories(include/Functions)
-include_directories(include/Trainers)
-include_directories(include/Utils)
-
 # Create lists of all of the header files and the source files
-file(GLOB_RECURSE HEADERS "include/*.h")
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+set(SOURCES src/mnistConvolutionExample.cpp)
 
-#Ignore the listed files
-list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
+add_executable(demo ${SOURCES})
 
-# Create a static library containing all of the code
-add_library(athena STATIC ${SOURCES})
-
-# Copy the .a file to /usr/local/lib and the .h files to /usr/local/include
-INSTALL(TARGETS athena DESTINATION "lib")
-INSTALL(FILES ${HEADERS} DESTINATION "include/athena")
+target_link_libraries(demo liboptkit.a)
 

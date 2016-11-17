@@ -6,18 +6,18 @@
  */
 
 #include <iostream>
-#include "Layer.h"
-#include "NeuralNetwork.h"
-#include "GradientDescent.h"
-#include "RMSProp.h"
-#include "SSEFunction.h"
-#include "CategoricalErrorFunction.h"
-#include "Matrix.h"
-#include "DataNormalizer.h"
-#include "ActivationFunction.h"
-#include "PrettyPrinter.h"
-#include "BatchIterator.h"
-#include "Timer.h"
+#include "athena/Layer.h"
+#include "athena/NeuralNetwork.h"
+#include "athena/GradientDescent.h"
+#include "athena/RMSProp.h"
+#include "athena/SSEFunction.h"
+#include "athena/CategoricalErrorFunction.h"
+#include "athena/Matrix.h"
+#include "athena/DataNormalizer.h"
+#include "athena/ActivationFunction.h"
+#include "athena/PrettyPrinter.h"
+#include "athena/BatchIterator.h"
+#include "athena/Timer.h"
 
 using namespace std;
 
@@ -40,10 +40,10 @@ int main()
     // Load the data
     cout << "Loading data..." << endl;
     Matrix trainFeatures, trainLabels, testFeatures, testLabels;
-    trainFeatures.loadARFF("../data/mnist_train_features.arff");
-    trainLabels.loadARFF("../data/mnist_train_labels.arff");
-    testFeatures.loadARFF("../data/mnist_test_features.arff");
-    testLabels.loadARFF("../data/mnist_test_labels.arff");
+    trainFeatures.loadARFF("../../data/mnist_train_features.arff");
+    trainLabels.loadARFF("../../data/mnist_train_labels.arff");
+    testFeatures.loadARFF("../../data/mnist_test_features.arff");
+    testLabels.loadARFF("../../data/mnist_test_labels.arff");
     
     cout << "Train samples: " << trainFeatures.rows() << endl;
     cout << "Test samples:  " << testFeatures.rows()  << endl;
