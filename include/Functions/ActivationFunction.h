@@ -11,6 +11,9 @@
 #include <cmath>
 #include <utility>
 
+namespace athena
+{
+    
 // Typedefs for the function pointers
 typedef double (*ActivationFunc)(double);
 typedef double (*ActivationDeriv)(double, double);
@@ -31,6 +34,8 @@ extern Activation reluActivation;
 extern Activation softPlusActivation;
 extern Activation bentIdentityActivation;
 extern Activation sinActivation;
+
+};
 
 #endif /* ACTIVATIONFUNCTION_H */
 

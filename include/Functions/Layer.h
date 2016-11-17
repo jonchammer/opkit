@@ -13,7 +13,10 @@
 #include "Tensor3D.h"
 #include "ActivationFunction.h"
 #include "Error.h"
-using namespace std;
+using std::vector;
+
+namespace athena
+{
 
 // A neural network consists of a set of layers. All layers have some functionality
 // in common, so they all derive from this superclass.
@@ -211,6 +214,8 @@ private:
     void convolve(Tensor3D& input,  size_t ix, size_t iy, size_t iz,
         Tensor3D& filter, size_t filterZ,
         Tensor3D& output, size_t outputZ);
+};
+
 };
 
 #endif /* LAYER_H */

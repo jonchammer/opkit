@@ -12,6 +12,9 @@
 #include "Function.h"
 using std::vector;
 
+namespace athena
+{
+    
 // This is a model representing a standard 2D line: y = mx + b
 class SimpleLinear : public StandardFunction
 {
@@ -136,6 +139,8 @@ public:
             output[j] += mParameters[biasStart + j];
         }
     }
+};
+
 };
 #endif /* FUNCTIONS_H */
 

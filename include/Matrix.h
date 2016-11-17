@@ -10,6 +10,9 @@
 #include <map>
 #include <string>
 
+namespace athena
+{
+    
 #define UNKNOWN_VALUE -1e308
 
 
@@ -131,6 +134,8 @@ public:
 	/// Throws an exception if that has a different number of columns than
 	/// this, or if one of its columns has a different number of values.
 	void checkCompatibility(const Matrix& that) const;
+};
+
 };
 
 #endif // MATRIX_H

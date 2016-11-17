@@ -12,6 +12,9 @@
 #include "Matrix.h"
 #include "Trainer.h"
 
+namespace athena
+{
+    
 // Used to adjust the behavior of an EvolutionaryOptimizer object
 // Default values will be set in the constructor.
 struct EvolutionaryOptimizerParams
@@ -380,5 +383,7 @@ void EvolutionaryOptimizer<T>::evaluateMember(int index,
             mOptimalSolution.begin());
     }
 } 
+
+};
 #endif /* EVOLUTIONARYOPTIMIZATION_H */
 

@@ -1,4 +1,10 @@
 #include "NeuralNetwork.h"
+using std::cerr;
+using std::endl;
+using std::max;
+
+namespace athena
+{
 
 NeuralNetwork::NeuralNetwork() 
 {
@@ -219,3 +225,5 @@ const Layer* NeuralNetwork::getOutputLayer() const
 {
     return mLayers.back();
 }
+
+};

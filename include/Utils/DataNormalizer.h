@@ -13,6 +13,9 @@
 #include "Matrix.h"
 using std::vector;
 
+namespace athena
+{
+
 // Scale an individual column from the range [min, max] to the new
 // range [desiredMin, desiredMax].
 void scaleColumn(Matrix& matrix, size_t column, double min, double max, 
@@ -112,6 +115,8 @@ Matrix convertColumnToOneHot(const Matrix& source, size_t column)
     
     return dest;
 }
+
+};
 
 #endif /* NORMALIZER_H */
 

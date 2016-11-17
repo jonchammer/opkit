@@ -14,12 +14,13 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 #include "PrettyPrinter.h"
-
 using std::vector;
+
+namespace athena
+{
 
 // http://andrew.gibiansky.com/blog/machine-learning/hessian-free-optimization/
 // ...
-
 template <class T>
 class HessianFreeOptimizer : public Trainer<T>
 {
@@ -165,4 +166,7 @@ void HessianFreeOptimizer<T>::multiplyHessian(vector<double>& x, const vector<do
 //    for (size_t i = 0; i < N; ++i)
 //        result[i] += lambda * v[i];
 }
+
+};
+
 #endif /* HESSIANFREEOPTIMIZER_H */

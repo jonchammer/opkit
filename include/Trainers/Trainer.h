@@ -11,6 +11,9 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
+namespace athena
+{
+
 // TODO: Add error reporting
 template <class T>
 class Trainer
@@ -39,6 +42,8 @@ public:
     
 protected:
     ErrorFunction<T>* function; // The function we are working with
+};
+
 };
 
 #endif /* TRAINER_H */

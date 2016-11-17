@@ -18,6 +18,9 @@
 
 #include <exception>
 
+namespace athena
+{
+
 /// A simple exception object that wraps a string message
 class Ex : public std::exception
 {
@@ -59,5 +62,6 @@ public:
 /// This method will cause an exception to be thrown when floating point
 /// overflow, divide-by-zero, or NAN conditions occur.
 //void enableFloatingPointExceptions();
+};
 
 #endif // error_h

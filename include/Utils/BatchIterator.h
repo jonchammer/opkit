@@ -11,6 +11,10 @@
 #include <vector>
 #include <random>
 #include "Matrix.h"
+using std::vector;
+
+namespace athena
+{
 
 class BatchIterator
 {
@@ -93,6 +97,8 @@ private:
     
     std::default_random_engine mRandGenerator;     // Used to create a random order
     std::uniform_real_distribution<double> mRand;  // Used to create a random order
+};
+
 };
 
 #endif /* BATCHITERATOR_H */

@@ -11,6 +11,9 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
+namespace athena
+{
+    
 template <class T>
 class CategoricalErrorFunction : public ErrorFunction<T>
 {
@@ -62,5 +65,6 @@ double CategoricalErrorFunction<T>::evaluate(const Matrix& features, const Matri
     return misclassifications;
 }
 
+};
 #endif /* CATEGORICALERRORFUNCTION_H */
 

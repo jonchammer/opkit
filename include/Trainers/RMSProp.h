@@ -13,6 +13,10 @@
 #include "Trainer.h"
 #include "ErrorFunction.h"
 #include "Matrix.h"
+using std::vector;
+
+namespace athena
+{
 
 // An implementation of batch RMS prop that includes Nesterov momentum. Three
 // parameters are used to adjust the performance:
@@ -99,6 +103,8 @@ private:
     double mDecay;
     double mLearningRate;
     double mMomentum;
+};
+
 };
 
 #endif /* RMSPROP_H */

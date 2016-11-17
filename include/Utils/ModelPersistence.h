@@ -13,6 +13,9 @@
 #include <vector>
 #include "Function.h"
 
+namespace athena
+{
+
 /**
  * Save a function to a plain text file with the given filename. The number of 
  * parameters will be written first, followed by each parameter on a new line.
@@ -119,6 +122,8 @@ bool loadFunctionBinary(const std::string& filename, Function& function)
     din.close();
     return true;
 }
+
+};
 
 #endif /* MODELPERSISTENCE_H */
 

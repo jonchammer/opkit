@@ -11,6 +11,9 @@
 #include "Function.h"
 #include "Matrix.h"
 
+namespace athena
+{
+    
 template <class T>
 class ErrorFunction
 {
@@ -286,5 +289,7 @@ void ErrorFunction<T>::calculateHessianParameters(const Matrix& features,
         }
     }
 }
+
+};
 #endif /* ERRORFUNCTION_H */
 

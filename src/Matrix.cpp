@@ -14,6 +14,9 @@ using std::ifstream;
 using std::map;
 using std::vector;
 
+namespace athena
+{
+    
 void Matrix::setSize(size_t rows, size_t cols)
 {
 	// Make space for the data
@@ -408,3 +411,4 @@ void Matrix::checkCompatibility(const Matrix& that) const
 	}
 }
 
+};

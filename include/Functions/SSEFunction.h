@@ -14,6 +14,9 @@
 #include "NeuralNetwork.h"
 using std::vector;
 
+namespace athena
+{
+    
 // This class is an implementation of the SSE Error function.
 template <class T>
 class SSEFunction : public ErrorFunction<T>
@@ -651,6 +654,8 @@ public:
             }
         }
     }
+};
+
 };
 
 #endif /* SSEFUNCTION_H */

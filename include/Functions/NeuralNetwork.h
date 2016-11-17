@@ -14,7 +14,10 @@
 #include "Matrix.h"
 #include "Error.h"
 #include "Layer.h"
-using namespace std;
+using std::vector;
+
+namespace athena
+{
 
 // This is a model representing a standard feedforward Artificial Neural Network
 // (ANN). A Neural Network consists of a set of neurons arranged in layers. Each
@@ -95,5 +98,6 @@ private:
         vector<double>& gradient);
 };
 
+};
 #endif /* NEURALNETWORK_H */
 

@@ -22,6 +22,9 @@ using std::string;
 using std::cout;
 using std::endl;
 
+namespace athena
+{
+    
 // Loads data from the given .ARFF file into 'features' and 'labels'.
 // The data will be split based on the last 'numLabels' columns.
 bool loadArff(const string& filename, Matrix& features, 
@@ -118,5 +121,8 @@ void print(const Matrix& features, const Matrix& labels)
         cout << "]" << std::endl;
     }
 }
+
+};
+
 #endif /* DATALOADER_H */
 

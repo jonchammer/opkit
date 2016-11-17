@@ -18,6 +18,9 @@ using std::cout;
 using std::endl;
 using std::vector;
  
+namespace athena
+{
+    
 class Function
 {
 public:
@@ -115,6 +118,8 @@ protected:
 // of the given mean and variance
 void randomizeParameters(vector<double>& parameters, 
     const double mean = 0.0, const double variance = 1.0);
+
+};
 
 #endif /* MODEL_H */
 

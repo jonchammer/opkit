@@ -14,6 +14,9 @@
 #include "Matrix.h"
 #include "Tensor3D.h"
 
+namespace athena
+{
+
 template <class T>
 void printVector(const std::vector<T>& vec, size_t decimalPlaces = 2)
 {
@@ -37,6 +40,8 @@ void print3DTensor(const std::vector<double>& vec, size_t width, size_t height,
 
 void print3DTensor(const Tensor3D& tensor, size_t decimalPlaces = 2, 
     size_t width = 6);
+
+};
 
 #endif /* PRETTY_PRINTER_H */
 

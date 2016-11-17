@@ -14,6 +14,9 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
+namespace athena
+{
+
 // This class implements a hill climber. It doesn't rely on gradient information
 // in order to improve the function. Instead, it tries 4 variations in each 
 // dimension and chooses the one that produces the best results. This method 
@@ -72,6 +75,8 @@ public:
     
 private:
     vector<double> mStepSize; // The step size in each dimension
+};
+
 };
 
 #endif /* HILLCLIMBER_H */

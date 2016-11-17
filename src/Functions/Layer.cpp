@@ -1,5 +1,11 @@
 #include "Layer.h"
 
+using std::cerr;
+using std::endl;
+
+namespace athena
+{
+
 // ---- Layer Implementations ---- //
 void Layer::deactivateDelta(size_t outputIndex)
 {
@@ -461,3 +467,5 @@ void Convolutional2DLayer::setActivationFunction(Activation act)
 { 
     mActFunction = act;  
 }
+
+};

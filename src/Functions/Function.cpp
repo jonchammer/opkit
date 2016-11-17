@@ -8,6 +8,9 @@
 #include "Function.h"
 #include "PrettyPrinter.h"
 
+namespace athena
+{
+    
 bool Function::cachesLastEvaluation() const
 {
     return false;
@@ -226,3 +229,5 @@ void randomizeParameters(vector<double>& parameters,
     for (size_t i = 0; i < parameters.size(); ++i)
         parameters[i] = rand(generator);
 }
+
+};

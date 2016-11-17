@@ -9,7 +9,11 @@
 #define TENSOR3D_H
 
 #include <vector>
-using namespace std;
+using std::vector;
+using std::size_t;
+
+namespace athena
+{
 
 // This class provides a 3D array wrapper around a normal C++ vector. It handles
 // the math necessary to provide the user with a 3-index interface, plus range
@@ -43,6 +47,8 @@ private:
     
     // The dimensions of this tensor (x, y, z)
     size_t mWidth, mHeight, mDepth;
+};
+
 };
 
 #endif /* TENSOR3D_H */

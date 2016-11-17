@@ -1,5 +1,8 @@
 #include "ActivationFunction.h"
 
+namespace athena
+{
+    
 // Common activation functions with their derivatives
 double tanhDeriv(double /*x*/, double fx)
 {
@@ -87,3 +90,5 @@ Activation reluActivation         = {&relu,         &reluDeriv};
 Activation softPlusActivation     = {&softPlus,     &softPlusDeriv};
 Activation bentIdentityActivation = {&bentIdentity, &bentIdentityDeriv};
 Activation sinActivation          = {&std::sin,     &sinDeriv};
+
+};

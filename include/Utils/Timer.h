@@ -4,6 +4,9 @@
 using namespace std;
 using namespace std::chrono;
 
+namespace athena
+{
+    
 class Timer
 {
 public:
@@ -26,6 +29,8 @@ public:
 
 private:
     time_point<system_clock, nanoseconds> mStartTime;
+};
+
 };
 
 #endif

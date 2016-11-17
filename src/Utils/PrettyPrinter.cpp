@@ -1,5 +1,8 @@
 #include "PrettyPrinter.h"
 
+namespace athena
+{
+
 void printMatrix(const Matrix& mat, size_t decimalPlaces, size_t width)
 {
     std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
@@ -64,3 +67,5 @@ void print3DTensor(const Tensor3D& tensor, size_t decimalPlaces, size_t spacing)
         std::cout << std::endl;
     }
 }
+
+};

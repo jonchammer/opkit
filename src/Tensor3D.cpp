@@ -1,6 +1,9 @@
 #include "Tensor3D.h"
 #include "ActivationFunction.h"
 
+namespace athena
+{
+
 Tensor3D::Tensor3D(vector<double>& parameters, const size_t parametersStart, 
     const size_t width, const size_t height, const size_t depth)
     : mParameters(&parameters[0]), mParametersStart(parametersStart),
@@ -63,4 +66,6 @@ size_t Tensor3D::getHeight() const
 size_t Tensor3D::getDepth() const
 {
     return mDepth;
-}        
+}    
+
+};

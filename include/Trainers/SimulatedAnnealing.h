@@ -15,6 +15,10 @@
 #include "Trainer.h"
 #include "ErrorFunction.h"
 #include "Matrix.h"
+using std::vector;
+
+namespace athena
+{
 
 // This class implements a Simulated Annealing optimizer. Essentially, it 
 // mirrors the physical process of annealing, in which materials are slowly 
@@ -169,6 +173,8 @@ private:
         // Determine the if we should accept the solution or not
         else return exp((mCurrentCost - proposedCost) / mTemperature);
     }
+};
+
 };
 
 #endif /* SIMULATEDANNEALING_H */

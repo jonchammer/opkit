@@ -13,6 +13,9 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
+namespace athena
+{
+
 // This class implements a traditional gradient descender. It looks at every
 // sample in the given matrices in order to calculate the best possible estimate 
 // of the gradient of the error surface before taking a single step. Note that
@@ -69,6 +72,8 @@ private:
     vector<double> mVelocity;
     double mLearningRate;
     double mMomentum;
+};
+
 };
 
 #endif /* GRADIENTDESCENT_H */
