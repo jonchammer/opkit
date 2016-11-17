@@ -8,7 +8,6 @@
 #include <iostream>
 #include "Layer.h"
 #include "NeuralNetwork.h"
-#include "StochasticGradientDescent.h"
 #include "GradientDescent.h"
 #include "RMSProp.h"
 #include "SSEFunction.h"
@@ -79,13 +78,13 @@ int main()
     network.addLayer(&layer1);
     network.addLayer(&layer2);
     network.addLayer(&layer3);
+    network.initializeParameters();
     
     printf("%zu x %zu\n", layer1.getInputs(), layer1.getOutputs());
     printf("%zu x %zu\n", layer2.getInputs(), layer2.getOutputs());
     printf("%zu x %zu\n", layer3.getInputs(), layer3.getOutputs());
     cout << "# Parameters: " << network.getParameters().size() << endl;
     
-    randomizeParameters(network.getParameters(), 0.0, 0.01);
     //layer1.normalizeKernels();
     //layer2.normalizeKernels();
     
