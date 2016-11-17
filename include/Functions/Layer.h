@@ -23,7 +23,11 @@ public:
 
     // Process the given input according to the rules for this layer, and place
     // the results in 'y'.
-    virtual void feed(const vector<double>& x);
+    virtual inline void feed(const vector<double>& x)
+    {
+        feed(x, getActivation());
+    }
+    
     virtual void feed(const vector<double>& x, vector<double>& y) = 0;
     
     // In order to efficiently calculate the gradient of a network, we need to
@@ -198,7 +202,7 @@ private:
     vector<double> mDeltas;     // The errors that result from backprop
     Activation mActFunction;    // The activation function (and derivative) to be used in this layer
     
-    double convolve(Tensor3D& input, size_t x, size_t y, size_t z);
+    double convolve(const Tensor3D& input, size_t x, size_t y, size_t z);
     
     // Convolves a 2D input with a 2D filter in order to produce a 2D output.
     // The 'z' parameters specify which slice of the 3D Tensors to use. The

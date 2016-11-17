@@ -1,30 +1,26 @@
 #include "Layer.h"
 
 // ---- Layer Implementations ---- //
-void Layer::feed(const vector<double>& x)
-{
-    feed(x, getActivation());
-}
-
 void Layer::deactivateDelta(size_t outputIndex)
 {
-    Activation& func       = getActivationFunction();
+    ActivationDeriv deriv  = *getActivationFunction().second;
     vector<double>& net    = getNet();
     vector<double>& act    = getActivation();
     vector<double>& deltas = getDeltas();
 
-    deltas[outputIndex] *= (*func.second)(net[outputIndex], act[outputIndex]);
+    deltas[outputIndex] *= deriv(net[outputIndex], act[outputIndex]);
 }
 
 void Layer::deactivateDeltas()
 {
-    Activation& func       = getActivationFunction();
+    ActivationDeriv deriv  = *getActivationFunction().second;
     vector<double>& net    = getNet();
     vector<double>& act    = getActivation();
     vector<double>& deltas = getDeltas();
-
-    for (size_t i = 0; i < getOutputs(); ++i)
-        deltas[i] *= (*func.second)(net[i], act[i]);
+    const size_t outputs   = getOutputs();
+    
+    for (size_t i = 0; i < outputs; ++i)
+        deltas[i] *= deriv(net[i], act[i]);
 }
 
 void Layer::assignStorage(vector<double>* parameters, 
@@ -51,8 +47,12 @@ void FeedforwardLayer::feed(const vector<double>& x, vector<double>& y)
 {
     y.resize(mOutputs, 0.0);
     
+    // Cache these so we can avoid repeated pointer dereferencing
+    const vector<double>& params = *mParameters;
+    ActivationFunc func          = *getActivationFunction().first;
+    
     // Cache the beginning of the bias section of the parameters
-    size_t biasStart = mInputs * mOutputs;
+    const size_t biasStart = mInputs * mOutputs;
     
     // The weights are arranged so they can be examined in order
     size_t weightIndex = 0;
@@ -64,13 +64,13 @@ void FeedforwardLayer::feed(const vector<double>& x, vector<double>& y)
 
         for (size_t i = 0; i < mInputs; ++i)
         {
-            mNet[j] += (*mParameters)[mParametersStartIndex + weightIndex] * x[i];
+            mNet[j] += params[mParametersStartIndex + weightIndex] * x[i];
             weightIndex++;
         }
-        mNet[j] += (*mParameters)[mParametersStartIndex + biasStart + j];
+        mNet[j] += params[mParametersStartIndex + biasStart + j];
         
         // y = a(sum + bias)
-        y[j] = (*mActFunction.first)(mNet[j]);
+        y[j] = func(mNet[j]);
         
         // Usually, y will be mActivation, but there's no need for that to be
         // the case. If not, we need to make sure to set mActivation manually,
@@ -82,33 +82,31 @@ void FeedforwardLayer::feed(const vector<double>& x, vector<double>& y)
 void FeedforwardLayer::calculateDeltas(vector<double>& destination)
 {
     std::fill(destination.begin(), destination.end(), 0.0);
-
+    const vector<double>& params = *mParameters;
+    
     for (size_t i = 0; i < mInputs; ++i)
     {
         for (size_t j = 0; j < mOutputs; ++j)
         {
-            size_t index  = mParametersStartIndex + (j * mInputs + i);
-            double weight = (*mParameters)[index];
-            destination[i] += weight * mDeltas[j];
+            // params[index] is the current weight
+            size_t index    = mParametersStartIndex + (j * mInputs + i);
+            destination[i] += params[index] * mDeltas[j];
         }
     }
 }
 
 void FeedforwardLayer::calculateGradient(const vector<double>& input, double* gradient)
 {
-    int inputSize  = getInputs();
-    int outputSize = getOutputs();
-
     // Calculate gradient for the weights
     size_t index = 0;
-    for (int i = 0; i < outputSize; ++i)
+    for (size_t i = 0; i < mOutputs; ++i)
     {
-        for (int j = 0; j < inputSize; ++j)
+        for (size_t j = 0; j < mInputs; ++j)
             gradient[index++] += input[j] * mDeltas[i];
     }
 
     // Calculate gradient for the biases
-    for (int i = 0; i < outputSize; ++i)
+    for (size_t i = 0; i < mOutputs; ++i)
         gradient[index++] += mDeltas[i];
 }
 
@@ -191,13 +189,13 @@ Convolutional2DLayer::Convolutional2DLayer(size_t inputWidth, size_t inputHeight
 }
 
 // (x, y, z) specifies coordinates of the output cell we are working on
-double Convolutional2DLayer::convolve(Tensor3D& input, size_t x, size_t y, size_t z)
+double Convolutional2DLayer::convolve(const Tensor3D& input, size_t x, size_t y, size_t z)
 {
     // Calculate where the weights and bias values are for this filter
-    size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels;
-    size_t weightsIndex     = mParametersStartIndex + z * (numFilterWeights + 1);
-    size_t biasIndex        = weightsIndex + numFilterWeights;
-    Tensor3D filterWeights(*mParameters, weightsIndex, 
+    const size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels;
+    const size_t weightsIndex     = mParametersStartIndex + z * (numFilterWeights + 1);
+    const size_t biasIndex        = weightsIndex + numFilterWeights;
+    const Tensor3D filterWeights(*mParameters, weightsIndex, 
         mFilterSize, mFilterSize, mInputChannels);
     
     // Calculate the bounds of the input window
@@ -205,10 +203,10 @@ double Convolutional2DLayer::convolve(Tensor3D& input, size_t x, size_t y, size_
     // that, we add the product of the index and the stride to move the box
     // either horizontally or vertically. The right and bottom bounds are found
     // by adding the filter size to the left/top bounds.
-    int lowX = -mZeroPadding + x * mStride;
-    int lowY = -mZeroPadding + y * mStride;
-    int hiX  = lowX + mFilterSize - 1;
-    int hiY  = lowY + mFilterSize - 1;
+    const int lowX = -mZeroPadding + x * mStride;
+    const int lowY = -mZeroPadding + y * mStride;
+    const int hiX  = lowX + mFilterSize - 1;
+    const int hiY  = lowY + mFilterSize - 1;
     
     // Do the actual convolution. Tensor3D objects will return 0 when the 
     // provided index is out of bounds, which is used to implement the zero
@@ -230,7 +228,7 @@ double Convolutional2DLayer::convolve(Tensor3D& input, size_t x, size_t y, size_
 
 void Convolutional2DLayer::feed(const vector<double>& x, vector<double>& y)
 {
-    Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
+    const Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
     
     // Make sure the output is the correct size
     y.resize(mOutputWidth * mOutputHeight * mNumFilters);
@@ -307,11 +305,11 @@ void Convolutional2DLayer::calculateDeltas(vector<double>& destination)
 
 void Convolutional2DLayer::calculateGradient(const vector<double>& x, double* gradient)
 {    
-    size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
+    const size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
 
     // Wrap the important vectors in Tensor3D objects so access is easier
-    Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
-    Tensor3D deltas(mDeltas, 0, mOutputWidth, mOutputHeight, mNumFilters);
+    const Tensor3D input((vector<double>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
+    const Tensor3D deltas(mDeltas, 0, mOutputWidth, mOutputHeight, mNumFilters);
     
     // Convolve the deltas in this layer with the input in order to calculate
     // the gradient for the weights in the filters. We also calculate the gradient
@@ -357,9 +355,9 @@ void Convolutional2DLayer::calculateGradient(const vector<double>& x, double* gr
 
 void Convolutional2DLayer::normalizeKernels()
 {
-    vector<double>& params = *mParameters;
-    size_t filterParams    = mFilterSize * mFilterSize * mInputChannels + 1;
-    size_t start           = mParametersStartIndex;
+    vector<double>& params    = *mParameters;
+    const size_t filterParams = mFilterSize * mFilterSize * mInputChannels + 1;
+    size_t start              = mParametersStartIndex;
     
     for (size_t filter = 0; filter < mNumFilters; ++filter)
     {
