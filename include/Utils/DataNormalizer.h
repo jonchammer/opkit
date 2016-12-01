@@ -13,7 +13,7 @@
 #include "Matrix.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
 
 // Scale an individual column from the range [min, max] to the new

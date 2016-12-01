@@ -12,7 +12,7 @@
 #include "Matrix.h"
 #include "Trainer.h"
 
-namespace athena
+namespace opkit
 {
     
 // Used to adjust the behavior of an EvolutionaryOptimizer object

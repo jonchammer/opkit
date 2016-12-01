@@ -30,9 +30,9 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
 
 # Create a static library containing all of the code
-add_library(athena STATIC ${SOURCES})
+add_library(opkit STATIC ${SOURCES})
 
 # Copy the .a file to /usr/local/lib and the .h files to /usr/local/include
-INSTALL(TARGETS athena DESTINATION "lib")
-INSTALL(FILES ${HEADERS} DESTINATION "include/athena")
+INSTALL(TARGETS opkit DESTINATION "lib")
+INSTALL(FILES ${HEADERS} DESTINATION "include/opkit")
 

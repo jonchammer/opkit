@@ -16,7 +16,7 @@
 #include "PrettyPrinter.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
 
 // http://andrew.gibiansky.com/blog/machine-learning/hessian-free-optimization/

@@ -13,7 +13,7 @@
 #include <vector>
 #include "Function.h"
 
-namespace athena
+namespace opkit
 {
 
 /**

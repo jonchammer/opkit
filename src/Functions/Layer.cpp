@@ -3,7 +3,7 @@
 using std::cerr;
 using std::endl;
 
-namespace athena
+namespace opkit
 {
 
 // ---- Layer Implementations ---- //

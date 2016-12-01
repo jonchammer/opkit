@@ -11,7 +11,7 @@
 #include <cmath>
 #include <utility>
 
-namespace athena
+namespace opkit
 {
     
 // Typedefs for the function pointers

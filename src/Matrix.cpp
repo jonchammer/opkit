@@ -14,7 +14,7 @@ using std::ifstream;
 using std::map;
 using std::vector;
 
-namespace athena
+namespace opkit
 {
     
 void Matrix::setSize(size_t rows, size_t cols)

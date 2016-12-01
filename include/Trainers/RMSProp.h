@@ -15,7 +15,7 @@
 #include "Matrix.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
 
 // An implementation of batch RMS prop that includes Nesterov momentum. Three

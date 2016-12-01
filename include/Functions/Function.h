@@ -18,7 +18,7 @@ using std::cout;
 using std::endl;
 using std::vector;
  
-namespace athena
+namespace opkit
 {
     
 class Function

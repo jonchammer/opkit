@@ -12,7 +12,7 @@
 using std::vector;
 using std::size_t;
 
-namespace athena
+namespace opkit
 {
 
 // This class provides a 3D array wrapper around a normal C++ vector. It handles

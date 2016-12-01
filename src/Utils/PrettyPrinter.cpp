@@ -1,6 +1,6 @@
 #include "PrettyPrinter.h"
 
-namespace athena
+namespace opkit
 {
 
 void printMatrix(const Matrix& mat, size_t decimalPlaces, size_t width)

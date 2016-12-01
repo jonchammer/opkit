@@ -18,7 +18,7 @@
 
 #include <exception>
 
-namespace athena
+namespace opkit
 {
 
 /// A simple exception object that wraps a string message

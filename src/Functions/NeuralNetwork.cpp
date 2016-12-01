@@ -3,7 +3,7 @@ using std::cerr;
 using std::endl;
 using std::max;
 
-namespace athena
+namespace opkit
 {
 
 NeuralNetwork::NeuralNetwork() 

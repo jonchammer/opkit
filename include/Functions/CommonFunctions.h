@@ -12,7 +12,7 @@
 #include "Function.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
     
 // This is a model representing a standard 2D line: y = mx + b

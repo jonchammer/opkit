@@ -17,7 +17,7 @@
 #include "Matrix.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
 
 // This class implements a Simulated Annealing optimizer. Essentially, it 

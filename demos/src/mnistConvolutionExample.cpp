@@ -6,18 +6,18 @@
  */
 
 #include <iostream>
-#include "athena/Layer.h"
-#include "athena/NeuralNetwork.h"
-#include "athena/GradientDescent.h"
-#include "athena/RMSProp.h"
-#include "athena/SSEFunction.h"
-#include "athena/CategoricalErrorFunction.h"
-#include "athena/Matrix.h"
-#include "athena/DataNormalizer.h"
-#include "athena/ActivationFunction.h"
-#include "athena/PrettyPrinter.h"
-#include "athena/BatchIterator.h"
-#include "athena/Timer.h"
+#include "opkit/Layer.h"
+#include "opkit/NeuralNetwork.h"
+#include "opkit/GradientDescent.h"
+#include "opkit/RMSProp.h"
+#include "opkit/SSEFunction.h"
+#include "opkit/CategoricalErrorFunction.h"
+#include "opkit/Matrix.h"
+#include "opkit/DataNormalizer.h"
+#include "opkit/ActivationFunction.h"
+#include "opkit/PrettyPrinter.h"
+#include "opkit/BatchIterator.h"
+#include "opkit/Timer.h"
 
 using namespace std;
 

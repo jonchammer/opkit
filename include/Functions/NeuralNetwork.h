@@ -16,7 +16,7 @@
 #include "Layer.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
 
 // This is a model representing a standard feedforward Artificial Neural Network

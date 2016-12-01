@@ -8,7 +8,7 @@
 #include "Function.h"
 #include "PrettyPrinter.h"
 
-namespace athena
+namespace opkit
 {
     
 bool Function::cachesLastEvaluation() const

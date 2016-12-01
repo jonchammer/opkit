@@ -13,7 +13,7 @@
 #include "Matrix.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
 
 class BatchIterator

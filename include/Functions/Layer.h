@@ -15,7 +15,7 @@
 #include "Error.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
 
 // A neural network consists of a set of layers. All layers have some functionality

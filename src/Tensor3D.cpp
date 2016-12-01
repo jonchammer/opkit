@@ -1,7 +1,7 @@
 #include "Tensor3D.h"
 #include "ActivationFunction.h"
 
-namespace athena
+namespace opkit
 {
 
 Tensor3D::Tensor3D(vector<double>& parameters, const size_t parametersStart, 

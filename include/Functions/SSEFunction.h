@@ -14,7 +14,7 @@
 #include "NeuralNetwork.h"
 using std::vector;
 
-namespace athena
+namespace opkit
 {
     
 // This class is an implementation of the SSE Error function.

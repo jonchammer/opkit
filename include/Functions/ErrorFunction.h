@@ -11,7 +11,7 @@
 #include "Function.h"
 #include "Matrix.h"
 
-namespace athena
+namespace opkit
 {
     
 template <class T>

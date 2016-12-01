@@ -10,7 +10,7 @@
 #include <map>
 #include <string>
 
-namespace athena
+namespace opkit
 {
     
 #define UNKNOWN_VALUE -1e308

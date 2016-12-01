@@ -1,6 +1,6 @@
 #include "ActivationFunction.h"
 
-namespace athena
+namespace opkit
 {
     
 // Common activation functions with their derivatives

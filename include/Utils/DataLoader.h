@@ -22,7 +22,7 @@ using std::string;
 using std::cout;
 using std::endl;
 
-namespace athena
+namespace opkit
 {
     
 // Loads data from the given .ARFF file into 'features' and 'labels'.

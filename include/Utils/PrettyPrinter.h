@@ -14,7 +14,7 @@
 #include "Matrix.h"
 #include "Tensor3D.h"
 
-namespace athena
+namespace opkit
 {
 
 template <class T>

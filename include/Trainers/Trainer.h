@@ -11,7 +11,7 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
-namespace athena
+namespace opkit
 {
 
 // TODO: Add error reporting

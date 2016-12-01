@@ -13,7 +13,7 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
-namespace athena
+namespace opkit
 {
 
 // This class implements a traditional gradient descender. It looks at every

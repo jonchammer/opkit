@@ -14,7 +14,7 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
-namespace athena
+namespace opkit
 {
 
 // This class implements a hill climber. It doesn't rely on gradient information
