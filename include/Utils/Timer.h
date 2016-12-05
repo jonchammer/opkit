@@ -12,9 +12,14 @@ class Timer
 public:
     Timer()
     {
-        mStartTime = high_resolution_clock::now();
+        reset();
     }
 
+    void reset()
+    {
+        mStartTime = high_resolution_clock::now();
+    }
+    
     double getElapsedTimeSeconds()
     {
         auto end = high_resolution_clock::now();
