@@ -78,8 +78,13 @@ std::vector<double>& Matrix::newRow()
 
 void Matrix::newRows(size_t n)
 {
-	for(size_t i = 0; i < n; i++)
-		newRow();
+	size_t c = cols();
+	if (c == 0)
+		throw Ex("You must add some columns before you add any rows.");
+	size_t rc = rows();
+	m_data.resize(rc + n);
+	for (size_t i = 0; i < n; ++i)
+		m_data[rc + i].resize(c);
 }
 
 double Matrix::columnMean(size_t col) const

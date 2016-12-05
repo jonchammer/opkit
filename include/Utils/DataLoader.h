@@ -100,6 +100,79 @@ bool loadText(const string& filename, Matrix& features, Matrix& labels,
     return true;
 }
 
+// Saves the data in the given features and labels matrices into a single RAW data
+// file. Note that this is only useful for continuous attributes, since categorical
+// attributes are not supported.
+bool saveDataRaw(const string& filename, const Matrix& features, const Matrix& labels)
+{
+	ofstream dout;
+	dout.open(filename.c_str(), std::ios::binary);
+	if (!dout)
+	{
+		cout << "Unable to open file: " << filename << endl;
+		return false;
+	} 
+
+	const size_t N = features.rows();
+	const size_t M = features.cols();
+	const size_t C = labels.cols();
+
+	// Write the metadata
+	dout.write((char*) &N, sizeof(size_t));
+	dout.write((char*) &M, sizeof(size_t));
+	dout.write((char*) &C, sizeof(size_t));
+
+	// Write the actual data
+	for (size_t i = 0; i < N; ++i)
+	{
+		const vector<double>& featureRow = features.row(i);
+		const vector<double>& labelRow   = labels.row(i);
+
+		dout.write((char*) &featureRow[0], sizeof(double) * M);
+		dout.write((char*) &labelRow[0], sizeof(double) * C);
+	}
+
+	dout.close();
+	return true;
+}
+
+// Loads the data from a single RAW data file into the given features and labels matrices.
+// Note that this is only useful for continuous attributes, since categorical attributes 
+// are not supported.
+bool loadDataRaw(const string& filename, Matrix& features, Matrix& labels)
+{
+	ifstream din;
+	din.open(filename.c_str(), std::ios::binary);
+	if (!din)
+	{
+		cout << "Unable to open file: " << filename << endl;
+		return false;
+	} 
+
+	size_t N, M, C;
+
+	// Read the metadata
+	din.read((char*) &N, sizeof(size_t));
+	din.read((char*) &M, sizeof(size_t));
+	din.read((char*) &C, sizeof(size_t));
+
+	features.setSize(N, M);
+	labels.setSize(N, C);
+
+	// Read the actual data into the matrices
+	for (size_t i = 0; i < N; ++i)
+	{
+		const vector<double>& featureRow = features.row(i);
+		const vector<double>& labelRow   = labels.row(i);
+
+		din.read((char*) &featureRow[0], sizeof(double) * M);
+		din.read((char*) &labelRow[0], sizeof(double) * C);
+	}
+
+	din.close();
+	return true;
+}
+
 void print(const Matrix& features, const Matrix& labels)
 {
     cout << std::fixed << std::showpoint << std::setprecision(6);
