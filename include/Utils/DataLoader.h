@@ -18,6 +18,7 @@
 
 using std::vector;
 using std::ifstream;
+using std::ofstream;
 using std::string;
 using std::cout;
 using std::endl;

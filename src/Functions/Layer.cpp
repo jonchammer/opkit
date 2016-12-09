@@ -54,29 +54,32 @@ void FeedforwardLayer::feed(const vector<double>& x, vector<double>& y)
     y.resize(mOutputs, 0.0);
     
     // Cache these so we can avoid repeated pointer dereferencing
-    const vector<double>& params = *mParameters;
-    ActivationFunc func          = *getActivationFunction().first;
+    const double* params = mParameters->data();
+    const double* xData  = x.data();
+    double* net          = mNet.data();
+    ActivationFunc func  = *getActivationFunction().first;
     
     // Cache the beginning of the bias section of the parameters
     const size_t biasStart = mInputs * mOutputs;
     
     // The weights are arranged so they can be examined in order
     size_t weightIndex = 0;
-    
+
     for (size_t j = 0; j < mOutputs; ++j)
     {
         // sum = W * x
-        mNet[j] = 0.0;
-
+        double val = 0.0;
+ 
         for (size_t i = 0; i < mInputs; ++i)
         {
-            mNet[j] += params[mParametersStartIndex + weightIndex] * x[i];
+            val += params[mParametersStartIndex + weightIndex] * xData[i];
             weightIndex++;
         }
-        mNet[j] += params[mParametersStartIndex + biasStart + j];
+        val += params[mParametersStartIndex + biasStart + j];
+        net[j] = val;
         
         // y = a(sum + bias)
-        y[j] = func(mNet[j]);
+        y[j] = func(val);
         
         // Usually, y will be mActivation, but there's no need for that to be
         // the case. If not, we need to make sure to set mActivation manually,
@@ -103,17 +106,21 @@ void FeedforwardLayer::calculateDeltas(vector<double>& destination)
 
 void FeedforwardLayer::calculateGradient(const vector<double>& input, double* gradient)
 {
+    // Cache the raw pointer so we can avoid calling vector::operator[]
+    const double* x      = input.data();
+    const double* deltas = mDeltas.data();
+    
     // Calculate gradient for the weights
     size_t index = 0;
     for (size_t i = 0; i < mOutputs; ++i)
     {
         for (size_t j = 0; j < mInputs; ++j)
-            gradient[index++] += input[j] * mDeltas[i];
+            gradient[index++] += x[j] * deltas[i];
     }
 
     // Calculate gradient for the biases
     for (size_t i = 0; i < mOutputs; ++i)
-        gradient[index++] += mDeltas[i];
+        gradient[index++] += deltas[i];
 }
 
 size_t FeedforwardLayer::getNumParameters()       
