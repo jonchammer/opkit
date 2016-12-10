@@ -22,34 +22,34 @@ namespace opkit
 // dimension and chooses the one that produces the best results. This method 
 // converges extremely quickly for convex functions, but is more susceptible to 
 // getting stuck in local minima than some other approaches.
-template <class T>
-class HillClimber : public Trainer<T>
+template <class T, class Model>
+class HillClimber : public Trainer<T, Model>
 {
 public:
-    HillClimber(ErrorFunction<T>* function) : Trainer(function)
+    HillClimber(ErrorFunction<T, Model>* function) : Trainer<T, Model>(function)
     {
         mStepSize.resize(function->getNumParameters());
         std::fill(mStepSize.begin(), mStepSize.end(), 0.1);
     }
     
-    void iterate(const Matrix& features, const Matrix& labels)
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
-        const static double CHANGES [4] = {-1.25, -0.8, 0.8, 1.25};
+        const static T CHANGES [4] = {-1.25, -0.8, 0.8, 1.25};
         
         // Try 4 change values and pick the one that does the best
         // for each parameter
-        vector<double>& params = Trainer<T>::function->getParameters();
+        vector<T>& params = Trainer<T, Model>::function->getParameters();
         for (size_t i = 0; i < params.size(); ++i)
         {
-            double orig     = params[i];
-            int minIndex    = -1;
-            double minError = Trainer<T>::function->evaluate(features, labels);
+            T orig        = params[i];
+            int minIndex  = -1;
+            T minError    = Trainer<T, Model>::function->evaluate(features, labels);
 
             // Try each change and record the best one.
             for (int j = 0; j < 4; ++j)
             {
                 params[i]   += (CHANGES[j] * mStepSize[i]);
-                double error = Trainer<T>::function->evaluate(features, labels);
+                T error      = Trainer<T, Model>::function->evaluate(features, labels);
                 params[i]    = orig;
 
                 if (error < minError)
@@ -74,7 +74,7 @@ public:
     }
     
 private:
-    vector<double> mStepSize; // The step size in each dimension
+    vector<T> mStepSize; // The step size in each dimension
 };
 
 };

@@ -26,52 +26,52 @@ namespace opkit
 // to improve the convergence rate. Values should be small (e.g. very close to
 // 0.0) to be effective. When the momentum value is set to 0.0, no momentum will
 // be used.
-template <class T>
-class GradientDescent : public Trainer<T>
+template <class T, class Model>
+class GradientDescent : public Trainer<T, Model>
 {
 public:
-    const double DEFAULT_LEARNING_RATE = 1E-4;
-    const double DEFAULT_MOMENTUM      = 1E-3;
+    const T DEFAULT_LEARNING_RATE = 1E-4;
+    const T DEFAULT_MOMENTUM      = 1E-3;
     
-    GradientDescent(ErrorFunction<T>* function) : 
-        Trainer<T>(function), 
+    GradientDescent(ErrorFunction<T, Model>* function) : 
+        Trainer<T, Model>(function), 
         mVelocity(function->getNumParameters(), 1.0),
         mLearningRate(DEFAULT_LEARNING_RATE),
         mMomentum(DEFAULT_MOMENTUM) {}
 
-    void iterate(const Matrix& features, const Matrix& labels)
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
-        vector<double>& params = Trainer<T>::function->getParameters();
-        const size_t N         = params.size();
+        vector<T>& params = Trainer<T, Model>::function->getParameters();
+        const size_t N    = params.size();
         
         // First step for Nesterov momentum
         for (size_t i = 0; i < N; ++i)
             params[i] -= mMomentum * mVelocity[i];
         
         // Estimate the complete gradient
-        static vector<double> gradient;
-        Trainer<T>::function->calculateGradientParameters(features, labels, gradient);
+        static vector<T> gradient;
+        Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
 
         // Descend the gradient (and apply momentum)
         for (size_t i = 0; i < N; ++i)
         {
-            double oldV  = mVelocity[i];
+            T oldV       = mVelocity[i];
             mVelocity[i] = mMomentum * oldV + mLearningRate * gradient[i];
             params[i]    = params[i] + (mMomentum * oldV) - mVelocity[i];
         }
     }
 
     // Setters / Getters
-    void setLearningRate(const double learningRate) { mLearningRate = learningRate; }
-    double getLearningRate() const                  { return mLearningRate;         }
+    void setLearningRate(const T learningRate) { mLearningRate = learningRate; }
+    T getLearningRate() const                  { return mLearningRate;         }
 
-    void setMomentum(const double momentum)         { mMomentum = momentum; }
-    double getMomentum() const                      { return mMomentum;     }
+    void setMomentum(const T momentum)         { mMomentum = momentum; }
+    T getMomentum() const                      { return mMomentum;     }
     
 private:
-    vector<double> mVelocity;
-    double mLearningRate;
-    double mMomentum;
+    vector<T> mVelocity;
+    T mLearningRate;
+    T mMomentum;
 };
 
 };

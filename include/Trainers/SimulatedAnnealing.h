@@ -41,22 +41,22 @@ namespace opkit
 // This implementation also maintains the best value that has been seen so far.
 // The optimal value will always be returned, even if the algorithm is currently
 // searching a different part of the search space.
-template <class T>
-class SimulatedAnnealing : public Trainer<T>
+template <class T, class Model>
+class SimulatedAnnealing : public Trainer<T, Model>
 {
 public:
     
     // Default values for the various meta parameters
-    constexpr static double DEFAULT_INITIAL_TEMPERATURE      = 1.0;
-    constexpr static double DEFAULT_FINAL_TEMPERATURE        = 0.00001;
-    constexpr static double DEFAULT_TEMPERATURE_COOLING_RATE = 0.9;
-    constexpr static double DEFAULT_INITIAL_VARIANCE         = 1.0;
-    constexpr static double DEFAULT_VARIANCE_COOLING_RATE    = 0.9;
+    constexpr static T DEFAULT_INITIAL_TEMPERATURE      = 1.0;
+    constexpr static T DEFAULT_FINAL_TEMPERATURE        = 0.00001;
+    constexpr static T DEFAULT_TEMPERATURE_COOLING_RATE = 0.9;
+    constexpr static T DEFAULT_INITIAL_VARIANCE         = 1.0;
+    constexpr static T DEFAULT_VARIANCE_COOLING_RATE    = 0.9;
     constexpr static int    DEFAULT_EQUILIBRIUM_ITERATIONS   = 1000;
         
-    SimulatedAnnealing(ErrorFunction<T>* function) :
+    SimulatedAnnealing(ErrorFunction<T, Model>* function) :
         // Superclass initialization
-        Trainer(function),
+        Trainer<T, Model>(function),
     
         // Initialize meta parameters
         mInitialTemperature(DEFAULT_INITIAL_TEMPERATURE),
@@ -69,10 +69,10 @@ public:
         // Initialize state information
         mTemperature(mInitialTemperature), 
         mCurrentVariance(mInitialVariance),
-        mCurrentCost(std::numeric_limits<double>::max()),
+        mCurrentCost(std::numeric_limits<T>::max()),
             
         // Initialize optimal solution information
-        mOptimalCost(std::numeric_limits<double>::max()),
+        mOptimalCost(std::numeric_limits<T>::max()),
             
         // Initialize random number generators
         mUniform(0.0, 1.0), 
@@ -81,15 +81,15 @@ public:
         // Do nothing
     }
     
-    void iterate(const Matrix& features, const Matrix& labels)
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialization
-        vector<double>& params = Trainer<T>::function->getParameters();
-        mCurrentCost           = function->evaluate(features, labels);
+        vector<T>& params      = Trainer<T, Model>::function->getParameters();
+        mCurrentCost           = Trainer<T, Model>::function->evaluate(features, labels);
         mTemperature           = mInitialTemperature;
         mCurrentVariance       = mInitialVariance;
         
-        vector<double> candidate(params.size());
+        vector<T> candidate(params.size());
         mOptimalSolution.resize(params.size());
         
         while (mTemperature > mFinalTemperature)
@@ -103,7 +103,7 @@ public:
                 
                 // Evaluate the new point
                 params.swap(candidate);
-                double proposedCost = Trainer<T>::function->evaluate(features, labels);
+                T proposedCost = Trainer<T, Model>::function->evaluate(features, labels);
 
                 // Save this solution if it is the best we've seen so far
                 if (proposedCost < mOptimalCost)
@@ -133,39 +133,39 @@ public:
     }
     
     // Setters
-    void setInitialTemperature(double temperature)   { mInitialTemperature       = temperature; }
-    void setFinalTemperature(double temperature)     { mFinalTemperature         = temperature; }
-    void setTemperatureCoolingRate(double rate)      { mTemperatureCoolingRate   = rate;        }
-    void setInitialVariance(double variance)         { mInitialVariance          = variance;    }
-    void setVarianceCoolingRate(double rate)         { mVarianceCoolingRate      = rate;        }
+    void setInitialTemperature(T temperature)   { mInitialTemperature       = temperature; }
+    void setFinalTemperature(T temperature)     { mFinalTemperature         = temperature; }
+    void setTemperatureCoolingRate(T rate)      { mTemperatureCoolingRate   = rate;        }
+    void setInitialVariance(T variance)         { mInitialVariance          = variance;    }
+    void setVarianceCoolingRate(T rate)         { mVarianceCoolingRate      = rate;        }
     void setNumEquilibriumIterations(int iterations) { mNumEquilibriumIterations = iterations;  }
     
 private:
     
     // Meta parameters
-    double mInitialTemperature;     // The initial temperature of the system.
-    double mFinalTemperature;       // The temperature at which we stop. Close to 0.
-    double mTemperatureCoolingRate; // The rate at which the temperature decreases after equilibrium is reached. [0, 1)
-    double mInitialVariance;        // How far away to look for neighbors at the beginning of the algorithm.
-    double mVarianceCoolingRate;    // The rate at which the variance is reduced as the algorithm proceeds.
+    T mInitialTemperature;     // The initial temperature of the system.
+    T mFinalTemperature;       // The temperature at which we stop. Close to 0.
+    T mTemperatureCoolingRate; // The rate at which the temperature decreases after equilibrium is reached. [0, 1)
+    T mInitialVariance;        // How far away to look for neighbors at the beginning of the algorithm.
+    T mVarianceCoolingRate;    // The rate at which the variance is reduced as the algorithm proceeds.
     int mNumEquilibriumIterations;  // The number of iterations performed before equilibrium is reached.
     
     // State information
-    double mTemperature;
-    double mCurrentVariance;
-    double mCurrentCost;
+    T mTemperature;
+    T mCurrentVariance;
+    T mCurrentCost;
 
     // Information about the best solution found so far
-    double mOptimalCost;
-    vector<double> mOptimalSolution;
+    T mOptimalCost;
+    vector<T> mOptimalSolution;
     
     // Random number creators
     std::default_random_engine mRandGenerator;        
-    std::uniform_real_distribution<double> mUniform; 
+    std::uniform_real_distribution<T> mUniform; 
     std::normal_distribution<> mNormal;
     
     // Helper functions
-    double getAcceptanceProbability(double proposedCost)
+    T getAcceptanceProbability(T proposedCost)
     {
         // Better solutions are accepted unconditionally
         if (proposedCost < mCurrentCost) return 1.0;

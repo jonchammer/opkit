@@ -31,78 +31,78 @@ namespace opkit
 // This implementation reduces to Adagrad when Decay = 0.0 and Momentum = 0.0.
 // See: http://climin.readthedocs.io/en/latest/rmsprop.html
 //      http://sebastianruder.com/optimizing-gradient-descent/index.html
-template <class T>
-class RMSProp : public Trainer<T>
+template <class T, class Model>
+class RMSProp : public Trainer<T, Model>
 {
 public:
-    const double DEFAULT_DECAY         = 0.90;
-    const double DEFAULT_LEARNING_RATE = 1E-4;
-    const double DEFAULT_MOMENTUM      = 1E-3;
+    const T DEFAULT_DECAY         = 0.90;
+    const T DEFAULT_LEARNING_RATE = 1E-4;
+    const T DEFAULT_MOMENTUM      = 1E-3;
     
-    RMSProp(ErrorFunction<T>* function) : 
-        Trainer<T>(function), 
+    RMSProp(ErrorFunction<T, Model>* function) : 
+        Trainer<T, Model>(function), 
         mRMS(function->getNumParameters(), 1.0),
         mVelocity(function->getNumParameters(), 1.0),
         mDecay(DEFAULT_DECAY),
         mLearningRate(DEFAULT_LEARNING_RATE),
         mMomentum(DEFAULT_MOMENTUM) {}
 
-    void iterate(const Matrix& features, const Matrix& labels)
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
-        vector<double>& params = Trainer<T>::function->getParameters();
-        const size_t N         = params.size();
+        vector<T>& params = Trainer<T, Model>::function->getParameters();
+        const size_t N    = params.size();
         
         for (size_t i = 0; i < N; ++i)
             params[i] -= mMomentum * mVelocity[i];
         
-        static vector<double> gradient;
-        Trainer<T>::function->calculateGradientParameters(features, labels, gradient);
+        static vector<T> gradient;
+        Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
         
         for (size_t i = 0; i < N; ++i)
         {
             mRMS[i]      = (1.0 - mDecay) * gradient[i] * gradient[i] + mDecay * mRMS[i];
-            double oldV  = mVelocity[i];
+            T oldV       = mVelocity[i];
             mVelocity[i] = mMomentum * oldV + (mLearningRate / std::sqrt(mRMS[i] + 1E-8) * gradient[i]);
             params[i]    = params[i] + (mMomentum * oldV) - mVelocity[i];
         }
     }
     
-    void setDecay(const double decay)
+    void setDecay(const T decay)
     {
         mDecay = decay;
     }
     
-    void setLearningRate(const double learningRate)
+    void setLearningRate(const T learningRate)
     {
         mLearningRate = learningRate;
     }
     
-    void setMomentum(const double momentum)
+    void setMomentum(const T momentum)
     {
         mMomentum = momentum;
     }
     
-    double getDecay() const
+    T getDecay() const
     {
         return mDecay;
     }
     
-    double getLearningRate() const
+    T getLearningRate() const
     {
         return mLearningRate;
     }
     
-    double getMomentum() const
+    T getMomentum() const
     {
         return mMomentum;
     }
     
 private:
-    vector<double> mRMS;
-    vector<double> mVelocity;
-    double mDecay;
-    double mLearningRate;
-    double mMomentum;
+    vector<T> mRMS;
+    vector<T> mVelocity;
+    T mDecay;
+    T mLearningRate;
+    T mMomentum;
 };
 
 };

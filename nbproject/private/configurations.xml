@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configurationDescriptor version="97">
+<configurationDescriptor version="100">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="0">
       <df name="build">
         <df name="CMakeFiles">
-          <df name="3.6.1">
+          <df name="3.5.1">
             <df name="CompilerIdC">
               <in>CMakeCCompilerId.c</in>
             </df>
@@ -12,11 +12,17 @@
               <in>CMakeCXXCompilerId.cpp</in>
             </df>
           </df>
+          <df name="athena.dir">
+            <df name="src">
+              <df name="Functions">
+              </df>
+              <df name="Utils">
+              </df>
+            </df>
+          </df>
           <df name="CMakeTmp">
           </df>
-          <df name="optimization_toolkit.dir">
-            <df name="demos">
-            </df>
+          <df name="opkit.dir">
             <df name="src">
               <df name="Functions">
               </df>
@@ -32,6 +38,24 @@
       </df>
       <df name="demos">
         <df name="build">
+          <df name="CMakeFiles">
+            <df name="3.5.1">
+              <df name="CompilerIdC">
+                <in>CMakeCCompilerId.c</in>
+              </df>
+              <df name="CompilerIdCXX">
+                <in>CMakeCXXCompilerId.cpp</in>
+              </df>
+            </df>
+            <df name="CMakeTmp">
+            </df>
+            <df name="demo.dir">
+              <df name="src">
+              </df>
+            </df>
+            <in>feature_tests.c</in>
+            <in>feature_tests.cxx</in>
+          </df>
         </df>
         <df name="src">
           <in>activationTest.cpp</in>
@@ -86,8 +110,6 @@
           <in>Function.cpp</in>
           <in>Layer.cpp</in>
           <in>NeuralNetwork.cpp</in>
-        </df>
-        <df name="Trainers">
         </df>
         <df name="Utils">
           <in>PrettyPrinter.cpp</in>

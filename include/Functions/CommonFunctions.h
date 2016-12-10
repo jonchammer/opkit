@@ -16,28 +16,29 @@ namespace opkit
 {
     
 // This is a model representing a standard 2D line: y = mx + b
-class SimpleLinear : public StandardFunction
+template <class T>
+class SimpleLinear : public StandardFunction<T>
 {
 public:
-    SimpleLinear() : StandardFunction(1, 1, 2) {}
+    SimpleLinear() : StandardFunction<T>(1, 1, 2) {}
 
-    void evaluate(const vector<double>& input, vector<double>& output)
+    void evaluate(const vector<T>& input, vector<T>& output)
     {
-        output.resize(mOutputs);
+        output.resize(StandardFunction<T>::mOutputs);
         
-        double m = mParameters[0];
-        double b = mParameters[1];
+        T m = StandardFunction<T>::mParameters[0];
+        T b = StandardFunction<T>::mParameters[1];
         
         output[0] = m * input[0] + b;
     }
     
-    void calculateJacobianInputs(const vector<double>& /*x*/, Matrix& jacobian)
+    void calculateJacobianInputs(const vector<T>& /*x*/, Matrix<T>& jacobian)
     {
         jacobian.setSize(1, 1);
-        jacobian[0][0] = mParameters[0];
+        jacobian[0][0] = StandardFunction<T>::mParameters[0];
     }
     
-    void calculateJacobianParameters(const vector<double>& x, Matrix& jacobian)
+    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
     {
         jacobian.setSize(1, 2);
         jacobian[0][0] = x[0];
@@ -46,29 +47,30 @@ public:
 };
 
 // This is a model representing a standard 2D quadratic: y = ax^2 + bx + c
-class SimpleQuadratic : public StandardFunction
+template <class T>
+class SimpleQuadratic : public StandardFunction<T>
 {
 public:
-    SimpleQuadratic() : StandardFunction(1, 1, 3) {}
+    SimpleQuadratic() : StandardFunction<T>(1, 1, 3) {}
     
-    void evaluate(const vector<double>& input, vector<double>& output)
+    void evaluate(const vector<T>& input, vector<T>& output)
     {
-        output.resize(mOutputs);
+        output.resize(StandardFunction<T>::mOutputs);
         
-        double a = mParameters[0];
-        double b = mParameters[1];
-        double c = mParameters[2];
+        T a = StandardFunction<T>::mParameters[0];
+        T b = StandardFunction<T>::mParameters[1];
+        T c = StandardFunction<T>::mParameters[2];
         
         output[0] = (a * input[0] * input[0]) + (b * input[0]) + c;
     }
     
-    void calculateJacobianInputs(const vector<double>& x, Matrix& jacobian)
+    void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
     {
         jacobian.setSize(1, 1);
-        jacobian[0][0] = 2 * mParameters[0] * x[0] + mParameters[1];
+        jacobian[0][0] = 2 * StandardFunction<T>::mParameters[0] * x[0] + StandardFunction<T>::mParameters[1];
     }
     
-    void calculateJacobianParameters(const vector<double>& x, Matrix& jacobian)
+    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
     {
         jacobian.setSize(1, 3);
         jacobian[0][0] = x[0] * x[0];
@@ -80,20 +82,21 @@ public:
 // This is a model representing an arbitrary 2D polynomial of the form
 // y = ax^N + bx^N-1 + c^N-2 + ... pN + q. The degree of the polynomial
 // is provided by the user.
-class SimplePolynomial : public StandardFunction
+template <class T>
+class SimplePolynomial : public StandardFunction<T>
 {
 public:
-    SimplePolynomial(int degree) : StandardFunction(1, 1, degree + 1) {}
+    SimplePolynomial(int degree) : StandardFunction<T>(1, 1, degree + 1) {}
     
-    void evaluate(const vector<double>& input, vector<double>& output)
+    void evaluate(const vector<T>& input, vector<T>& output)
     {
         output.resize(1);
 
-        double sum = 1;
+        T sum = 1.0;
         output[0]  = 0.0;
-        for (int i = mParameters.size() - 1; i >= 0; --i)
+        for (int i = StandardFunction<T>::mParameters.size() - 1; i >= 0; --i)
         {
-            output[0] += mParameters[i] * sum;
+            output[0] += StandardFunction<T>::mParameters[i] * sum;
             sum       *= input[0];
         }
     }
@@ -115,28 +118,29 @@ public:
 //
 // The matrix weights represent the strength of the connection between the
 // ith input and the jth output (wij).
-class MultivariateLinear : public StandardFunction
+template <class T>
+class MultivariateLinear : public StandardFunction<T>
 {
 public:
     MultivariateLinear(int inputs, int outputs) : 
-        StandardFunction(inputs, outputs, inputs * outputs + outputs) {}
+        StandardFunction<T>(inputs, outputs, inputs * outputs + outputs) {}
     
-    void evaluate(const vector<double>& input, vector<double>& output)
+    void evaluate(const vector<T>& input, vector<T>& output)
     {
-        output.resize(mOutputs);
+        output.resize(StandardFunction<T>::mOutputs);
         std::fill(output.begin(), output.end(), 0.0);
         
         // The biases are the last 'mOutputs' terms in the parameter list
-        int biasStart = mParameters.size() - mOutputs;
+        int biasStart = StandardFunction<T>::mParameters.size() - StandardFunction<T>::mOutputs;
         
-        for (size_t j = 0; j < mOutputs; ++j)
+        for (size_t j = 0; j < StandardFunction<T>::mOutputs; ++j)
         {
             // M*x
-            for (size_t i = 0; i < mInputs; ++i)
-                output[j] += mParameters[i * mOutputs + j] * input[i];
+            for (size_t i = 0; i < StandardFunction<T>::mInputs; ++i)
+                output[j] += StandardFunction<T>::mParameters[i * StandardFunction<T>::mOutputs + j] * input[i];
             
             // + b
-            output[j] += mParameters[biasStart + j];
+            output[j] += StandardFunction<T>::mParameters[biasStart + j];
         }
     }
 };

@@ -28,10 +28,11 @@ namespace opkit
     
 // Loads data from the given .ARFF file into 'features' and 'labels'.
 // The data will be split based on the last 'numLabels' columns.
-bool loadArff(const string& filename, Matrix& features, 
-    Matrix& labels, int numLabels)
+template <class T>
+bool loadArff(const string& filename, Matrix<T>& features, 
+    Matrix<T>& labels, int numLabels)
 {
-    Matrix temp;
+    Matrix<T> temp;
     try
     {
         temp.loadARFF(filename);
@@ -54,7 +55,8 @@ bool loadArff(const string& filename, Matrix& features,
 // The number of feature dimensions and the number of label dimensions
 // must be given ahead of time, as well any delimiters that separate
 // sample entries. (Spaces are the default delimiters.)
-bool loadText(const string& filename, Matrix& features, Matrix& labels, 
+template <class T>
+bool loadText(const string& filename, Matrix<T>& features, Matrix<T>& labels, 
     const int numFeatures, const int numLabels, const string& delimiters = " ")
 {
     // Open the file
@@ -77,13 +79,13 @@ bool loadText(const string& filename, Matrix& features, Matrix& labels,
     while (getline(din, line))
     {
         // Add a new row to both matrices
-        vector<double>& featureRow = features.newRow();
-        vector<double>& labelRow   = labels.newRow();
+        vector<T>& featureRow = features.newRow();
+        vector<T>& labelRow   = labels.newRow();
         
         // Split the line into pieces based on the delimiters
         char* lineC = (char*) line.c_str();
        
-        double val = atof(strtok(lineC, delimitersC));
+        T val = atof(strtok(lineC, delimitersC));
         for (int i = 0; i < numFeatures; ++i)
         {
             featureRow[i] = val;
@@ -104,7 +106,8 @@ bool loadText(const string& filename, Matrix& features, Matrix& labels,
 // Saves the data in the given features and labels matrices into a single RAW data
 // file. Note that this is only useful for continuous attributes, since categorical
 // attributes are not supported.
-bool saveDataRaw(const string& filename, const Matrix& features, const Matrix& labels)
+template <class T>
+bool saveDataRaw(const string& filename, const Matrix<T>& features, const Matrix<T>& labels)
 {
 	ofstream dout;
 	dout.open(filename.c_str(), std::ios::binary);
@@ -126,11 +129,11 @@ bool saveDataRaw(const string& filename, const Matrix& features, const Matrix& l
 	// Write the actual data
 	for (size_t i = 0; i < N; ++i)
 	{
-		const vector<double>& featureRow = features.row(i);
-		const vector<double>& labelRow   = labels.row(i);
+		const vector<T>& featureRow = features.row(i);
+		const vector<T>& labelRow   = labels.row(i);
 
-		dout.write((char*) &featureRow[0], sizeof(double) * M);
-		dout.write((char*) &labelRow[0], sizeof(double) * C);
+		dout.write((char*) &featureRow[0], sizeof(T) * M);
+		dout.write((char*) &labelRow[0],   sizeof(T) * C);
 	}
 
 	dout.close();
@@ -140,7 +143,8 @@ bool saveDataRaw(const string& filename, const Matrix& features, const Matrix& l
 // Loads the data from a single RAW data file into the given features and labels matrices.
 // Note that this is only useful for continuous attributes, since categorical attributes 
 // are not supported.
-bool loadDataRaw(const string& filename, Matrix& features, Matrix& labels)
+template <class T>
+bool loadDataRaw(const string& filename, Matrix<T>& features, Matrix<T>& labels)
 {
 	ifstream din;
 	din.open(filename.c_str(), std::ios::binary);
@@ -163,25 +167,26 @@ bool loadDataRaw(const string& filename, Matrix& features, Matrix& labels)
 	// Read the actual data into the matrices
 	for (size_t i = 0; i < N; ++i)
 	{
-		const vector<double>& featureRow = features.row(i);
-		const vector<double>& labelRow   = labels.row(i);
+		const vector<T>& featureRow = features.row(i);
+		const vector<T>& labelRow   = labels.row(i);
 
-		din.read((char*) &featureRow[0], sizeof(double) * M);
-		din.read((char*) &labelRow[0], sizeof(double) * C);
+		din.read((char*) &featureRow[0], sizeof(T) * M);
+		din.read((char*) &labelRow[0],   sizeof(T) * C);
 	}
 
 	din.close();
 	return true;
 }
 
-void print(const Matrix& features, const Matrix& labels)
+template <class T>
+void print(const Matrix<T>& features, const Matrix<T>& labels)
 {
     cout << std::fixed << std::showpoint << std::setprecision(6);
         
     for (size_t row = 0; row < features.rows(); ++row)
     {
-        const vector<double>& feature = features.row(row);
-        const vector<double>& label   = labels.row(row);
+        const vector<T>& feature = features.row(row);
+        const vector<T>& label   = labels.row(row);
         
         cout << "[ ";
         for (size_t col = 0; col < feature.size(); ++col)

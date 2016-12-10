@@ -15,7 +15,7 @@ namespace opkit
 {
 
 // TODO: Add error reporting
-template <class T>
+template <class T, class Model>
 class Trainer
 {
 public:
@@ -23,7 +23,7 @@ public:
      * Every Trainer must have a function on which to operate.
      * @param function. The function to be optimized.
      */
-    Trainer(ErrorFunction<T>* function) : function(function) {};
+    Trainer(ErrorFunction<T, Model>* function) : function(function) {};
     
     /**
      * Default destructor
@@ -35,13 +35,13 @@ public:
      * semantics of this call will depend largely on the underlying
      * implementation.
      */
-    virtual void iterate(const Matrix& features, const Matrix& labels) = 0;
+    virtual void iterate(const Matrix<T>& features, const Matrix<T>& labels) = 0;
     
     // Setters / Getters
-    ErrorFunction<T>* getFunction() {return function;}
+    ErrorFunction<T, Model>* getFunction() {return function;}
     
 protected:
-    ErrorFunction<T>* function; // The function we are working with
+    ErrorFunction<T, Model>* function; // The function we are working with
 };
 
 };

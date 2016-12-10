@@ -16,10 +16,11 @@ using std::vector;
 namespace opkit
 {
 
+template <class T>
 class BatchIterator
 {
 public:
-    BatchIterator(Matrix& features, Matrix& labels, size_t batchSize) :
+    BatchIterator(Matrix<T>& features, Matrix<T>& labels, size_t batchSize) :
         mFeatures(features),
         mLabels(labels),
         mBatchSize(batchSize),
@@ -42,14 +43,14 @@ public:
         return mOrderIndex < mOrder.size();
     }
     
-    void lock(Matrix*& features, Matrix*& labels)
+    void lock(Matrix<T>*& features, Matrix<T>*& labels)
     {        
         // Swap data in
         for (size_t i = mOrderIndex; (i < mOrderIndex + mBatchSize) && (i < mOrder.size()); ++i)
         {
             // Prepare this batch sample
-            vector<double>& origFeature = mFeatures[mOrder[i]];
-            vector<double>& origLabel   = mLabels[mOrder[i]];
+            vector<T>& origFeature = mFeatures[mOrder[i]];
+            vector<T>& origLabel   = mLabels[mOrder[i]];
 
             // Swap the current feature/label pair into the working matrices
             mBatchFeatures[i - mOrderIndex].swap(origFeature);
@@ -66,8 +67,8 @@ public:
         for (size_t i = mOrderIndex; (i < mOrderIndex + mBatchSize) && (i < mOrder.size()); ++i)
         {
             // Prepare this batch sample
-            vector<double>& origFeature = mFeatures[mOrder[i]];
-            vector<double>& origLabel   = mLabels[mOrder[i]];
+            vector<T>& origFeature = mFeatures[mOrder[i]];
+            vector<T>& origLabel   = mLabels[mOrder[i]];
 
             // Swap the current feature/label pair into the working matrices
             mBatchFeatures[i - mOrderIndex].swap(origFeature);
@@ -88,8 +89,8 @@ public:
     }
     
 private:
-    Matrix& mFeatures, mLabels;
-    Matrix mBatchFeatures, mBatchLabels;
+    Matrix<T>& mFeatures, mLabels;
+    Matrix<T> mBatchFeatures, mBatchLabels;
     size_t mBatchSize;
     
     vector<size_t> mOrder;

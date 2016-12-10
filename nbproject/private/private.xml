@@ -10,12 +10,7 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/include/Utils/DataNormalizer.h</file>
-            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/TODO.txt</file>
-            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/include/Trainers/RMSProp.h</file>
-            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/include/Tensor3D.h</file>
-            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/demos/mnistConvolutionExample.cpp</file>
-            <file>file:/D:/My%20Documents/NetBeansProjects/OptimizationToolkit/include/Trainers/GradientDescent.h</file>
+            <file>file:/home/jhammer/projects/OptimizationToolkit/include/Utils/Timer.h</file>
         </group>
     </open-files>
 </project-private>

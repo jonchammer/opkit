@@ -65,24 +65,24 @@ struct EvolutionaryOptimizerParams
 // Evolutionary optimization is well suited to problems in which derivative
 // information is unavailable or expensive to calculate, but it tends to be
 // slower than some other methods (e.g. Gradient Descent) in general.
-template <class T>
-class EvolutionaryOptimizer<T> : public Trainer<T>
+template <class T, class Model>
+class EvolutionaryOptimizer : public Trainer<T, Model>
 {
 public:
     
     // Constructors
-    EvolutionaryOptimizer(ErrorFunction<T>* function, EvolutionaryOptimizerParams& params);
-    void iterate(const Matrix& features, const Matrix& labels);
+    EvolutionaryOptimizer(ErrorFunction<T, Model>* function, EvolutionaryOptimizerParams& params);
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels);
  
 private:
     // Members
-    Matrix mPopulation;                    // The population of candidate solutions
+    Matrix<T> mPopulation;                 // The population of candidate solutions
     EvolutionaryOptimizerParams* mParams;  // The meta parameters to use for the simulation
-    vector<double> mErrors;                // The fitness value of each member of the population
-    vector<double> mInvErrors;             // 1.0 / mFitnesses[i] (used for run-time optimization)
+    vector<T> mErrors;                     // The fitness value of each member of the population
+    vector<T> mInvErrors;                  // 1.0 / mFitnesses[i] (used for run-time optimization)
     
-    double mMinError;                      // The error of the best member of the population
-    vector<double> mOptimalSolution;       // Our best estimate of the optimal solution
+    T mMinError;                      // The error of the best member of the population
+    vector<T> mOptimalSolution;       // Our best estimate of the optimal solution
   
     // Random number creators
     std::default_random_engine mRandGenerator;        
@@ -97,33 +97,33 @@ private:
 
     // Replace the vector at index with a new member (found using crossover, 
     // interpolation, or extrapolation)
-    void repopulate(int index, const Matrix& features, const Matrix& labels);
+    void repopulate(int index, const Matrix<T>& features, const Matrix<T>& labels);
 
     // Choose two vectors at random to fight to the death. The loser is repopulated.
-    void tournament(const Matrix& features, const Matrix& labels);
+    void tournament(const Matrix<T>& features, const Matrix<T>& labels);
 
     // Mutate a single given element of the given vector
     void mutateSingle(int row, int column, bool reevaluateFitness, 
-        const Matrix& features, const Matrix& labels);
+        const Matrix<T>& features, const Matrix<T>& labels);
 
     // Mutates all elements of a random vector
-    void mutateAll(const Matrix& features, const Matrix& labels);
+    void mutateAll(const Matrix<T>& features, const Matrix<T>& labels);
 
     // Returns the best fitness (lowest error) in the entire population
-    double getBestError();
+    T getBestError();
 
     // Returns the average error over the entire population
-    double getAverageError();
+    T getAverageError();
     
     // Updates information about the given population member (reevaluating its
     // fitness and comparing it to the optimal answer).
-    void evaluateMember(int index, const Matrix& features, const Matrix& labels);
+    void evaluateMember(int index, const Matrix<T>& features, const Matrix<T>& labels);
 };
 
-template <class T>
-EvolutionaryOptimizer<T>::EvolutionaryOptimizer(ErrorFunction<T>* function, 
+template <class T, class Model>
+EvolutionaryOptimizer<T, Model>::EvolutionaryOptimizer(ErrorFunction<T, Model>* function, 
     EvolutionaryOptimizerParams& params) : 
-    Trainer(function), 
+    Trainer<T, Model>(function), 
         
     // Initialize random number generators
     mUniform(0.0, 1.0), 
@@ -154,8 +154,8 @@ EvolutionaryOptimizer<T>::EvolutionaryOptimizer(ErrorFunction<T>* function,
 	mParams = &params;
 }
 
-template <class T>
-void EvolutionaryOptimizer<T>::chooseParents(int& out1, int& out2)
+template <class T, class Model>
+void EvolutionaryOptimizer<T, Model>::chooseParents(int& out1, int& out2)
 {
 	// Find the sum of the inverse errors
 	double sum = std::accumulate(mInvErrors.begin(), mInvErrors.end(), 0.0);
@@ -185,9 +185,9 @@ void EvolutionaryOptimizer<T>::chooseParents(int& out1, int& out2)
 	}
 }
 
-template <class T>
-void EvolutionaryOptimizer<T>::repopulate(int index, const Matrix& features, 
-    const Matrix& labels)
+template <class T, class Model>
+void EvolutionaryOptimizer<T, Model>::repopulate(int index, 
+    const Matrix<T>& features, const Matrix<T>& labels)
 {
 	// Fitter parents are more likely to be chosen to repopulate
 	int parent1 = -1, parent2 = -1;
@@ -213,7 +213,7 @@ void EvolutionaryOptimizer<T>::repopulate(int index, const Matrix& features,
 		for (size_t j = 0; j < mPopulation.cols(); ++j)
 		{
 			double w              = mUniform(mRandGenerator);
-			double val            = w * mPopulation[parent1][j] + 
+			T val                 = w * mPopulation[parent1][j] + 
                                     (1.0 - w) * mPopulation[parent2][j];
 			mPopulation[index][j] = val;
 		}
@@ -227,7 +227,7 @@ void EvolutionaryOptimizer<T>::repopulate(int index, const Matrix& features,
 			double range = mParams->repopulate_extrapolate_range;
 
 			double w              = mUniform(mRandGenerator) * range - range/2.0;
-			double val            = w * mPopulation[parent1][j] + 
+			T val                 = w * mPopulation[parent1][j] + 
                                     (1.0 - w) * mPopulation[parent2][j];
 			mPopulation[index][j] = val;
 		}
@@ -237,17 +237,16 @@ void EvolutionaryOptimizer<T>::repopulate(int index, const Matrix& features,
 	evaluateMember(index, features, labels);
 }
 
-template <class T>
-void EvolutionaryOptimizer<T>::tournament(const Matrix& features, 
-    const Matrix& labels)
+template <class T, class Model>
+void EvolutionaryOptimizer<T, Model>::tournament(const Matrix<T>& features, const Matrix<T>& labels)
 {
 	// Pick two candidates
 	int c1 = (int)(mUniform(mRandGenerator) * mPopulation.rows());
 	int c2 = (int)(mUniform(mRandGenerator) * mPopulation.rows());
 
 	// Evaluate fitness of both
-	double e1 = mErrors[c1];
-	double e2 = mErrors[c2];
+	T e1 = mErrors[c1];
+	T e2 = mErrors[c2];
 
 	int loser = -1;
 
@@ -262,9 +261,9 @@ void EvolutionaryOptimizer<T>::tournament(const Matrix& features,
 	repopulate(loser, features, labels);
 }
 
-template <class T>
-void EvolutionaryOptimizer<T>::mutateSingle(int row, int column, 
-    bool reevaluateFitness, const Matrix& features, const Matrix& labels)
+template <class T, class Model>
+void EvolutionaryOptimizer<T, Model>::mutateSingle(int row, int column, 
+    bool reevaluateFitness, const Matrix<T>& features, const Matrix<T>& labels)
 {
 	// Perturb the element
 	mPopulation[row][column] += mNormal(mRandGenerator) * 
@@ -275,9 +274,9 @@ void EvolutionaryOptimizer<T>::mutateSingle(int row, int column,
 		evaluateMember(row, features, labels);
 }
 
-template <class T>
-void EvolutionaryOptimizer<T>::mutateAll(const Matrix& features, 
-    const Matrix& labels)
+template <class T, class Model>
+void EvolutionaryOptimizer<T, Model>::mutateAll(const Matrix<T>& features, 
+    const Matrix<T>& labels)
 {
 	// Pick the subject for mutation
 	int index = (int)(mUniform(mRandGenerator) * mPopulation.rows());
@@ -290,21 +289,21 @@ void EvolutionaryOptimizer<T>::mutateAll(const Matrix& features,
 	evaluateMember(index, features, labels);
 }
 
-template <class T>
-double EvolutionaryOptimizer<T>::getBestError()
+template <class T, class Model>
+T EvolutionaryOptimizer<T, Model>::getBestError()
 {
 	return *std::min_element(mErrors.begin(), mErrors.end());
 }
 
-template <class T>
-double EvolutionaryOptimizer<T>::getAverageError()
+template <class T, class Model>
+T EvolutionaryOptimizer<T, Model>::getAverageError()
 {
-	double sum = std::accumulate(mErrors.begin(), mErrors.end(), 0.0);
+	T sum = std::accumulate(mErrors.begin(), mErrors.end(), 0.0);
 	return sum / mPopulation.rows();
 }
 
-template <class T>
-void EvolutionaryOptimizer<T>::iterate(const Matrix& features, const Matrix& labels)
+template <class T, class Model>
+void EvolutionaryOptimizer<T, Model>::iterate(const Matrix<T>& features, const Matrix<T>& labels)
 {
     // The first time this function is called, we calculate the fitness of each
     // member of the population
@@ -312,7 +311,7 @@ void EvolutionaryOptimizer<T>::iterate(const Matrix& features, const Matrix& lab
     
     if (firstRun)
     {
-        mMinError = std::numeric_limits<double>::max();
+        mMinError = std::numeric_limits<T>::max();
         
         // Save the initial fitness (error) values for each member
         for (int i = 0; i < mParams->population_size; ++i)
@@ -321,13 +320,13 @@ void EvolutionaryOptimizer<T>::iterate(const Matrix& features, const Matrix& lab
         firstRun = false;
     }
     
-    double currentMinError = mMinError;
+    T currentMinError = mMinError;
     
 	// Perform an update for each member of the population. (This distinction
     // is arbitrary. We could just as easily iterate 'N' times during one pass.)
 	for (size_t i = 0; i < mPopulation.rows(); ++i)
 	{
-		double option = mUniform(mRandGenerator);
+		T option = mUniform(mRandGenerator);
 
 		// Tournament selection
 		if (option < mParams->iterate_chances[0])
@@ -356,20 +355,20 @@ void EvolutionaryOptimizer<T>::iterate(const Matrix& features, const Matrix& lab
     if (mMinError < currentMinError)
     {
         std::copy(mOptimalSolution.begin(), mOptimalSolution.end(), 
-            function->getParameters().begin());
+            Trainer<T, Model>::function->getParameters().begin());
     }
 }
 
-template <class T>
-void EvolutionaryOptimizer<T>::evaluateMember(int index, 
-    const Matrix& features, const Matrix& labels)
+template <class T, class Model>
+void EvolutionaryOptimizer<T, Model>::evaluateMember(int index, 
+    const Matrix<T>& features, const Matrix<T>& labels)
 {
     // Swap the desired parameters into the function
-    vector<double>& origParams = function->getParameters();
+    vector<T>& origParams = Trainer<T, Model>::function->getParameters();
     origParams.swap(mPopulation[index]);
 
     // Do the evaluation with the desired parameters
-    mErrors[index]    = Trainer<T>::function->evaluate(features, labels);
+    mErrors[index]    = Trainer<T, Model>::function->evaluate(features, labels);
     mInvErrors[index] = 1.0 / mErrors[index];
 
     // Put the original parameters back

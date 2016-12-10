@@ -14,6 +14,13 @@
 namespace opkit
 {
     
+/*
+template <class T>
+using ActivationFunc = T (*)(T);
+
+template <class T>
+using ActivationDeriv = T(*)(T, T);*/
+
 // Typedefs for the function pointers
 typedef double (*ActivationFunc)(double);
 typedef double (*ActivationDeriv)(double, double);

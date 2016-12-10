@@ -14,38 +14,38 @@
 namespace opkit
 {
     
-template <class T>
-class CategoricalErrorFunction : public ErrorFunction<T>
+template <class T, class Model>
+class CategoricalErrorFunction : public ErrorFunction<T, Model>
 {
 public:
-    CategoricalErrorFunction(T& baseFunction);
-    double evaluate(const Matrix& features, const Matrix& labels);
+    CategoricalErrorFunction(Model& baseFunction);
+    T evaluate(const Matrix<T>& features, const Matrix<T>& labels);
 };
 
-template <class T>
-CategoricalErrorFunction<T>::CategoricalErrorFunction(T& baseFunction)
-    : ErrorFunction<T>(baseFunction)
+template <class T, class Model>
+CategoricalErrorFunction<T, Model>::CategoricalErrorFunction(Model& baseFunction)
+    : ErrorFunction<T, Model>(baseFunction)
 {
     // Do nothing
 }
 
-template <class T>
-double CategoricalErrorFunction<T>::evaluate(const Matrix& features, const Matrix& labels)
+template <class T, class Model>
+T CategoricalErrorFunction<T, Model>::evaluate(const Matrix<T>& features, const Matrix<T>& labels)
 {
     // Initialize variables
     int misclassifications = 0;
-    static vector<double> prediction(labels.cols(), 0.0);
+    static vector<T> prediction(labels.cols(), 0.0);
     std::fill(prediction.begin(), prediction.end(), 0.0);
     prediction.resize(labels.cols());
     
     // Calculate the SSE
     for (size_t i = 0; i < features.rows(); ++i)
     {
-        ErrorFunction<T>::mBaseFunction.evaluate(features[i], prediction);
+        ErrorFunction<T, Model>::mBaseFunction.evaluate(features[i], prediction);
                 
         // Determine the largest output in the prediction
         int largest = 0;
-        double max  = prediction[0];
+        T max       = prediction[0];
         
         for (size_t j = 1; j < labels.cols(); ++j)
         {

@@ -21,29 +21,29 @@ namespace opkit
 
 // http://andrew.gibiansky.com/blog/machine-learning/hessian-free-optimization/
 // ...
-template <class T>
-class HessianFreeOptimizer : public Trainer<T>
+template <class T, class Model>
+class HessianFreeOptimizer : public Trainer<T, Model>
 {
 public:
-    HessianFreeOptimizer(ErrorFunction<T>* function) : Trainer(function) {}
+    HessianFreeOptimizer(ErrorFunction<T, Model>* function) : Trainer<T, Model>(function) {}
     
-    void iterate(const Matrix& features, const Matrix& labels);
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels);
     
 private:
     
-    void multiplyHessian(vector<double>& x, const vector<double>& v, 
-        const Matrix& features, const Matrix& labels, vector<double>& result);
+    void multiplyHessian(vector<T>& x, const vector<T>& v, 
+        const Matrix<T>& features, const Matrix<T>& labels, vector<T>& result);
     void conjugateGradient();
 };
 
-template <class T>
-void HessianFreeOptimizer<T>::iterate(const Matrix& features, const Matrix& labels)
+template <class T, class Model>
+void HessianFreeOptimizer<T, Model>::iterate(const Matrix<T>& features, const Matrix<T>& labels)
 {
     // The step size that will be used if the calculated value is unreasonable
     // (e.g. negative)
-    const double DEFAULT_STEP_SIZE = 1E-6;
+    const T DEFAULT_STEP_SIZE = 1E-6;
     
-    cout << "SSE: " << Trainer<T>::function->evaluate(features, labels) << endl;
+    cout << "SSE: " << Trainer<T, Model>::function->evaluate(features, labels) << endl;
     
     // f(x) = some arbitrary nonlinear function (R^N -> R)
     // g(x) = quadratic approximation of f
@@ -60,15 +60,15 @@ void HessianFreeOptimizer<T>::iterate(const Matrix& features, const Matrix& labe
     // b           = 1 x N vector
     // c           = scalar
     
-    vector<double>& x = Trainer<T>::function->getParameters();
+    vector<T>& x = Trainer<T, Model>::function->getParameters();
     size_t N          = x.size();
 
     // Calculate the initial direction (the negative of the gradient)
-    vector<double> gradient(N);
-    vector<double> direction(N);
+    vector<T> gradient(N);
+    vector<T> direction(N);
 
     //model.calculateGradient(x, gradient, gradient);
-    Trainer<T>::function->calculateGradientParameters(features, labels, gradient);
+    Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
     for (size_t i = 0; i < N; ++i)
         direction[i] = -gradient[i];
     
@@ -82,19 +82,19 @@ void HessianFreeOptimizer<T>::iterate(const Matrix& features, const Matrix& labe
         //           -direction * gradient
         // alpha = -------------------------------
         //         direction * Hessian * direction
-        double num = 0.0;
+        T num = 0.0;
         for (size_t i = 0; i < N; ++i)
             num += direction[i] * gradient[i];
 
-        vector<double> Ad(N);
+        vector<T> Ad(N);
         multiplyHessian(x, direction, features, labels, Ad);
 
-        double denom = 0.0;
+        T denom = 0.0;
         for (size_t i = 0; i < N; ++i)
             denom += direction[i] * Ad[i];
 
         // Calculate alpha and ensure it's reasonable
-        double alpha = -num / denom;
+        T alpha = -num / denom;
         if (alpha < 0) alpha = DEFAULT_STEP_SIZE;
         
         // Update the current parameter estimation by moving 'alpha' units along 
@@ -104,7 +104,7 @@ void HessianFreeOptimizer<T>::iterate(const Matrix& features, const Matrix& labe
 
         // Calculate beta, used for updating the current direction
         //model.calculateGradient(x, gradient, gradient);
-        Trainer<T>::function->calculateGradientParameters(features, labels, gradient);
+        Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
 
         num = 0.0;
         for (size_t i = 0; i < N; ++i)
@@ -113,41 +113,41 @@ void HessianFreeOptimizer<T>::iterate(const Matrix& features, const Matrix& labe
         // Calculate beta and ensure it's reasonable. Unreasonable beta values
         // are replaced with 0, allowing the algorithm to degenerate to normal
         // gradient descent in exceptional circumstances.
-        double beta = num / denom;
+        T beta = num / denom;
         beta = std::max(0.0, beta);
         
         // Update the current direction
         for (size_t i = 0; i < N; ++i)
             direction[i] = -gradient[i] + beta * direction[i];
         
-        cout << "SSE: " << Trainer<T>::function->evaluate(features, labels) << endl;
+        cout << "SSE: " << Trainer<T, Model>::function->evaluate(features, labels) << endl;
     }
 }
 
-template <class T>
-void HessianFreeOptimizer<T>::multiplyHessian(vector<double>& x, const vector<double>& v, 
-    const Matrix& features, const Matrix& labels, vector<double>& result)
+template <class T, class Model>
+void HessianFreeOptimizer<T, Model>::multiplyHessian(vector<T>& x, const vector<T>& v, 
+    const Matrix<T>& features, const Matrix<T>& labels, vector<T>& result)
 {
-    const double EPSILON = 1.0E-10;
-    const size_t N       = Trainer<T>::function->getNumParameters();
+    const T EPSILON = 1.0E-10;
+    const size_t N       = Trainer<T, Model>::function->getNumParameters();
 
     // Calculate gradient 1 - grad(f(x))
-    vector<double> grad1(N);
-    Trainer<T>::function->getParameters().swap(x);
+    vector<T> grad1(N);
+    Trainer<T, Model>::function->getParameters().swap(x);
     //model.calculateGradient(x, result, grad1);
-    Trainer<T>::function->calculateGradientParameters(features, labels, grad1);
-    Trainer<T>::function->getParameters().swap(x);
+    Trainer<T, Model>::function->calculateGradientParameters(features, labels, grad1);
+    Trainer<T, Model>::function->getParameters().swap(x);
 
     // Calculate gradient 2 - grad(f(x + epsilon * v))
-    vector<double> x2(N);  
+    vector<T> x2(N);  
     for (size_t i = 0; i < N; ++i)
         x2[i] = x[i] + EPSILON * v[i];
 
-    vector<double> grad2(N);
-    Trainer<T>::function->getParameters().swap(x2);
+    vector<T> grad2(N);
+    Trainer<T, Model>::function->getParameters().swap(x2);
     //model.calculateGradient(x, result, grad2);
-    Trainer<T>::function->calculateGradientParameters(features, labels, grad2);  
-    Trainer<T>::function->getParameters().swap(x2);
+    Trainer<T, Model>::function->calculateGradientParameters(features, labels, grad2);  
+    Trainer<T, Model>::function->getParameters().swap(x2);
 
     // Estimate H * v using finite differences
     result.resize(N);

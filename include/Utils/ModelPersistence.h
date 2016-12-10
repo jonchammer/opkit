@@ -24,12 +24,13 @@ namespace opkit
  * @param function. The function to be persisted.
  * @return true if the file is opened and written correctly, false otherwise.
  */
-bool saveFunctionText(const std::string& filename, const Function& function)
+template <class T>
+bool saveFunctionText(const std::string& filename, const Function<T>& function)
 {
     std::ofstream dout(filename.c_str());
     if (!dout) return false;
     
-    const std::vector<double>& parameters = function.getParameters();
+    const std::vector<T>& parameters = function.getParameters();
     
     // Write the number of parameters first
     dout << parameters.size() << endl;
@@ -50,12 +51,13 @@ bool saveFunctionText(const std::string& filename, const Function& function)
  * @param function.    The destination of the parameters read from the file.
  * @return true if the file is opened and read correctly, false otherwise.
  */
-bool loadFunctionText(const std::string& filename, Function& function)
+template <class T>
+bool loadFunctionText(const std::string& filename, Function<T>& function)
 {
     std::ifstream din(filename.c_str());
     if (!din) return false;
     
-    std::vector<double>& parameters = function.getParameters();
+    std::vector<T>& parameters = function.getParameters();
     
     // Read the number of parameters first
     size_t numParams;
@@ -78,19 +80,20 @@ bool loadFunctionText(const std::string& filename, Function& function)
  * @param function.    The function to be persisted.
  * @return true if the file is opened and written correctly, false otherwise.
  */
-bool saveFunctionBinary(const std::string& filename, const Function& function)
+template <class T>
+bool saveFunctionBinary(const std::string& filename, const Function<T>& function)
 {
     std::ofstream dout(filename.c_str(), std::ios::binary);
     if (!dout) return false;
     
-    const std::vector<double>& parameters = function.getParameters();
+    const std::vector<T>& parameters = function.getParameters();
     
     // Write the number of parameters first
     size_t numParams = parameters.size();
     dout.write((char*) &numParams, sizeof(size_t));
     
     // Then write the parameter values
-    dout.write((char*) &parameters[0], sizeof(double) * numParams);
+    dout.write((char*) &parameters[0], sizeof(T) * numParams);
     
     dout.close();
     return true;
@@ -104,12 +107,13 @@ bool saveFunctionBinary(const std::string& filename, const Function& function)
  * @param function.    The destination of the parameters read from the file.
  * @return true if the file is opened and read correctly, false otherwise.
  */
-bool loadFunctionBinary(const std::string& filename, Function& function)
+template <class T>
+bool loadFunctionBinary(const std::string& filename, Function<T>& function)
 {
     std::ifstream din(filename.c_str(), std::ios::binary);
     if (!din) return false;
     
-    std::vector<double>& parameters = function.getParameters();
+    std::vector<T>& parameters = function.getParameters();
     
     // Read the number of parameters first
     size_t numParams = 0;
@@ -117,7 +121,7 @@ bool loadFunctionBinary(const std::string& filename, Function& function)
     parameters.resize(numParams);
     
     // Then read the parameter values
-    din.read((char*) &parameters[0], sizeof(double) * numParams);
+    din.read((char*) &parameters[0], sizeof(T) * numParams);
     
     din.close();
     return true;
