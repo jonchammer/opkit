@@ -28,6 +28,8 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 #Ignore the listed files
 list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
+list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/Matrix.cpp")
+list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/Functions/Function.cpp")
 
 # Create a static library containing all of the code
 add_library(opkit STATIC ${SOURCES})

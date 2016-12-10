@@ -21,7 +21,6 @@ using std::vector;
  
 namespace opkit
 {
-    
 template <class T>
 class Function
 {
@@ -340,6 +339,218 @@ void randomizeParameters(vector<T>& parameters,
         parameters[i] = rand(generator);
 }
 
+template <class T>
+bool Function<T>::cachesLastEvaluation() const
+{
+    return false;
+}
+
+template <class T>
+void Function<T>::getLastEvaluation(vector<T>& output)
+{
+    throw Ex("Function::getLastEvaluation not implemented.");
+}
+
+template <class T>
+void Function<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
+{
+    cout << "Function::calculateJacobianInputs()" << endl;
+
+    // Constants used in the finite differences approximation
+    const T EPSILON = 1.0E-10;
+    const size_t N  = getInputs();
+    const size_t M  = getOutputs();
+    
+    // Ensure the Jacobian matrix is large enough
+    jacobian.setSize(M, N);
+    
+    // Temporary vectors used for calculations
+    static vector<T> prediction(M, 0.0);
+    static vector<T> derivativePrediction(M, 0.0);
+    static vector<T> input(N, 0.0);
+    
+    // Start by evaluating the function without any modifications
+    std::copy(x.begin(), x.end(), input.begin());
+    evaluate(input, prediction);
+
+    // The Jacobian is calculated one column at a time by changing one input
+    // and measuring the effect on all M outputs.
+    for (size_t p = 0; p < N; ++p)
+    {
+        // Save the original value of this input
+        T orig = input[p];
+
+        // Calculate the derivative of the function (y) with respect to
+        // the current input, p, by slightly changing that input
+        // and measuring comparing the output that with no change applied.
+        input[p] += EPSILON;
+        evaluate(input, derivativePrediction);
+            
+        for (size_t r = 0; r < M; ++r)
+            jacobian[r][p] = (derivativePrediction[r] - prediction[r]) / EPSILON;
+            
+        // Change the input back to its original value
+        input[p] = orig;
+    }
+}
+
+template <class T>
+void Function<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
+{
+    cout << "Function::calculateJacobianParameters()" << endl;
+    
+    // Constants used in the finite differences approximation
+    const T EPSILON = 1.0E-10;
+    const size_t N  = getNumParameters();
+    const size_t M  = getOutputs();
+    
+    // Ensure the Jacobian matrix is large enough
+    jacobian.setSize(M, N);
+    
+    // Temporary vectors used for calculations
+    static vector<T> prediction(M, 0.0);
+    static vector<T> derivativePrediction(M, 0.0);
+    
+    // Start by evaluating the function without any modifications
+    vector<T>& parameters = getParameters();
+    evaluate(x, prediction);
+
+    for (size_t p = 0; p < N; ++p)
+    {
+        // Save the original value of this parameter
+        T orig = parameters[p];
+
+        // Calculate the derivative of the function (y) with respect to
+        // the current parameter, p, by slightly changing that parameter
+        // and measuring comparing the output that with no change applied.
+        parameters[p] += EPSILON;
+        evaluate(x, derivativePrediction);
+
+        for (size_t r = 0; r < M; ++r)
+            jacobian[r][p] = (derivativePrediction[r] - prediction[r]) / EPSILON;
+        
+        // Change the parameter back to its original value
+        parameters[p] = orig;
+    }
+}
+    
+template <class T>
+void Function<T>::calculateHessianInputs(const vector<T>& x,
+        const size_t outputIndex, Matrix<T>& hessian)
+{
+    cout << "Function::calculateHessianInputs()" << endl;
+    
+    // Epsilon has to be set to a larger value than that used in calculating
+    // the gradient because it will be squared in the calculations below. If it
+    // is too small, we incur more significant rounding errors.
+    const T EPSILON = 1E-4;
+    const size_t N  = getInputs();
+    const size_t M  = getOutputs();
+    hessian.setSize(N, N);
+
+    // Create the temporary vectors we'll need
+    static vector<T> base(M, 0.0);
+    static vector<T> ei(M, 0.0);
+    static vector<T> ej(M, 0.0);
+    static vector<T> eij(M, 0.0);
+    static vector<T> input(N, 0.0);
+    
+    // Perform one evaluation with no changes to get a baseline measurement
+    std::copy(x.begin(), x.end(), input.begin());
+    evaluate(x, base);
+    
+    // Using the method of finite differences, each element of the Hessian
+    // can be approximated using the following formula:
+    // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn) 
+    //          - f(x1, x2, ... xj + k ... xn) + f(x1...xn)) / hk
+    for (size_t i = 0; i < N; ++i)
+    {
+        // Modify i alone
+        T origI      = input[i];
+        input[i]    += EPSILON;
+        evaluate(input, ei);
+        input[i]     = origI;
+        
+        for (size_t j = 0; j < N; ++j)
+        {
+            // Modify i and j
+            T origJ      = input[j];
+            input[i]    += EPSILON;
+            input[j]    += EPSILON;
+            evaluate(input, eij);
+            input[i]     = origI;
+            input[j]     = origJ;
+            
+            // Modify j alone
+            input[j] += EPSILON;
+            evaluate(input, ej);
+            input[j] = origJ;
+            
+            // Calculate the value of the Hessian at this index
+            hessian[i][j] = (eij[outputIndex] - ei[outputIndex] - 
+                ej[outputIndex] + base[outputIndex]) / (EPSILON * EPSILON);
+        }
+    }
+}
+
+template <class T>
+void Function<T>::calculateHessianParameters(const vector<T>& x,
+        const size_t outputIndex, Matrix<T>& hessian)
+{
+    cout << "Function::calculateHessianParameters()" << endl;
+    
+    // Epsilon has to be set to a larger value than that used in calculating
+    // the gradient because it will be squared in the calculations below. If it
+    // is too small, we incur more significant rounding errors.
+    const T EPSILON = 1E-4;
+    const size_t N  = getNumParameters();
+    const size_t M  = getOutputs();
+    
+    hessian.setSize(N, N);
+    vector<T>& params = getParameters();
+    
+    // Create the temporary vectors we'll need
+    static vector<T> base(M, 0.0);
+    static vector<T> ei(M, 0.0);
+    static vector<T> ej(M, 0.0);
+    static vector<T> eij(M, 0.0);
+    
+    // Perform one evaluation with no changes to get a baseline measurement
+    evaluate(x, base);
+    
+    // Using the method of finite differences, each element of the Hessian
+    // can be approximated using the following formula:
+    // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn) 
+    //          - f(x1, x2, ... xj + k ... xn) + f(x1...xn)) / hk
+    for (size_t i = 0; i < N; ++i)
+    {
+        // Modify i alone
+        T origI      = params[i];
+        params[i]   += EPSILON;
+        evaluate(x, ei);
+        params[i]    = origI;
+        
+        for (size_t j = 0; j < N; ++j)
+        {
+            // Modify i and j
+            T origJ      = params[j];
+            params[i]   += EPSILON;
+            params[j]   += EPSILON;
+            evaluate(x, eij);
+            params[i]    = origI;
+            params[j]    = origJ;
+            
+            // Modify j alone
+            params[j] += EPSILON;
+            evaluate(x, ej);
+            params[j]  = origJ;
+            
+            // Calculate the value of the Hessian at this index
+            hessian[i][j] = (eij[outputIndex] - ei[outputIndex] - 
+                ej[outputIndex] + base[outputIndex]) / (EPSILON * EPSILON);
+        }
+    }
+}
 };
 
 #endif /* MODEL_H */

@@ -15,6 +15,7 @@ using std::string;
 using std::endl;
 using std::ifstream;
 using std::ofstream;
+using std::vector;
 using std::map;
 
 namespace opkit
@@ -45,13 +46,13 @@ class Matrix
 {
 private:
 	// Data
-	std::vector< std::vector<T> > m_data; // matrix elements
+	vector< vector<T> > m_data; // matrix elements
 
 	// Meta-data
-	std::string m_filename; // the name of the file
-	std::vector<std::string> m_attr_name; // the name of each attribute (or column)
-	std::vector< std::map<std::string, size_t> > m_str_to_enum; // value to enumeration
-	std::vector< std::map<size_t, std::string> > m_enum_to_str; // enumeration to value
+	string m_filename; // the name of the file
+	vector<string> m_attr_name; // the name of each attribute (or column)
+	vector< map<string, size_t> > m_str_to_enum; // value to enumeration
+	vector< map<size_t, string> > m_enum_to_str; // enumeration to value
 
 public:
 	/// Creates a 0x0 matrix. (Next, to give this matrix some dimensions, you should call:
@@ -65,10 +66,10 @@ public:
 	~Matrix() {}
 
 	/// Loads the matrix from an ARFF file
-	void loadARFF(std::string filename);
+	void loadARFF(string filename);
 
 	/// Saves the matrix to an ARFF file
-	void saveARFF(std::string filename) const;
+	void saveARFF(string filename) const;
 
 	/// Makes a rows x columns matrix of *ALL CONTINUOUS VALUES*.
 	/// This method wipes out any data currently in the matrix. It also
@@ -87,7 +88,7 @@ public:
 	void newColumn(size_t vals = 0);
 
 	/// Adds one new row to this matrix. Returns a reference to the new row.
-	std::vector<T>& newRow();
+	vector<T>& newRow();
 
 	/// Adds 'n' new rows to this matrix. (These rows are not initialized.)
 	void newRows(size_t n);
@@ -99,22 +100,22 @@ public:
 	size_t cols() const { return m_attr_name.size(); }
 
 	/// Returns the name of the specified attribute
-	const std::string& attrName(size_t col) const { return m_attr_name[col]; }
+	const string& attrName(size_t col) const { return m_attr_name[col]; }
 
 	/// Returns the name of the specified value
-	const std::string& attrValue(size_t attr, size_t val) const;
+	const string& attrValue(size_t attr, size_t val) const;
 
 	/// Returns a reference to the specified row
-	std::vector<T>& row(size_t index) { return m_data[index]; }
+	vector<T>& row(size_t index) { return m_data[index]; }
 
-        /// Returns a const reference to the specified row
-        const std::vector<T>& row(size_t index) const {return m_data[index]; }
-        
+    /// Returns a const reference to the specified row
+    const vector<T>& row(size_t index) const {return m_data[index]; }
+ 
 	/// Returns a reference to the specified row
-	std::vector<T>& operator [](size_t index) { return m_data[index]; }
+	vector<T>& operator [](size_t index) { return m_data[index]; }
 
 	/// Returns a reference to the specified row
-	const std::vector<T>& operator [](size_t index) const { return m_data[index]; }
+	const vector<T>& operator [](size_t index) const { return m_data[index]; }
 
 	/// Returns the number of values associated with the specified attribute (or column)
 	/// 0=continuous, 2=binary, 3=trinary, etc.
@@ -557,7 +558,6 @@ void Matrix<T>::checkCompatibility(const Matrix<T>& that) const
 			throw Ex("Column ", std::to_string(i), " has mis-matching number of values");
 	}
 }
-
 };
 
 #endif // MATRIX_H
