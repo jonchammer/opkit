@@ -26,15 +26,9 @@ include_directories(include/Utils)
 file(GLOB_RECURSE HEADERS "include/*.h")
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-#Ignore the listed files
-list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
-list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/Matrix.cpp")
-list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/Functions/Function.cpp")
-
 # Create a static library containing all of the code
 add_library(opkit STATIC ${SOURCES})
 
 # Copy the .a file to /usr/local/lib and the .h files to /usr/local/include
 INSTALL(TARGETS opkit DESTINATION "lib")
 INSTALL(FILES ${HEADERS} DESTINATION "include/opkit")
-

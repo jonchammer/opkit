@@ -19,7 +19,13 @@ When the library is installed, the static library file (libopkit.a) will be copi
 On Windows, this command will attempt to install to C:/Program Files (x86)/optimization_toolkit,
 but you have to have Administrator priviledges for the installation to succeed.
 
+Dependencies
+------------
+opkit requires linking with a BLAS library in order to accelerate certain
+computations (anything that uses "Acceleration.h"). OpenBLAS is recommended for
+Linux-based platforms. Some BLAS libraries (e.g. OpenBLAS) require a threading
+library for parallelism, so it's probably a good idea to link to that too.
+
 Example compilation command
 ---------------------------
-g++ -std=c++11 -O3 test.cpp -o test -lopkit
-
+g++ -std=c++11 -O3 test.cpp -o test -lopenblas -lpthread -lopkit
