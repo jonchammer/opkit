@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   GradientDescent.h
  * Author: Jon C. Hammer
  *
@@ -17,7 +17,7 @@ namespace opkit
 {
 
 // This class implements a traditional gradient descender. It looks at every
-// sample in the given matrices in order to calculate the best possible estimate 
+// sample in the given matrices in order to calculate the best possible estimate
 // of the gradient of the error surface before taking a single step. Note that
 // by using this class with a BatchIterator, both minibatches and stochastic
 // sampling can be performed.
@@ -32,9 +32,9 @@ class GradientDescent : public Trainer<T, Model>
 public:
     const T DEFAULT_LEARNING_RATE = 1E-4;
     const T DEFAULT_MOMENTUM      = 1E-3;
-    
-    GradientDescent(ErrorFunction<T, Model>* function) : 
-        Trainer<T, Model>(function), 
+
+    GradientDescent(ErrorFunction<T, Model>* function) :
+        Trainer<T, Model>(function),
         mVelocity(function->getNumParameters(), 1.0),
         mLearningRate(DEFAULT_LEARNING_RATE),
         mMomentum(DEFAULT_MOMENTUM) {}
@@ -43,13 +43,13 @@ public:
     {
         vector<T>& params = Trainer<T, Model>::function->getParameters();
         const size_t N    = params.size();
-        
+
         // First step for Nesterov momentum
         for (size_t i = 0; i < N; ++i)
             params[i] -= mMomentum * mVelocity[i];
-        
+
         // Estimate the complete gradient
-        static vector<T> gradient;
+        static vector<T> gradient(N);
         Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
 
         // Descend the gradient (and apply momentum)
@@ -67,7 +67,7 @@ public:
 
     void setMomentum(const T momentum)         { mMomentum = momentum; }
     T getMomentum() const                      { return mMomentum;     }
-    
+
 private:
     vector<T> mVelocity;
     T mLearningRate;
@@ -77,4 +77,3 @@ private:
 };
 
 #endif /* GRADIENTDESCENT_H */
-

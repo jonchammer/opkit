@@ -259,21 +259,16 @@ void Layer<T>::assignStorage(vector<T>* parameters,
 
 template <class T>
 FeedforwardLayer<T>::FeedforwardLayer(size_t inputs, size_t outputs)
-    : mInputs(inputs), mOutputs(outputs)
+    : mInputs(inputs), mOutputs(outputs),
+    mDeltas(outputs), mNet(outputs), mActivation(outputs),
+    mActFunction(tanhActivation) // Use tanh() as the default activation function
 {
-    mDeltas.resize(outputs);
-    mNet.resize(outputs);
-    mActivation.resize(outputs);
-
-    // Use tanh() as the default activation function
-    mActFunction = tanhActivation;
+    // Do nothing
 }
 
 template <class T>
 void FeedforwardLayer<T>::feed(const vector<T>& x, vector<T>& y)
 {
-    y.resize(mOutputs, T{});
-
     // Cache these so we can avoid repeated pointer dereferencing
     const T* params      = Layer<T>::mParameters->data() + Layer<T>::mParametersStartIndex;
     const T* xData       = x.data();

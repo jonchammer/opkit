@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   RMSProp.h
  * Author: Jon C. Hammer
  *
@@ -21,7 +21,7 @@ namespace opkit
 // An implementation of batch RMS prop that includes Nesterov momentum. Three
 // parameters are used to adjust the performance:
 //   1 - Learning Rate - same as for traditional gradient descent.
-//   2 - Decay - Dictates size of moving window. When decay = 1.0, this 
+//   2 - Decay - Dictates size of moving window. When decay = 1.0, this
 //       implementation reduces to traditional gradient descent. Value should be
 //       between [0.0 and 1.0].
 //   3 - Momentum - Adjusts the convergence speed. When momentum = 0.0, this
@@ -38,9 +38,9 @@ public:
     const T DEFAULT_DECAY         = 0.90;
     const T DEFAULT_LEARNING_RATE = 1E-4;
     const T DEFAULT_MOMENTUM      = 1E-3;
-    
-    RMSProp(ErrorFunction<T, Model>* function) : 
-        Trainer<T, Model>(function), 
+
+    RMSProp(ErrorFunction<T, Model>* function) :
+        Trainer<T, Model>(function),
         mRMS(function->getNumParameters(), 1.0),
         mVelocity(function->getNumParameters(), 1.0),
         mDecay(DEFAULT_DECAY),
@@ -51,13 +51,13 @@ public:
     {
         vector<T>& params = Trainer<T, Model>::function->getParameters();
         const size_t N    = params.size();
-        
+
         for (size_t i = 0; i < N; ++i)
             params[i] -= mMomentum * mVelocity[i];
-        
-        static vector<T> gradient;
+
+        static vector<T> gradient(N);
         Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
-        
+
         for (size_t i = 0; i < N; ++i)
         {
             mRMS[i]      = (1.0 - mDecay) * gradient[i] * gradient[i] + mDecay * mRMS[i];
@@ -66,37 +66,37 @@ public:
             params[i]    = params[i] + (mMomentum * oldV) - mVelocity[i];
         }
     }
-    
+
     void setDecay(const T decay)
     {
         mDecay = decay;
     }
-    
+
     void setLearningRate(const T learningRate)
     {
         mLearningRate = learningRate;
     }
-    
+
     void setMomentum(const T momentum)
     {
         mMomentum = momentum;
     }
-    
+
     T getDecay() const
     {
         return mDecay;
     }
-    
+
     T getLearningRate() const
     {
         return mLearningRate;
     }
-    
+
     T getMomentum() const
     {
         return mMomentum;
     }
-    
+
 private:
     vector<T> mRMS;
     vector<T> mVelocity;
@@ -108,4 +108,3 @@ private:
 };
 
 #endif /* RMSPROP_H */
-

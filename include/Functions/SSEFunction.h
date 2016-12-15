@@ -32,7 +32,6 @@ public:
         // Initialize variables
         T sum = 0.0;
         static vector<T> prediction(labels.cols(), 0.0);
-        prediction.resize(labels.cols());
 
         // Calculate the SSE
         for (size_t i = 0; i < features.rows(); ++i)
@@ -65,14 +64,11 @@ public:
         const size_t rows = features.rows();
 
         // Set the gradient to the zero vector
-        gradient.resize(N);
         std::fill(gradient.begin(), gradient.end(), 0.0);
 
         static Matrix<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
-        evaluation.resize(M);
-        error.resize(M);
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -115,14 +111,11 @@ public:
         const size_t rows = features.rows();
 
         // Set the gradient to the zero vector
-        gradient.resize(N);
         std::fill(gradient.begin(), gradient.end(), 0.0);
 
         static Matrix<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
-        evaluation.resize(M);
-        error.resize(M);
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -343,7 +336,6 @@ public:
         // Initialize variables
         T sum = 0.0;
         static vector<T> prediction(labels.cols(), 0.0);
-        prediction.resize(labels.cols());
 
         // Calculate the SSE
         for (size_t i = 0; i < features.rows(); ++i)
@@ -374,13 +366,10 @@ public:
         const size_t M    = nn.getOutputs();
         const size_t rows = features.rows();
 
-        gradient.resize(N);
-        std::fill(gradient.begin(), gradient.end(), 0.0);
+        std::fill(gradient.begin(), gradient.end(), T{});
 
         static vector<T> evaluation(M);
         static vector<T> tempGradient(N);
-        evaluation.resize(M);
-        tempGradient.resize(N);
 
         // Calculate a partial gradient for each row in the training data
         for (size_t i = 0; i < rows; ++i)
@@ -430,15 +419,12 @@ public:
         const Matrix<T>& labels, vector<T>& gradient)
     {
         NeuralNetwork<T>& nn = ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction;
-        const size_t N    = nn.getNumParameters();
-        const size_t M    = nn.getOutputs();
-        const size_t rows = features.rows();
+        const size_t N       = nn.getNumParameters();
+        const size_t M       = nn.getOutputs();
+        const size_t rows    = features.rows();
 
-        gradient.resize(N);
         std::fill(gradient.begin(), gradient.end(), T{});
-
         static vector<T> evaluation(M);
-        evaluation.resize(M);
 
         // Calculate a partial gradient for each row in the training data
         for (size_t i = 0; i < rows; ++i)
@@ -477,10 +463,9 @@ public:
         // Technically, we need to multiply the final gradient by a factor
         // of -2 to get the true gradient with respect to the SSE function.
         // We also need to divide by the batch size to get an average gradient.
+        const double mult = -2.0 / rows;
         for (size_t j = 0; j < gradient.size(); ++j)
-        {
-            gradient[j] *= (-2.0 / rows);
-        }
+            gradient[j] *= mult;
     }
 
     void calculateHessianInputs(const Matrix<T>& features, const Matrix<T>& labels,

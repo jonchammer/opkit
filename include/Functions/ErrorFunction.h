@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   ErrorFunction.h
  * Author: Jon C. Hammer
  *
@@ -13,20 +13,20 @@
 
 namespace opkit
 {
-    
+
 template <class T, class Model>
 class ErrorFunction
 {
 public:
     ErrorFunction(Model& baseFunction);
-    
+
     // Error functions compare the output of a base function on a given feature
     // to a known result. The interface presented in 'Function' for these
-    // methods isn't really applicable to Error Functions, so these are 
+    // methods isn't really applicable to Error Functions, so these are
     // more intuitive replacements.
     virtual T evaluate(const Matrix<T>& features, const Matrix<T>& labels) = 0;
-    
-    // Note: The default implementations of the functions that calculate 
+
+    // Note: The default implementations of the functions that calculate
     // derivatives with respect to the 'inputs' are quite slow and are not
     // particularly numerically stable. Those that calculate derivatives with
     // respect to the 'parameters' are much faster and more stable, but it would
@@ -34,26 +34,26 @@ public:
     // of all of these functions if it is possible to do so.
     // --- Use the default implementations at your own risk. ---
     // NOTE: Gradients are averaged over each sample in the matrix.
-    virtual void calculateGradientInputs(const Matrix<T>& features, 
+    virtual void calculateGradientInputs(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient);
-    virtual void calculateGradientParameters(const Matrix<T>& features, 
+    virtual void calculateGradientParameters(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient);
     virtual void calculateHessianInputs(const Matrix<T>& features,
         const Matrix<T>& labels, Matrix<T>& hessian);
-    virtual void calculateHessianParameters(const Matrix<T>& features, 
+    virtual void calculateHessianParameters(const Matrix<T>& features,
         const Matrix<T>& labels, Matrix<T>& hessian);
-    
+
     // Returns the number of inputs to the function and the number of outputs,
     // respectively. Error functions only have 1 output.
     virtual size_t getInputs()  const;
     virtual size_t getOutputs() const;
-    
+
     // Our 'parameters' are simply those of the base function. We forward the
     // calls wherever necessary.
     virtual vector<T>& getParameters();
     virtual const vector<T>& getParameters() const;
     virtual size_t getNumParameters() const;
-    
+
 protected:
     Model& mBaseFunction;
 };
@@ -65,49 +65,48 @@ ErrorFunction<T, Model>::ErrorFunction(Model& baseFunction) : mBaseFunction(base
 }
 
 template <class T, class Model>
-size_t ErrorFunction<T, Model>::getInputs()  const 
+size_t ErrorFunction<T, Model>::getInputs()  const
 {
     return mBaseFunction.getInputs();
 }
 
 template <class T, class Model>
-size_t ErrorFunction<T, Model>::getOutputs() const 
+size_t ErrorFunction<T, Model>::getOutputs() const
 {
     return 1;
 }
 
 template <class T, class Model>
-vector<T>& ErrorFunction<T, Model>::getParameters()             
-{ 
-    return mBaseFunction.getParameters(); 
+vector<T>& ErrorFunction<T, Model>::getParameters()
+{
+    return mBaseFunction.getParameters();
 }
 
 template <class T, class Model>
-const vector<T>& ErrorFunction<T, Model>::getParameters() const 
-{ 
-    return mBaseFunction.getParameters(); 
+const vector<T>& ErrorFunction<T, Model>::getParameters() const
+{
+    return mBaseFunction.getParameters();
 }
 
 template <class T, class Model>
-size_t ErrorFunction<T, Model>::getNumParameters() const             
-{ 
-    return mBaseFunction.getNumParameters(); 
+size_t ErrorFunction<T, Model>::getNumParameters() const
+{
+    return mBaseFunction.getNumParameters();
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features, 
+void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
     const Matrix<T>& labels, vector<T>& gradient)
 {
     cout << "ErrorFunction::calculateGradientInputs()" << endl;
-    
+
     // Constants used in the finite differences approximation
     const T EPSILON = 1.0E-10;
     const size_t N  = getInputs();
-    
+
     // Ensure the gradient vector is large enough
-    gradient.resize(N);
     std::fill(gradient.begin(), gradient.end(), 0.0);
-    
+
      // Start by evaluating the function without any modifications
     T y = evaluate(features, labels);
 
@@ -119,7 +118,7 @@ void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
         // original state. The const-invariance of 'features' will therefore
         // be preserved.
         vector<T>& row = (vector<T>&) features[r];
-        
+
         for (size_t p = 0; p < N; ++p)
         {
             // Save the original value of this input
@@ -137,25 +136,22 @@ void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
             row[p] = orig;
         }
     }
-    
+
     // Calculate the average gradient for the batch
     for (size_t i = 0; i < N; ++i)
         gradient[i] /= rows;
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateGradientParameters(const Matrix<T>& features, 
+void ErrorFunction<T, Model>::calculateGradientParameters(const Matrix<T>& features,
     const Matrix<T>& labels, vector<T>& gradient)
 {
     cout << "ErrorFunction::calculateGradientParameters()" << endl;
-    
+
     // Constants used in the finite differences approximation
     const T EPSILON = 1.0E-10;
     const size_t N  = getNumParameters();
-    
-    // Ensure the gradient vector is large enough
-    gradient.resize(N);
-    
+
      // Start by evaluating the function without any modifications
     vector<T>& parameters = getParameters();
     T y = evaluate(features, labels);
@@ -173,24 +169,24 @@ void ErrorFunction<T, Model>::calculateGradientParameters(const Matrix<T>& featu
 
         // Divide by the number of rows to get the average gradient
         gradient[p] = (y2 - y) / (EPSILON * features.rows());
-        
+
         // Change the parameter back to its original value
         parameters[p] = orig;
     }
 }
-    
+
 template <class T, class Model>
 void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
     const Matrix<T>& labels, Matrix<T>& hessian)
 {
     cout << "ErrorFunction::calculateHessianInputs()" << endl;
-    
+
     // Epsilon has to be set to a larger value than that used in calculating
     // the gradient because it will be squared in the calculations below. If it
     // is too small, we incur more significant rounding errors.
     const T EPSILON = 1E-4;
     const size_t N  = mBaseFunction.getInputs();
-    
+
     hessian.setSize(N, N);
     hessian.setAll(0.0);
 
@@ -199,7 +195,7 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
 
     // Using the method of finite differences, each element of the Hessian
     // can be approximated using the following formula:
-    // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn) 
+    // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn)
     //- f(x1, x2, ... xj + k ... xn) + f(x1...xn)) / hk
     for (size_t k = 0; k < features.rows(); ++k)
     {
@@ -208,7 +204,7 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
         // original state. The const-invariance of 'features' will therefore
         // be preserved.
         vector<T>& row = (vector<T>&) features.row(k);
-        
+
         for (size_t i = 0; i < N; ++i)
         {
             // Modify i alone
@@ -240,26 +236,26 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateHessianParameters(const Matrix<T>& features, 
+void ErrorFunction<T, Model>::calculateHessianParameters(const Matrix<T>& features,
     const Matrix<T>& labels, Matrix<T>& hessian)
 {
     cout << "ErrorFunction::calculateHessianParameters()" << endl;
-    
+
     // Epsilon has to be set to a larger value than that used in calculating
     // the gradient because it will be squared in the calculations below. If it
     // is too small, we incur more significant rounding errors.
     const T EPSILON = 1E-4;
     const size_t N  = mBaseFunction.getNumParameters();
-    
+
     hessian.setSize(N, N);
     vector<T>& params = getParameters();
-    
+
     // Perform one evaluation with no changes to get a baseline measurement
     T base = evaluate(features, labels);
 
     // Using the method of finite differences, each element of the Hessian
     // can be approximated using the following formula:
-    // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn) 
+    // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn)
     //- f(x1, x2, ... xj + k ... xn) + f(x1...xn)) / hk
     for (size_t i = 0; i < N; ++i)
     {
@@ -268,7 +264,7 @@ void ErrorFunction<T, Model>::calculateHessianParameters(const Matrix<T>& featur
         params[i] += EPSILON;
         T ei       = evaluate(features, labels);
         params[i]  = origI;
-        
+
         for (size_t j = 0; j < N; ++j)
         {
             // Modify i and j
@@ -278,12 +274,12 @@ void ErrorFunction<T, Model>::calculateHessianParameters(const Matrix<T>& featur
             T eij        = evaluate(features, labels);
             params[i]    = origI;
             params[j]    = origJ;
-            
+
             // Modify j alone
             params[j] += EPSILON;
             T ej       = evaluate(features, labels);
             params[j]  = origJ;
-            
+
             // Calculate the value of the Hessian at this index
             hessian[i][j] = (eij - ei - ej + base) / (EPSILON * EPSILON);
         }
@@ -292,4 +288,3 @@ void ErrorFunction<T, Model>::calculateHessianParameters(const Matrix<T>& featur
 
 };
 #endif /* ERRORFUNCTION_H */
-
