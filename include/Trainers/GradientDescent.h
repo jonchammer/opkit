@@ -12,6 +12,7 @@
 #include "Trainer.h"
 #include "ErrorFunction.h"
 #include "Matrix.h"
+#include "Acceleration.h"
 
 namespace opkit
 {
@@ -41,23 +42,26 @@ public:
 
     void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
-        vector<T>& params = Trainer<T, Model>::function->getParameters();
-        const size_t N    = params.size();
+        T* params      = Trainer<T, Model>::function->getParameters().data();
+        T* velocity    = mVelocity.data();
+        const size_t N = mVelocity.size();
 
-        // First step for Nesterov momentum
-        for (size_t i = 0; i < N; ++i)
-            params[i] -= mMomentum * mVelocity[i];
+        // First step for Nesterov momentum.
+        // params -= momentum * velocity
+        vAdd(velocity, params, N, -mMomentum);
 
         // Estimate the complete gradient
         static vector<T> gradient(N);
         Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
 
-        // Descend the gradient (and apply momentum)
+        // Descend the gradient (and apply momentum).
+        // This operation is too complex to be performed using the accelerated
+        // vector operations, so we just use the simple approach.
         for (size_t i = 0; i < N; ++i)
         {
-            T oldV       = mVelocity[i];
-            mVelocity[i] = mMomentum * oldV + mLearningRate * gradient[i];
-            params[i]    = params[i] + (mMomentum * oldV) - mVelocity[i];
+            T temp      = velocity[i] * mMomentum;
+            velocity[i] = temp + mLearningRate * gradient[i];
+            params[i]  += (temp - velocity[i]);
         }
     }
 

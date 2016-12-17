@@ -333,6 +333,45 @@ namespace opkit
         // 6. y's increment (1)
         cblas_saxpy(N, alpha, x, xInc, y, yInc);
     }
+
+    // Computes x = alpha * x, where x is a vector of size N and
+    // alpha is a scalar. xInc can be adjusted if the vector is
+    // stored in an interlaced format.
+    inline void vScale(double* x, const double alpha,
+        const size_t N, const int xInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters
+        // 1. Size of vector x
+        // 2. Scalar alpha
+        // 3. x's data
+        // 4. x's increment (1)
+        cblas_dscal(N, alpha, x, xInc);
+    }
+
+    // Computes x = alpha * x, where x is a vector of size N and
+    // alpha is a scalar. xInc can be adjusted if the vector is
+    // stored in an interlaced format.
+    inline void vScale(float* x, const float alpha,
+        const size_t N, const int xInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters
+        // 1. Size of vector x
+        // 2. Scalar alpha
+        // 3. x's data
+        // 4. x's increment (1)
+        cblas_sscal(N, alpha, x, xInc);
+    }
 };
+
 
  #endif

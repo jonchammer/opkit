@@ -9,9 +9,11 @@
 #define SSEFUNCTION_H
 
 #include <vector>
+#include <cstring>
 #include "ErrorFunction.h"
 #include "Matrix.h"
 #include "NeuralNetwork.h"
+#include "Acceleration.h"
 using std::vector;
 
 namespace opkit
@@ -463,9 +465,7 @@ public:
         // Technically, we need to multiply the final gradient by a factor
         // of -2 to get the true gradient with respect to the SSE function.
         // We also need to divide by the batch size to get an average gradient.
-        const double mult = -2.0 / rows;
-        for (size_t j = 0; j < gradient.size(); ++j)
-            gradient[j] *= mult;
+        vScale(gradient.data(), -2.0/rows, N);
     }
 
     void calculateHessianInputs(const Matrix<T>& features, const Matrix<T>& labels,
