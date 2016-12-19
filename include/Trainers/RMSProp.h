@@ -53,7 +53,7 @@ public:
         for (size_t i = 0; i < N; ++i)
         {
             // Logically, the RMS update is:
-            // RMS[i] = (1.0 - mDecay) * gradient^2 + mDecay + RMS[i]
+            // RMS[i] = (1.0 - mDecay) * gradient^2 + mDecay * RMS[i]
             // This is a reorganization of the same formula that has fewer operations.
             T gradSquare = gradient[i] * gradient[i];
             RMS[i]       = gradSquare + mDecay * (RMS[i] - gradSquare);

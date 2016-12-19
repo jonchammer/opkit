@@ -336,8 +336,8 @@ public:
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
-        T sum = 0.0;
-        static vector<T> prediction(labels.cols(), 0.0);
+        T sum {};
+        static vector<T> prediction(labels.cols(), T{});
 
         // Calculate the SSE
         for (size_t i = 0; i < features.rows(); ++i)
@@ -364,9 +364,9 @@ public:
         vector<T>& gradient)
     {
         NeuralNetwork<T>& nn = ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction;
-        const size_t N    = nn.getInputs();
-        const size_t M    = nn.getOutputs();
-        const size_t rows = features.rows();
+        const size_t N       = nn.getInputs();
+        const size_t M       = nn.getOutputs();
+        const size_t rows    = features.rows();
 
         std::fill(gradient.begin(), gradient.end(), T{});
 
@@ -408,13 +408,11 @@ public:
 
             // Technically, we need to multiply the final gradient by a factor
             // of -2 to get the true gradient with respect to the SSE function.
-            for (size_t j = 0; j < tempGradient.size(); ++j)
-                gradient[j] += -2.0 * tempGradient[j];
+            vAdd(tempGradient.data(), gradient.data(), N, -2.0);
         }
 
         // Divide by the batch size to get the average gradient
-        for (size_t i = 0; i < N; ++i)
-            gradient[i] /= rows;
+        vScale(gradient.data(), 1.0/rows, N);
     }
 
     void calculateGradientParameters(const Matrix<T>& features,
