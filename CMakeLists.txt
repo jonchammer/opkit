@@ -24,11 +24,6 @@ include_directories(include/Utils)
 
 # Create lists of all of the header files and the source files
 file(GLOB_RECURSE HEADERS "include/*.h")
-file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-# Create a static library containing all of the code
-add_library(opkit STATIC ${SOURCES})
-
-# Copy the .a file to /usr/local/lib and the .h files to /usr/local/include
-INSTALL(TARGETS opkit DESTINATION "lib")
+# Copy the .h files to /usr/local/include
 INSTALL(FILES ${HEADERS} DESTINATION "include/opkit")
