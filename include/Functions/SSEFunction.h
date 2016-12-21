@@ -14,6 +14,7 @@
 #include "Matrix.h"
 #include "NeuralNetwork.h"
 #include "Acceleration.h"
+#include "PrettyPrinter.h"
 using std::vector;
 
 namespace opkit
@@ -388,7 +389,6 @@ public:
                 vector<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
                 for (size_t j = 0; j < outputDeltas.size(); ++j)
                     outputDeltas[j] = label[j] - evaluation[j];
-                nn.getOutputLayer()->deactivateDeltas();
 
                 // Apply the delta process recursively for each layer, moving backwards
                 // through the network.
@@ -398,7 +398,6 @@ public:
                     Layer<T>* prev    = nn.getLayer(i - 1);
 
                     current->calculateDeltas(prev->getDeltas());
-                    prev->deactivateDeltas();
                 }
             }
 
@@ -426,6 +425,7 @@ public:
         std::fill(gradient.begin(), gradient.end(), T{});
         static vector<T> evaluation(M);
 
+        static int x = 0;
         // Calculate a partial gradient for each row in the training data
         for (size_t i = 0; i < rows; ++i)
         {
@@ -441,7 +441,6 @@ public:
                 vector<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
                 for (size_t j = 0; j < M; ++j)
                     outputDeltas[j] = label[j] - evaluation[j];
-                nn.getOutputLayer()->deactivateDeltas();
 
                 // Apply the delta process recursively for each layer, moving backwards
                 // through the network.
@@ -451,7 +450,6 @@ public:
                     Layer<T>* prev    = nn.getLayer(i - 1);
 
                     current->calculateDeltas(prev->getDeltas());
-                    prev->deactivateDeltas();
                 }
             }
 

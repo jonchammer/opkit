@@ -163,9 +163,19 @@ void NeuralNetwork<T>::addLayer(Layer<T>* layer)
     size_t numParams = layer->getNumParameters();
     size_t origSize  = mParameters.size();
     mParameters.resize(origSize + numParams);
-    layer->assignStorage(&mParameters, origSize);
-
     mLayers.push_back(layer);
+
+    // When the parameters vector is resized, it's possible that the pointers
+    // may have been invalidated. To guard against that, we need to reassign
+    // the storage for all of the layers. (Yes, this is inefficient, but it is
+    // assumed that the user isn't going to be adding more layers to the network
+    // at runtime.)
+    T* data = mParameters.data();
+    for (Layer<T>* l : mLayers)
+    {
+        l->assignStorage(data);
+        data += l->getNumParameters();
+    }
 }
 
 template <class T>
@@ -173,21 +183,21 @@ void NeuralNetwork<T>::evaluate(const vector<T>& input, vector<T>& output)
 {
     // For single layer networks, we feed directly into the output
     if (mLayers.size() == 1)
-        mLayers[0]->feed(input, output);
+        mLayers[0]->eval(input, output);
 
     else
     {
         // Feed the input to the first layer and put the result in Layer 1's
         // activation
-        mLayers[0]->feed(input);
+        mLayers[0]->eval(input);
 
         // Feed the activation from the previous layer into the current layer.
         for (size_t i = 1; i < mLayers.size() - 1; ++i)
-            mLayers[i]->feed(mLayers[i - 1]->getActivation());
+            mLayers[i]->eval(mLayers[i - 1]->getActivation());
 
         // On the last layer, feed the previous layer's activation and put the
         // result in 'output'
-        mLayers.back()->feed(mLayers[mLayers.size() - 2]->getActivation(), output);
+        mLayers.back()->eval(mLayers[mLayers.size() - 2]->getActivation(), output);
     }
 }
 
@@ -195,18 +205,18 @@ template <class T>
 void NeuralNetwork<T>::calculateDeltas(const size_t outputIndex)
 {
     // Calculate the deltas on the last layer first
-    vector<T>& outputDeltas = mLayers.back()->getDeltas();
-    std::fill(outputDeltas.begin(), outputDeltas.end(), 0.0);
-    outputDeltas[outputIndex] = 1.0;
-    mLayers.back()->deactivateDelta(outputIndex);
-
-    // Apply the delta process recursively for each layer, moving backwards
-    // through the network.
-    for (int i = mLayers.size() - 1; i >= 1; --i)
-    {
-        mLayers[i]->calculateDeltas(mLayers[i - 1]->getDeltas());
-        mLayers[i - 1]->deactivateDeltas();
-    }
+    // vector<T>& outputDeltas = mLayers.back()->getDeltas();
+    // std::fill(outputDeltas.begin(), outputDeltas.end(), 0.0);
+    // outputDeltas[outputIndex] = 1.0;
+    // mLayers.back()->deactivateDelta(outputIndex);
+    //
+    // // Apply the delta process recursively for each layer, moving backwards
+    // // through the network.
+    // for (int i = mLayers.size() - 1; i >= 1; --i)
+    // {
+    //     mLayers[i]->calculateDeltas(mLayers[i - 1]->getDeltas());
+    //     mLayers[i - 1]->deactivateDeltas();
+    // }
 }
 
 template <class T>
