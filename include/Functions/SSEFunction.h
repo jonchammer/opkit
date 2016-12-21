@@ -390,20 +390,12 @@ public:
                 for (size_t j = 0; j < outputDeltas.size(); ++j)
                     outputDeltas[j] = label[j] - evaluation[j];
 
-                // Apply the delta process recursively for each layer, moving backwards
-                // through the network.
-                for (int i = nn.getNumLayers() - 1; i >= 1; --i)
-                {
-                    Layer<T>* current = nn.getLayer(i);
-                    Layer<T>* prev    = nn.getLayer(i - 1);
-
-                    current->calculateDeltas(prev->getDeltas());
-                }
+                nn.calculateDeltas();
             }
 
             // Calculate the gradient based on the deltas. Values are summed
             // for each pattern.
-            nn.getLayer(0)->calculateDeltas(tempGradient);
+            nn.getLayer(0)->calculateDeltas(feature, tempGradient);
 
             // Technically, we need to multiply the final gradient by a factor
             // of -2 to get the true gradient with respect to the SSE function.
@@ -442,15 +434,7 @@ public:
                 for (size_t j = 0; j < M; ++j)
                     outputDeltas[j] = label[j] - evaluation[j];
 
-                // Apply the delta process recursively for each layer, moving backwards
-                // through the network.
-                for (int i = nn.getNumLayers() - 1; i >= 1; --i)
-                {
-                    Layer<T>* current = nn.getLayer(i);
-                    Layer<T>* prev    = nn.getLayer(i - 1);
-
-                    current->calculateDeltas(prev->getDeltas());
-                }
+                nn.calculateDeltas();
             }
 
             // Calculate the gradient based on the deltas. Values are summed

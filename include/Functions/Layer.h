@@ -22,6 +22,8 @@ using std::endl;
 namespace opkit
 {
 
+// This is the base class from which all Layers derive. The template argument
+// T specifies the type used for mathematical operations (e.g. float or double).
 template <class T>
 class Layer
 {
@@ -31,6 +33,8 @@ public:
         mInputs(inputs), mOutputs(outputs),
         mActivation(outputs), mDeltas(outputs) {}
 
+    // When eval is called with just one argument, it is assumed that the
+    // result will be placed in mActivation.
     void eval(const vector<T>& x)
     {
         eval(x, mActivation);
@@ -40,12 +44,14 @@ public:
     virtual void eval(const vector<T>& x, vector<T>& y) = 0;
 
     // 2. Calculate blame terms for each node in the previous layer
-    virtual void calculateDeltas(vector<T>& destination) = 0;
+    virtual void calculateDeltas(const vector<T>& x, vector<T>& destination) = 0;
 
     // 3. Calculate the gradient with respect to the parameters
     virtual void calculateGradient(const vector<T>& x, T* gradient) = 0;
 
-    virtual size_t getNumParameters() = 0;
+    // Returns the number of optimizable parameters this layer uses. Some layers
+    // only transform their inputs and so have 0 parameters.
+    virtual size_t getNumParameters() const = 0;
 
     // When layers are added to the network, they are assigned a segment of the
     // network's parameters to work with. This function tells the layer which
@@ -57,34 +63,45 @@ public:
     }
 
     // General layer properties
-    size_t getInputs()         { return mInputs;     }
-    size_t getOutputs()        { return mOutputs;    }
-    vector<T>& getActivation() { return mActivation; }
-    vector<T>& getDeltas()     { return mDeltas;     }
+    size_t getInputs() const    { return mInputs;     }
+    size_t getOutputs() const   { return mOutputs;    }
+    vector<T>& getActivation()  { return mActivation; }
+    vector<T>& getDeltas()      { return mDeltas;     }
 
 protected:
-    T* mParameters;
-    size_t mInputs, mOutputs;
-    vector<T> mActivation;
-    vector<T> mDeltas;
+    T* mParameters;           // Storage used for the parameters for this layer
+    size_t mInputs, mOutputs; // The dimensions of this layer (inputs -> outputs)
+    vector<T> mActivation;    // The output of this layer
+    vector<T> mDeltas;        // The derivative of the network with respect to
+                              // each output neuron.
 };
 
+// Fully connected layers are the basis of the MLP. They perform the linear
+// transformation y = W * x + b, where the W matrix and the b vector are
+// optimizable parameters.
 template <class T>
 class FullyConnectedLayer : public Layer<T>
 {
 public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mParameters;
+    using Layer<T>::mInputs;
+    using Layer<T>::mOutputs;
+    using Layer<T>::mDeltas;
+
+    // Create a new FullyConnectedLayer. We need only specify the input and
+    // output dimensions.
     FullyConnectedLayer(const size_t inputs, const size_t outputs) :
         Layer<T>(inputs, outputs) {}
 
     void eval(const vector<T>& x, vector<T>& y) override
     {
         //Cache these so we can avoid repeated pointer dereferencing
-        const T* params = Layer<T>::mParameters;
+        const T* params = mParameters;
         const T* xData  = x.data();
         T* yData        = y.data();
-
-        const size_t inputs  = Layer<T>::mInputs;
-        const size_t outputs = Layer<T>::mOutputs;
 
         // y = W * x + b
         // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
@@ -94,48 +111,101 @@ public:
         // [...  ...  ... ...]
         // [w1m, w2m, ... wnm]
         // [b1, b2,   ...  bm]
-        mvMultiply(params, xData, yData, outputs, inputs);
-        vAdd(params + (inputs * outputs), yData, outputs);
+        //
+        // This could be done with one BLAS call, but it would override the bias,
+        // which means a copy would have to be made ahead of time. It's easier
+        // to just use two calls.
+        mvMultiply(params, xData, yData, mOutputs, mInputs);
+        vAdd(params + (mInputs * mOutputs), yData, mOutputs);
     }
 
-    void calculateDeltas(vector<T>& destination) override
+    void calculateDeltas(const vector<T>& /*x*/, vector<T>& destination) override
     {
-        const T* params = Layer<T>::mParameters;
-        const T* deltas = Layer<T>::mDeltas.data();
+        const T* deltas = mDeltas.data();
         T* dest         = destination.data();
 
-        const size_t inputs  = Layer<T>::mInputs;
-        const size_t outputs = Layer<T>::mOutputs;
-
         // Calculate destination = W^T * deltas
-        mtvMultiply(params, deltas, dest, outputs, inputs);
+        mtvMultiply(mParameters, deltas, dest, mOutputs, mInputs);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override
     {
         // Cache the raw pointer so we can avoid calling vector::operator[]
         const T* input  = x.data();
-        const T* deltas = Layer<T>::mDeltas.data();
-
-        const size_t inputs  = Layer<T>::mInputs;
-        const size_t outputs = Layer<T>::mOutputs;
+        const T* deltas = mDeltas.data();
 
         // Calculate gradient for the weights and for the biases.
         // The gradients are added to the values already present.
         // gradient(weights) = outerProduct(x, deltas);
         // gradient(biases)  = deltas
-        outerProduct(deltas, input, gradient, outputs, inputs);
-        vAdd(deltas, gradient + (inputs * outputs), outputs);
+        outerProduct(deltas, input, gradient, mOutputs, mInputs);
+        vAdd(deltas, gradient + (mInputs * mOutputs), mOutputs);
     }
 
-    size_t getNumParameters() override
+    size_t getNumParameters() const override
     {
-        const size_t inputs  = Layer<T>::mInputs;
-        const size_t outputs = Layer<T>::mOutputs;
-
-        return inputs * outputs + outputs;
+        // N * M for the weights matrix and M for the bias terms
+        return mInputs * mOutputs + mOutputs;
     }
 };
+
+// This layer performs a simple element-wise transformation to the inputs.
+// Therefore the input and output sizes are the same, and this layer has no
+// optimizable parameters.
+template <class T>
+class ActivationLayer : public Layer<T>
+{
+public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mParameters;
+    using Layer<T>::mInputs;
+    using Layer<T>::mOutputs;
+    using Layer<T>::mActivation;
+    using Layer<T>::mDeltas;
+
+    // Create a new layer with the given size and transformation function.
+    ActivationLayer(const size_t size, Activation<T>* activation) :
+        Layer<T>(size, size), mActivationFunction(activation) {}
+
+    // Performs the element-wise transformation according to the given
+    // transformation function.
+    void eval(const vector<T>& x, vector<T>& y) override
+    {
+        const T* xData = x.data();
+        T* yData       = y.data();
+
+        for (size_t i = 0; i < mInputs; ++i)
+            yData[i] = mActivationFunction->eval(xData[i]);
+    }
+
+    // The deltas for the downstream (left) layer are simply the deltas from
+    // this layer multiplied by the derivative of the transformation function.
+    void calculateDeltas(const vector<T>& x, vector<T>& destination) override
+    {
+        const T* input  = x.data();
+        const T* deltas = mDeltas.data();
+        T* dest         = destination.data();
+
+        for (size_t i = 0; i < mInputs; ++i)
+            dest[i] = deltas[i] * mActivationFunction->deriv(input[i], mActivation[i]);
+    }
+
+    void calculateGradient(const vector<T>& x, T* gradient) override
+    {
+        // We have no parameters, so there is no gradient to calculate
+        // for this layer.
+    }
+
+    size_t getNumParameters() const override
+    {
+        return 0;
+    }
+private:
+    Activation<T>* mActivationFunction;
+};
+
 // A neural network consists of a set of layers. All layers have some functionality
 // in common, so they all derive from this superclass.
 // template <class T>

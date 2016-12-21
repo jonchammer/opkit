@@ -50,14 +50,14 @@ struct tanhActivation : Activation<T>
 // Supposedly, the scaled tanh() function better avoids saturation when the
 // inputs are already in the range [-1, 1]
 template <class T>
-struct scaledTanhActivation
+struct scaledTanhActivation : Activation<T>
 {
-    static T eval (T x)
+    T eval (T x)
     {
         return 1.7159 * tanh(0.666666666 * x);
     }
 
-    static T deriv(T /*x*/, T fx)
+    T deriv(T /*x*/, T fx)
     {
         // Since fx = 1.71519 * tanh(bx), we need to divide fx by 1.7159 to get
         // tanh(bx) by itself. We also turn the division into a multiplication
@@ -68,84 +68,84 @@ struct scaledTanhActivation
 };
 
 template <class T>
-struct logisticActivation
+struct logisticActivation : Activation<T>
 {
-    static T eval (T x)
+    T eval (T x)
     {
         return 1.0 / (1.0 + std::exp(-x));
     }
 
-    static T deriv(T /*x*/, T fx)
+    T deriv(T /*x*/, T fx)
     {
         return fx * (1.0 - fx);
     }
 };
 
 template <class T>
-struct linearActivation
+struct linearActivation : Activation<T>
 {
-    static T eval (T x)
+    T eval (T x)
     {
         return x;
     }
 
-    static T deriv(T /*x*/, T /*fx*/)
+    T deriv(T /*x*/, T /*fx*/)
     {
         return 1.0;
     }
 };
 
 template <class T>
-struct reluActivation
+struct reluActivation : Activation<T>
 {
-    static T eval (T x)
+    T eval (T x)
     {
         return x < 0.0 ? 0.0 : x;
     }
 
-    static T deriv(T x, T /*fx*/)
+    T deriv(T x, T /*fx*/)
     {
         return x < 0.0 ? 0.0 : 1.0;
     }
 };
 
 template <class T>
-struct softPlusActivation
+struct softPlusActivation : Activation<T>
 {
-    static T eval (T x)
+    T eval (T x)
     {
         return std::log(1.0 + std::exp(x));
     }
 
-    static T deriv(T x, T /*fx*/)
+    T deriv(T x, T /*fx*/)
     {
         return 1.0 / (1.0 + std::exp(-x));
     }
 };
 
 template <class T>
-struct bentIdentityActivation
+struct bentIdentityActivation : Activation<T>
 {
-    static T eval (T x)
+    T eval (T x)
     {
         return 0.5 * (std::sqrt(x * x + 1.0) - 1.0) + x;
     }
 
-    static T deriv(T x, T /*fx*/)
+    T deriv(T x, T /*fx*/)
     {
         return x / (2.0 * std::sqrt(x * x + 1.0)) + 1.0;
     }
 };
 
 template <class T>
-struct sinActivation
+struct sinActivation : Activation<T>
 {
-    static T eval (T x)
+    T eval (T x)
     {
         return std::sin(x);
     }
 
-    static T deriv(T x, T /*fx*/)
+    T deriv(T x, T /*fx*/)
     {
         return std::cos(x);
     }
