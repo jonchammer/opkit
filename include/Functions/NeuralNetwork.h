@@ -181,24 +181,18 @@ void NeuralNetwork<T>::addLayer(Layer<T>* layer)
 template <class T>
 void NeuralNetwork<T>::evaluate(const vector<T>& input, vector<T>& output)
 {
-    // For single layer networks, we feed directly into the output
-    if (mLayers.size() == 1)
-        mLayers[0]->eval(input, output);
+    const vector<T>* x = &input;
 
-    else
+    // Feed the output of the previous layer as input
+    // to the next layer.
+    for (int i = 0; i < mLayers.size() - 1; ++i)
     {
-        // Feed the input to the first layer and put the result in Layer 1's
-        // activation
-        mLayers[0]->eval(input);
-
-        // Feed the activation from the previous layer into the current layer.
-        for (size_t i = 1; i < mLayers.size() - 1; ++i)
-            mLayers[i]->eval(mLayers[i - 1]->getActivation());
-
-        // On the last layer, feed the previous layer's activation and put the
-        // result in 'output'
-        mLayers.back()->eval(mLayers[mLayers.size() - 2]->getActivation(), output);
+        mLayers[i]->eval(*x);
+        x = &mLayers[i]->getActivation();
     }
+
+    // Feed the output of the last layer into 'output'
+    mLayers.back()->eval(*x, output);
 }
 
 template <class T>
