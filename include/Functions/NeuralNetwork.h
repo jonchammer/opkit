@@ -41,13 +41,27 @@ public:
     NeuralNetwork() {}
 
     // Destroy the Neural Network
-    virtual ~NeuralNetwork() {};
+    virtual ~NeuralNetwork()
+    {
+        // Delete the layers that we own
+        for (size_t i = 0; i < mLayers.size(); ++i)
+        {
+            if (mLayerOwnership[i])
+            {
+                delete mLayers[i];
+                mLayers[i] = nullptr;
+            }
+        }
+
+        // Safeguard
+        mLayers.clear();
+    };
 
     // Add a new layer to this Neural Network. Layers are added to the end of
     // the network, so add the layers from input layer to output layer. The
     // caller of this function retains ownership of the layer--it will NOT be
     // destroyed (if necessary) by the network.
-    void addLayer(Layer<T>* layer);
+    void addLayer(Layer<T>* layer, bool ownLayer = true);
 
     // Execute one forward pass through the network in order to produce an output.
     void evaluate(const vector<T>& input, vector<T>& output) override;
@@ -147,10 +161,11 @@ public:
 private:
     vector<T> mParameters;
     vector<Layer<T>*> mLayers;
+    vector<bool> mLayerOwnership;
 };
 
 template <class T>
-void NeuralNetwork<T>::addLayer(Layer<T>* layer)
+void NeuralNetwork<T>::addLayer(Layer<T>* layer, bool ownLayer)
 {
     // Make sure this layer is compatible with the rest of the network
     if (!mLayers.empty() && mLayers.back()->getOutputs() != layer->getInputs())
@@ -164,6 +179,7 @@ void NeuralNetwork<T>::addLayer(Layer<T>* layer)
     // new layer a share of the parameters to work with.
     mParameters.resize(mParameters.size() + layer->getNumParameters());
     mLayers.push_back(layer);
+    mLayerOwnership.push_back(ownLayer);
 
     // When the parameters vector is resized, it's possible that the pointers
     // may have been invalidated. To guard against that, we need to reassign

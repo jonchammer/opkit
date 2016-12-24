@@ -166,8 +166,21 @@ public:
     using Layer<T>::mDeltas;
 
     // Create a new layer with the given size and transformation function.
-    ActivationLayer(const size_t size, Activation<T>* activation) :
-        Layer<T>(size, size), mActivationFunction(activation) {}
+    ActivationLayer(const size_t size, Activation<T>* activation, bool ownActivation = true) :
+        Layer<T>(size, size),
+        mActivationFunction(activation),
+        mOwnActivation(ownActivation)
+    {}
+
+    ~ActivationLayer()
+    {
+        // If we own the pointer, we need to take charge of disposing of it.
+        if (mOwnActivation)
+        {
+            delete mActivationFunction;
+            mActivationFunction = nullptr;
+        }
+    }
 
     // Performs the element-wise transformation according to the given
     // transformation function.
@@ -202,8 +215,10 @@ public:
     {
         return 0;
     }
+
 private:
     Activation<T>* mActivationFunction;
+    bool mOwnActivation;
 };
 
 // Convolutional layers are often used for image processing. They take as input
@@ -451,6 +466,7 @@ public:
     size_t getNumFilters()    { return mNumFilters;    }
     size_t getStride()        { return mStride;        }
     size_t getZeroPadding()   { return mZeroPadding;   }
+
 private:
     size_t mInputWidth, mInputHeight, mInputChannels;
     size_t mFilterSize, mNumFilters;
@@ -494,298 +510,7 @@ private:
         // Factor in the bias
         return sum + mParameters[biasIndex];
     }
-
-    // Convolves a 2D input with a 2D filter in order to produce a 2D output.
-    // The 'z' parameters specify which slice of the 3D Tensors to use. The
-    // output size will be determined by the padding and stride values.
-    // The values calculated are SUMMED to whatever is currently inside 'output'.
-    void convolve(Tensor3D<T>& input,  size_t ix, size_t iy, size_t iz,
-        Tensor3D<T>& filter, size_t filterZ,
-        Tensor3D<T>& output, size_t outputZ);
 };
-
-// A neural network consists of a set of layers. All layers have some functionality
-// in common, so they all derive from this superclass.
-// template <class T>
-// class Layer
-// {
-// public:
-//
-//     // Process the given input according to the rules for this layer, and place
-//     // the results in 'y'.
-//     virtual inline void feed(const vector<T>& x)
-//     {
-//         feed(x, getActivation());
-//     }
-//
-//     virtual void feed(const vector<T>& x, vector<T>& y) = 0;
-//
-//     // In order to efficiently calculate the gradient of a network, we need to
-//     // be able to assign 'blame' to each node. This method calculates the
-//     // 'blame' terms for each node in the previous (left) layer. Therefore, the
-//     // destination will usually be the deltas of the previous layer.
-//     //
-//     // This method can also be used to calculate the gradient with respect to the
-//     // inputs. In this case, the method will be called on the first layer in the
-//     // network, and the destination will be a location to store the gradient.
-//     virtual void calculateDeltas(vector<T>& destination) = 0;
-//
-//     // Multiplies a single delta value by the derivative of the activation function
-//     // in order to deactivate it. (Used in the output layer)
-//     virtual void deactivateDelta(size_t outputIndex)
-//     {
-//         vector<T>& net         = getNet();
-//         vector<T>& act         = getActivation();
-//         vector<T>& deltas      = getDeltas();
-//
-//         deltas[outputIndex] *= getActivationFunction().deriv(net[outputIndex], act[outputIndex]);
-//     }
-//
-//     // Multiplies the deltas by the derivative of the activation function in
-//     // order to deactivate them. (Used in the inner and output layers)
-//     virtual void deactivateDeltas()
-//     {
-//         vector<T>& net         = getNet();
-//         vector<T>& act         = getActivation();
-//         vector<T>& deltas      = getDeltas();
-//         const size_t outputs   = getOutputs();
-//
-//         for (size_t i = 0; i < outputs; ++i)
-//             deltas[i] *= getActivationFunction().deriv(net[i], act[i]);
-//     }
-//
-//     // Calculate the gradient of the network with respect to the parameters
-//     // of this layer. The caller can assume that 'gradient' is a region of
-//     // contiguous memory that has already been allocated to be the proper size.
-//     // The calculated gradient is added to whatever value is already in that cell,
-//     // so make sure 'gradient' is initialized with 0's if that behavior is desired.
-//     virtual void calculateGradient(const vector<T>& input, T* gradient) = 0;
-//
-//     // These functions provide structural information about the layer
-//     virtual size_t getNumParameters()           = 0;
-//     virtual size_t getInputs()                  = 0;
-//     virtual size_t getOutputs()                 = 0;
-//     virtual Activation<T>& getActivationFunction() = 0;
-//
-//     virtual vector<T>& getNet() = 0;
-//
-//     // All layers produce some sort of output. This method returns that output
-//     // to the caller.
-//     virtual vector<T>& getActivation() = 0;
-//
-//     // This method returns the deltas that were calculated in calculateDeltas()
-//     // to the user.
-//     virtual vector<T>& getDeltas() = 0;
-//
-//     // When layers are added to the network, they are assigned a segment of the
-//     // network's parameters to work with. This function tells the layer which
-//     // segment to use for parameter storage.
-//     void assignStorage(vector<T>* parameters, const size_t parametersStartIndex)
-//     {
-//         mParameters           = parameters;
-//         mParametersStartIndex = parametersStartIndex;
-//     }
-//
-// protected:
-//     vector<T>* mParameters;  // Parameter storage
-//     size_t mParametersStartIndex;
-// };
-//
-// // Feedforward layers are traditional, fully connected layers. They take vectors
-// // as input, and produce vectors as output.
-// template <class T>
-// class FeedforwardLayer : public Layer<T>
-// {
-// public:
-//     // Constructors
-//     FeedforwardLayer(size_t inputs, size_t outputs):
-//         mInputs(inputs), mOutputs(outputs),
-//         mDeltas(outputs), mNet(outputs), mActivation(outputs),
-//         mActFunction(new tanhActivation<T>())
-//         {}
-//
-//     // Used for evaluating this layer. This updates the activation based
-//     // on y = a(Wx + b)
-//     void feed(const vector<T>& x, vector<T>& y) override
-//     {
-//         // Cache these so we can avoid repeated pointer dereferencing
-//         const T* params      = Layer<T>::mParameters->data() + Layer<T>::mParametersStartIndex;
-//         const T* xData       = x.data();
-//         T* net               = mNet.data();
-//
-//         // net = W * x + b
-//         // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
-//         // ordering, followed directly by the biases. E.g.:
-//         // [w11, w21, ... wn1]
-//         // [w12, w22, ... wn2]
-//         // [...  ...  ... ...]
-//         // [w1m, w2m, ... wnm]
-//         // [b1, b2,   ...  bm]
-//         mvMultiply(params, xData, net, mOutputs, mInputs);
-//         vAdd(params + (mInputs * mOutputs), net, mOutputs);
-//
-//         // Apply the activation function to both 'y' and 'mActivation'.
-//         // Usually, y will be mActivation, but there's no need for that to be
-//         // the case. If not, we need to make sure to set mActivation manually,
-//         // since some algorithms depend on it.
-//         for (size_t i = 0; i < mOutputs; ++i)
-//         {
-//             y[i]           = mActFunction->eval(net[i]);
-//             mActivation[i] = y[i];
-//         }
-//     }
-//
-//     void calculateDeltas(vector<T>& destination) override
-//     {
-//         const T* params = Layer<T>::mParameters->data() + Layer<T>::mParametersStartIndex;
-//         const T* deltas = mDeltas.data();
-//         T* dest         = destination.data();
-//
-//         // Calculate destination = W^T * deltas
-//         mtvMultiply(params, deltas, dest, mOutputs, mInputs);
-//     }
-//
-//     void calculateGradient(const vector<T>& input, T* gradient) override
-//     {
-//         // Cache the raw pointer so we can avoid calling vector::operator[]
-//         const T* x      = input.data();
-//         const T* deltas = mDeltas.data();
-//
-//         // Calculate gradient for the weights and for the biases.
-//         // The gradients are added to the values already present.
-//         // gradient(weights) = outerProduct(x, deltas);
-//         // gradient(biases)  = deltas
-//         outerProduct(deltas, x, gradient, mOutputs, mInputs);
-//         vAdd(deltas, gradient + (mInputs * mOutputs), mOutputs);
-//     }
-//
-//     size_t getNumParameters() override
-//     {
-//         return (mInputs + 1) * mOutputs;
-//     }
-//
-//     size_t getInputs() override
-//     {
-//         return mInputs;
-//     }
-//
-//     size_t getOutputs() override
-//     {
-//         return mOutputs;
-//     }
-//
-//     vector<T>& getNet() override
-//     {
-//         return mNet;
-//     }
-//
-//     vector<T>& getActivation() override
-//     {
-//         return mActivation;
-//     }
-//
-//     vector<T>& getDeltas() override
-//     {
-//         return mDeltas;
-//     }
-//
-//     Activation<T>& getActivationFunction()
-//     {
-//         return *mActFunction;
-//     }
-//
-// private:
-//     size_t mInputs, mOutputs;   // The dimensions of this layer
-//     vector<T> mDeltas;          // The errors that result from backprop
-//     vector<T> mNet;             // The sum before the activation function is applied
-//     vector<T> mActivation;      // The activation (output of this layer)
-//     Activation<T>* mActFunction;
-// };
-//
-//
-//
-//     size_t getInputs() override
-//     {
-//         return mInputWidth * mInputHeight * mInputChannels;
-//     }
-//
-//     size_t getOutputs() override
-//     {
-//         return mOutputWidth * mOutputHeight * mNumFilters;
-//     }
-//
-//     vector<T>& getNet() override
-//     {
-//         return mNet;
-//     }
-//     vector<T>& getActivation() override
-//     {
-//         return mActivation;
-//     }
-//     vector<T>& getDeltas() override
-//     {
-//         return mDeltas;
-//     }
-//
-//
-//
-// private:
-//     size_t mInputWidth, mInputHeight, mInputChannels;
-//     size_t mFilterSize, mNumFilters;
-//     size_t mStride, mZeroPadding;
-//     size_t mOutputWidth, mOutputHeight;
-//
-//     vector<T> mNet;        // The sum before the activation function is applied
-//     vector<T> mActivation; // The activation (output of this layer)
-//     vector<T> mDeltas;     // The errors that result from backprop
-//     Activation<T> mActFunction;
-//
-//     // (x, y, z) specifies coordinates of the output cell we are working on
-//     T convolve(const Tensor3D<T>& input, size_t x, size_t y, size_t z)
-//     {
-//         // Calculate where the weights and bias values are for this filter
-//         const size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels;
-//         const size_t weightsIndex     = Layer<T>::mParametersStartIndex + z * (numFilterWeights + 1);
-//         const size_t biasIndex        = weightsIndex + numFilterWeights;
-//         const Tensor3D<T> filterWeights(*Layer<T>::mParameters, weightsIndex,
-//             mFilterSize, mFilterSize, mInputChannels);
-//
-//         // Calculate the bounds of the input window
-//         // The amount of padding dictates where the top left corner will start. To
-//         // that, we add the product of the index and the stride to move the box
-//         // either horizontally or vertically. The right and bottom bounds are found
-//         // by adding the filter size to the left/top bounds.
-//         const int lowX = -mZeroPadding + x * mStride;
-//         const int lowY = -mZeroPadding + y * mStride;
-//         const int hiX  = lowX + mFilterSize - 1;
-//         const int hiY  = lowY + mFilterSize - 1;
-//
-//         // Do the actual convolution. Tensor3D objects will return 0 when the
-//         // provided index is out of bounds, which is used to implement the zero
-//         // padding.
-//         T sum = 0.0;
-//         for (size_t k = 0; k < mInputChannels; ++k)
-//         {
-//             for (int j = lowY; j <= hiY; ++j)
-//             {
-//                 for (int i = lowX; i <= hiX; ++i)
-//                     sum += input.get(i, j, k) *
-//                         filterWeights.get(i - lowX, j - lowY, k);
-//             }
-//         }
-//
-//         // Factor in the bias
-//         return sum + (*Layer<T>::mParameters)[biasIndex];
-//     }
-//
-//     // Convolves a 2D input with a 2D filter in order to produce a 2D output.
-//     // The 'z' parameters specify which slice of the 3D Tensors to use. The
-//     // output size will be determined by the padding and stride values.
-//     // The values calculated are SUMMED to whatever is currently inside 'output'.
-//     void convolve(Tensor3D<T>& input,  size_t ix, size_t iy, size_t iz,
-//         Tensor3D<T>& filter, size_t filterZ,
-//         Tensor3D<T>& output, size_t outputZ);
-// };
 };
 
 #endif /* LAYER_H */
