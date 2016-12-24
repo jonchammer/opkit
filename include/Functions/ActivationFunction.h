@@ -96,14 +96,14 @@ struct linearActivation
 };
 
 template <class T>
-struct reluActivation
+struct reluActivation : Activation<T>
 {
-    static T eval (T x)
+    T eval (T x)
     {
         return x < 0.0 ? 0.0 : x;
     }
 
-    static T deriv(T x, T /*fx*/)
+    T deriv(T x, T /*fx*/)
     {
         return x < 0.0 ? 0.0 : 1.0;
     }

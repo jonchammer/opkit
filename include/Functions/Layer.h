@@ -212,6 +212,11 @@ public:
         return *mActFunction;
     }
 
+    void setActivationFunction(Activation<T>* func)
+    {
+        mActFunction = func;
+    }
+
 private:
     size_t mInputs, mOutputs;   // The dimensions of this layer
     vector<T> mDeltas;          // The errors that result from backprop
@@ -294,7 +299,7 @@ public:
         mDeltas.resize(outputSize);
 
         // Use tanh() as the default activation function
-        mActFunction = tanhActivation<T>();
+        mActFunction = new tanhActivation<T>();
     }
 
     virtual ~Convolutional2DLayer() {}
@@ -302,7 +307,7 @@ public:
     // Used for evaluating this layer. This updates the activation based
     // on y = a(W*x + b), where * represents convolution of the inputs with
     // each of the filters
-    void feed(const vector<T>& x, vector<T>& y)
+    void feed(const vector<T>& x, vector<T>& y) override
     {
         const Tensor3D<T> input((vector<T>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
 
@@ -324,7 +329,7 @@ public:
                 {
                     // Dot product input about (j, i) with filter 'filter'
                     T sum = convolve(input, j, i, filter);
-                    T act = (*mActFunction.first)(sum);
+                    T act = mActFunction->eval(sum);
 
                     net.set(j, i, filter, sum);
                     activation.set(j, i, filter, act);
@@ -493,6 +498,16 @@ public:
     size_t getStride() {return mStride;}
     size_t getZeroPadding() {return mZeroPadding;}
 
+    Activation<T>& getActivationFunction()
+    {
+        return *mActFunction;
+    }
+
+    void setActivationFunction(Activation<T>* func)
+    {
+        mActFunction = func;
+    }
+
 private:
     size_t mInputWidth, mInputHeight, mInputChannels;
     size_t mFilterSize, mNumFilters;
@@ -502,8 +517,8 @@ private:
     vector<T> mNet;        // The sum before the activation function is applied
     vector<T> mActivation; // The activation (output of this layer)
     vector<T> mDeltas;     // The errors that result from backprop
-    Activation<T> mActFunction;
-    
+    Activation<T>* mActFunction;
+
     // (x, y, z) specifies coordinates of the output cell we are working on
     T convolve(const Tensor3D<T>& input, size_t x, size_t y, size_t z)
     {
