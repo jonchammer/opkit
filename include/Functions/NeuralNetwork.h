@@ -208,7 +208,7 @@ void NeuralNetwork<T>::evaluate(const vector<T>& input, vector<T>& output)
     }
 
     // Feed the output of the last layer into 'output'
-    mLayers.back()->eval(*x, output);
+    mLayers[mLayers.size() - 1]->eval(*x, output);
 }
 
 template <class T>

@@ -14,8 +14,10 @@
 #include "ActivationFunction.h"
 #include "Error.h"
 #include "Acceleration.h"
+#include "PrettyPrinter.h"
 
 using std::vector;
+using std::cout;
 using std::cerr;
 using std::endl;
 
@@ -33,15 +35,18 @@ public:
         mInputs(inputs), mOutputs(outputs),
         mActivation(outputs), mDeltas(outputs) {}
 
-    // When eval is called with just one argument, it is assumed that the
-    // result will be placed in mActivation.
-    void eval(const vector<T>& x)
+    // When eval is called with two arguments, we evaluate like normal, but also
+    // copy the result into y
+    void eval(const vector<T>& x, vector<T>& y)
     {
-        eval(x, mActivation);
+        eval(x);
+        vCopy(mActivation.data(), y.data(), mOutputs);
     }
 
     // 1. Feedforward step
-    virtual void eval(const vector<T>& x, vector<T>& y) = 0;
+    // When eval is called with just one argument, it is assumed that the
+    // result will be placed in mActivation.
+    virtual void eval(const vector<T>& x) = 0;
 
     // 2. Calculate blame terms for each node in the previous layer
     virtual void calculateDeltas(const vector<T>& x, vector<T>& destination) = 0;
@@ -90,18 +95,19 @@ public:
     using Layer<T>::mInputs;
     using Layer<T>::mOutputs;
     using Layer<T>::mDeltas;
+    using Layer<T>::mActivation;
 
     // Create a new FullyConnectedLayer. We need only specify the input and
     // output dimensions.
     FullyConnectedLayer(const size_t inputs, const size_t outputs) :
         Layer<T>(inputs, outputs) {}
 
-    void eval(const vector<T>& x, vector<T>& y) override
+    void eval(const vector<T>& x) override
     {
         //Cache these so we can avoid repeated pointer dereferencing
         const T* params = mParameters;
         const T* xData  = x.data();
-        T* yData        = y.data();
+        T* yData        = mActivation.data();
 
         // y = W * x + b
         // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
@@ -159,8 +165,6 @@ public:
 
     // Allows us to use the members in the base class without specifying
     // their complete names
-    using Layer<T>::mParameters;
-    using Layer<T>::mInputs;
     using Layer<T>::mOutputs;
     using Layer<T>::mActivation;
     using Layer<T>::mDeltas;
@@ -184,12 +188,12 @@ public:
 
     // Performs the element-wise transformation according to the given
     // transformation function.
-    void eval(const vector<T>& x, vector<T>& y) override
+    void eval(const vector<T>& x) override
     {
         const T* xData = x.data();
-        T* yData       = y.data();
+        T* yData       = mActivation.data();
 
-        for (size_t i = 0; i < mInputs; ++i)
+        for (size_t i = 0; i < mOutputs; ++i)
             yData[i] = mActivationFunction->eval(xData[i]);
     }
 
@@ -197,12 +201,13 @@ public:
     // this layer multiplied by the derivative of the transformation function.
     void calculateDeltas(const vector<T>& x, vector<T>& destination) override
     {
-        const T* input  = x.data();
-        const T* deltas = mDeltas.data();
-        T* dest         = destination.data();
+        const T* input      = x.data();
+        const T* deltas     = mDeltas.data();
+        const T* activation = mActivation.data();
+        T* dest             = destination.data();
 
-        for (size_t i = 0; i < mInputs; ++i)
-            dest[i] = deltas[i] * mActivationFunction->deriv(input[i], mActivation[i]);
+        for (size_t i = 0; i < mOutputs; ++i)
+            dest[i] = deltas[i] * mActivationFunction->deriv(input[i], activation[i]);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override
@@ -309,12 +314,12 @@ public:
     // Used for evaluating this layer. This updates the activation based
     // on y = W*x + b, where * represents convolution of the inputs with
     // each of the filters
-    void eval(const vector<T>& x, vector<T>& y) override
+    void eval(const vector<T>& x) override
     {
         const Tensor3D<T> input((vector<T>&) x, 0, mInputWidth, mInputHeight, mInputChannels);
 
         // Wrap the important vectors in Tensor3D objects so we can work with them
-        Tensor3D<T> output(y, 0, mOutputWidth, mOutputHeight, mNumFilters);
+        Tensor3D<T> output(mActivation, 0, mOutputWidth, mOutputHeight, mNumFilters);
 
         // Note: These loops can be run in any order. Each iteration is completely
         // independent of every other iteration.
@@ -441,7 +446,7 @@ public:
 
         for (size_t filter = 0; filter < mNumFilters; ++filter)
         {
-            T sum = 0.0;
+            T sum{};
             for (size_t j = 0; j < filterParams - 1; ++j)
             {
                 T val = params[j];
@@ -496,7 +501,7 @@ private:
         // Do the actual convolution. Tensor3D objects will return 0 when the
         // provided index is out of bounds, which is used to implement the zero
         // padding.
-        T sum = 0.0;
+        T sum{};
         for (size_t k = 0; k < mInputChannels; ++k)
         {
             for (int j = lowY; j <= hiY; ++j)
@@ -511,6 +516,75 @@ private:
         return sum + mParameters[biasIndex];
     }
 };
+
+template <class T>
+class SoftmaxLayer : public Layer<T>
+{
+public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mOutputs;
+    using Layer<T>::mDeltas;
+    using Layer<T>::mActivation;
+
+    SoftmaxLayer(size_t size) :
+        Layer<T>(size, size) {}
+
+    void eval(const vector<T>& x) override
+    {
+        const T* xData = x.data();
+        T* yData       = mActivation.data();
+
+        // Calculate the offset (for numerical stability)
+        T offset = -xData[vMaxIndex(xData, mOutputs)];
+
+        // y_i = e^(x_i)
+        T sum{};
+        for (size_t i = 0; i < mOutputs; ++i)
+        {
+            yData[i] = exp(xData[i] + offset);
+            sum     += yData[i];
+        }
+
+        // Normalize the entries such that they sum to 1.0
+        vScale(yData, 1.0 / sum, mOutputs);
+    }
+
+    void calculateDeltas(const vector<T>& /*x*/, vector<T>& destination) override
+    {
+        static vector<T> yyT(mOutputs * mOutputs);
+        const T* deltas     = mDeltas.data();
+        const T* activation = mActivation.data();
+        T* work             = yyT.data();
+        T* dest             = destination.data();
+
+        // Destination = J * deltas, where J = Diag(y) - y*y^T
+        // and y is the activation of this layer
+        std::fill(yyT.begin(), yyT.end(), T{});
+        outerProduct(activation, activation, work, mOutputs, mOutputs);
+
+        for (size_t i = 0; i < mOutputs; ++i)
+        {
+            size_t index = i * mOutputs + i;
+            work[index]  = activation[i] - work[index];
+        }
+
+        mvMultiply(work, deltas, dest, mOutputs, mOutputs);
+    }
+
+    void calculateGradient(const vector<T>& x, T* gradient) override
+    {
+        // We have no parameters, so there is no gradient to calculate
+        // for this layer.
+    }
+
+    size_t getNumParameters() const override
+    {
+        return 0;
+    }
+};
+
 };
 
 #endif /* LAYER_H */
