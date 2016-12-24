@@ -10,6 +10,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include "Error.h"
 
 using std::string;
 using std::endl;
@@ -20,9 +21,8 @@ using std::map;
 
 namespace opkit
 {
-    
-#define UNKNOWN_VALUE -1e308
 
+#define UNKNOWN_VALUE -1e308
 
 // This stores a matrix, A.K.A. data set, A.K.A. table. Each element is
 // represented as a double value. Nominal values are represented using their
@@ -110,7 +110,7 @@ public:
 
     /// Returns a const reference to the specified row
     const vector<T>& row(size_t index) const {return m_data[index]; }
- 
+
 	/// Returns a reference to the specified row
 	vector<T>& operator [](size_t index) { return m_data[index]; }
 
@@ -509,7 +509,7 @@ void Matrix<T>::loadARFF(string fileName)
 						{
 							typename map<string, size_t>::iterator it = m_str_to_enum[i].find ( val );
 							if(it == m_str_to_enum[i].end())
-								throw Ex("Unrecognized enumeration value, \"", val, "\" on line ", std::to_string(lineNum), ", attr ", std::to_string(i)); 
+								throw Ex("Unrecognized enumeration value, \"", val, "\" on line ", std::to_string(lineNum), ", attr ", std::to_string(i));
 							temp[i] = m_str_to_enum[i][val];
 						}
 					}

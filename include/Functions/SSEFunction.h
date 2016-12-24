@@ -33,8 +33,8 @@ public:
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
-        T sum = 0.0;
-        static vector<T> prediction(labels.cols(), 0.0);
+        T sum{};
+        static vector<T> prediction(labels.cols(), T{});
 
         // Calculate the SSE
         for (size_t i = 0; i < features.rows(); ++i)
@@ -67,7 +67,7 @@ public:
         const size_t rows = features.rows();
 
         // Set the gradient to the zero vector
-        std::fill(gradient.begin(), gradient.end(), 0.0);
+        std::fill(gradient.begin(), gradient.end(), T{});
 
         static Matrix<T> baseJacobian;
         static vector<T> evaluation(M);
@@ -264,7 +264,7 @@ public:
         localHessian.setSize(N, N);
         sumOfLocalHessians.setSize(N, N);
 
-        hessian.setAll(0.0);
+        hessian.setAll(T{});
 
         for(size_t i = 0; i < features.rows(); ++i)
         {
@@ -279,7 +279,7 @@ public:
             {
                 for (size_t c2 = 0; c2 < N; ++c2)
                 {
-                    T sum = 0.0;
+                    T sum{};
                     for (size_t r = 0; r < M; ++r)
                         sum += jacobian[r][c1] * jacobian[r][c2];
 
@@ -296,7 +296,7 @@ public:
                 error[j] = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
-            sumOfLocalHessians.setAll(0.0);
+            sumOfLocalHessians.setAll(T{});
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
@@ -337,16 +337,19 @@ public:
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
+        const size_t N = features.rows();
+        const size_t M = labels.cols();
+
         T sum {};
-        static vector<T> prediction(labels.cols(), T{});
+        static vector<T> prediction(M, T{});
 
         // Calculate the SSE
-        for (size_t i = 0; i < features.rows(); ++i)
+        for (size_t i = 0; i < N; ++i)
         {
             ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.evaluate(features[i], prediction);
 
             const vector<T>& row = labels[i];
-            for (size_t j = 0; j < labels.cols(); ++j)
+            for (size_t j = 0; j < M; ++j)
             {
                 T d = row[j] - prediction[j];
 

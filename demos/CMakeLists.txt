@@ -16,10 +16,14 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -O3")
 # Set the location of the final executable to be where cmake/make are called
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-# Create lists of all of the header files and the source files
-set(SOURCES src/mnistConvolutionExample.cpp)
+# Since the library is header-only, we need to specify where they are
+include_directories("/usr/local/include/opkit")
 
+# Create lists of all of the header files and the source files
+set(SOURCES src/fullyConnectedBackpropTest.cpp)
 add_executable(demo ${SOURCES})
 
-target_link_libraries(demo liboptkit.a)
-
+# Find and link the BLAS Library
+find_package(BLAS REQUIRED)
+message("BLAS Library Found: ${BLAS_LIBRARIES}")
+target_link_libraries(demo ${BLAS_LIBRARIES})

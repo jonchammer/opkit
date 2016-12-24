@@ -155,6 +155,72 @@ namespace opkit
         beta, y, yInc);
     }
 
+    // Computes y = alpha * A * x + beta * y, where A is an N x N
+    // symmetric matrix, x is a vector of size N, y is a vector of size N,
+    // and alpha and beta are scalars.
+    // xInc and yInc can be adjusted if the vectors are stored
+    // in an interlaced format.
+    inline void symmetricMvMultiply(const double* A, const double* x, double* y,
+        const size_t N, const double alpha = 1.0, const double beta = 0.0,
+        const int xInc = 1, const int yInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  Upper or lower part of matrix is used
+        // 3.  N
+        // 4.  Alpha
+        // 5.  A's data
+        // 6.  A's stride
+        // 7.  x's data
+        // 8.  x's increment (1)
+        // 9.  Beta
+        // 10. y's data
+        // 11. y's increment (1)
+        cblas_dsymv(CblasRowMajor, CblasUpper,
+        N, alpha,
+        A, N,
+        x, xInc,
+        beta, y, yInc);
+    }
+
+    // Computes y = alpha * A * x + beta * y, where A is an N x N
+    // symmetric matrix, x is a vector of size N, y is a vector of size N,
+    // and alpha and beta are scalars.
+    // xInc and yInc can be adjusted if the vectors are stored
+    // in an interlaced format.
+    inline void symmetricMvMultiply(const float* A, const float* x, float* y,
+        const size_t N, const float alpha = 1.0f, const float beta = 0.0f,
+        const int xInc = 1, const int yInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  Upper or lower part of matrix is used
+        // 3.  N
+        // 4.  Alpha
+        // 5.  A's data
+        // 6.  A's stride
+        // 7.  x's data
+        // 8.  x's increment (1)
+        // 9.  Beta
+        // 10. y's data
+        // 11. y's increment (1)
+        cblas_ssymv(CblasRowMajor, CblasUpper,
+        N, alpha,
+        A, N,
+        x, xInc,
+        beta, y, yInc);
+    }
+
     // Computes y = alpha * A^T * x + beta * y, where A is an M x N
     // matrix, x is a vector of size M, y is a vector of size N,
     // and alpha and beta are scalars.

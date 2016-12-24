@@ -517,6 +517,10 @@ private:
     }
 };
 
+// This layer implements the multivariate logistic function (aka Softmax). Given
+// a vector of inputs, it produces a vector of outputs such that the sum of the
+// values is equal to 1.0. This makes softmax layers good choices when we need
+// to predict a probability distribution.
 template <class T>
 class SoftmaxLayer : public Layer<T>
 {
@@ -528,8 +532,8 @@ public:
     using Layer<T>::mDeltas;
     using Layer<T>::mActivation;
 
-    SoftmaxLayer(size_t size) :
-        Layer<T>(size, size) {}
+    // Create a Softmax layer. All we need to know is the dimension.
+    SoftmaxLayer(size_t size) : Layer<T>(size, size) {}
 
     void eval(const vector<T>& x) override
     {
@@ -553,24 +557,43 @@ public:
 
     void calculateDeltas(const vector<T>& /*x*/, vector<T>& destination) override
     {
-        static vector<T> yyT(mOutputs * mOutputs);
+        static vector<T> jacobian(mOutputs * mOutputs);
         const T* deltas     = mDeltas.data();
         const T* activation = mActivation.data();
-        T* work             = yyT.data();
+        T* work             = jacobian.data();
         T* dest             = destination.data();
 
         // Destination = J * deltas, where J = Diag(y) - y*y^T
-        // and y is the activation of this layer
-        std::fill(yyT.begin(), yyT.end(), T{});
-        outerProduct(activation, activation, work, mOutputs, mOutputs);
+        // and y is the activation of this layer. We construct J manually by
+        // first calculating y*y^T (using the outerProduct function), and then
+        // adding the diagonal terms.
+        //
+        // NOTE 1: J should be a symmetric matrix, so when possible, we should
+        // avoid repeated calculations.
+        //
+        // NOTE 2: J can also be expressed as
+        // J_ij = y_i (delta_i_j - y_j), where delta_i_j == 1 if i == j and
+        // delta_i_j == 0 if i != j.
+        // This definition is more useful if the matrix has to be constructed
+        // manually.
+        //
+        // NOTE 3: If the Cross-Entropy cost function is used and this is the
+        // last layer of the network, the values placed in 'destination' should
+        // equal y' - y, where y' is the activation of this layer and y is the
+        // training label (in one hot representation). This is computationally
+        // much easier to calculate and much more numerically stable, so it
+        // should be used whenever possible.
+        std::fill(jacobian.begin(), jacobian.end(), T{});
+        outerProduct(activation, activation, work, mOutputs, mOutputs, T{-1.0});
 
+        size_t index = 0;
         for (size_t i = 0; i < mOutputs; ++i)
         {
-            size_t index = i * mOutputs + i;
-            work[index]  = activation[i] - work[index];
+            work[index] += activation[i];
+            index       += mOutputs + 1;
         }
 
-        mvMultiply(work, deltas, dest, mOutputs, mOutputs);
+        symmetricMvMultiply(work, deltas, dest, mOutputs);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override
