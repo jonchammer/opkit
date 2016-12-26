@@ -25,6 +25,9 @@ template <class T, class Model>
 class SSEFunction : public ErrorFunction<T, Model>
 {
 public:
+
+    using ErrorFunction<T, Model>::mBaseFunction;
+
     SSEFunction(Model& baseFunction) : ErrorFunction<T, Model>(baseFunction)
     {
         // Do nothing
@@ -39,7 +42,7 @@ public:
         // Calculate the SSE
         for (size_t i = 0; i < features.rows(); ++i)
         {
-            ErrorFunction<T, Model>::mBaseFunction.evaluate(features[i], prediction);
+            mBaseFunction.evaluate(features[i], prediction);
 
             const vector<T>& row = labels[i];
             for (size_t j = 0; j < labels.cols(); ++j)
@@ -62,8 +65,8 @@ public:
     {
         // When SSE is the error function, the gradient is simply the error vector
         // multiplied by the model's Jacobian.
-        const size_t N    = ErrorFunction<T, Model>::mBaseFunction.getInputs();
-        const size_t M    = ErrorFunction<T, Model>::mBaseFunction.getOutputs();
+        const size_t N    = mBaseFunction.getInputs();
+        const size_t M    = mBaseFunction.getOutputs();
         const size_t rows = features.rows();
 
         // Set the gradient to the zero vector
@@ -77,12 +80,12 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the inputs
-            ErrorFunction<T, Model>::mBaseFunction.calculateJacobianInputs(features[i], baseJacobian);
+            mBaseFunction.calculateJacobianInputs(features[i], baseJacobian);
 
             // Calculate the error for this sample
-            if (ErrorFunction<T, Model>::mBaseFunction.cachesLastEvaluation())
-                ErrorFunction<T, Model>::mBaseFunction.getLastEvaluation(evaluation);
-            else ErrorFunction<T, Model>::mBaseFunction.evaluate(features[i], evaluation);
+            if (mBaseFunction.cachesLastEvaluation())
+                mBaseFunction.getLastEvaluation(evaluation);
+            else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
                 error[j] = labels[i][j] - evaluation[j];
@@ -109,8 +112,8 @@ public:
     {
         // When SSE is the error function, the gradient is simply the error vector
         // multiplied by the model's Jacobian.
-        const size_t N    = ErrorFunction<T, Model>::mBaseFunction.getNumParameters();
-        const size_t M    = ErrorFunction<T, Model>::mBaseFunction.getOutputs();
+        const size_t N    = mBaseFunction.getNumParameters();
+        const size_t M    = mBaseFunction.getOutputs();
         const size_t rows = features.rows();
 
         // Set the gradient to the zero vector
@@ -124,12 +127,12 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            ErrorFunction<T, Model>::mBaseFunction.calculateJacobianParameters(features[i], baseJacobian);
+            mBaseFunction.calculateJacobianParameters(features[i], baseJacobian);
 
             // Calculate the error for this sample
-            if (ErrorFunction<T, Model>::mBaseFunction.cachesLastEvaluation())
-                ErrorFunction<T, Model>::mBaseFunction.getLastEvaluation(evaluation);
-            else ErrorFunction<T, Model>::mBaseFunction.evaluate(features[i], evaluation);
+            if (mBaseFunction.cachesLastEvaluation())
+                mBaseFunction.getLastEvaluation(evaluation);
+            else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
                 error[j] = labels[i][j] - evaluation[j];
@@ -161,8 +164,8 @@ public:
         // H_i is the model's Hessian matrix with respect to output i
         // J is the model's Jacobian matrix
 
-        const size_t N = ErrorFunction<T, Model>::mBaseFunction.getInputs();
-        const size_t M = ErrorFunction<T, Model>::mBaseFunction.getOutputs();
+        const size_t N = mBaseFunction.getInputs();
+        const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
         Matrix<T> jacobian;
@@ -184,7 +187,7 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            ErrorFunction<T, Model>::mBaseFunction.calculateJacobianInputs(features[i], jacobian);
+            mBaseFunction.calculateJacobianInputs(features[i], jacobian);
 
             // Calculate the square of the Jacobian matrix.
             // TODO: Calculate J^T and work with that for better cache performance
@@ -202,9 +205,9 @@ public:
             }
 
             // Calculate the error for this sample
-            if (ErrorFunction<T, Model>::mBaseFunction.cachesLastEvaluation())
-                ErrorFunction<T, Model>::mBaseFunction.getLastEvaluation(evaluation);
-            else ErrorFunction<T, Model>::mBaseFunction.evaluate(features[i], evaluation);
+            if (mBaseFunction.cachesLastEvaluation())
+                mBaseFunction.getLastEvaluation(evaluation);
+            else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
                 error[j] = labels[i][j] - evaluation[j];
@@ -214,7 +217,7 @@ public:
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
-                ErrorFunction<T, Model>::mBaseFunction.calculateHessianInputs(features[i], j, localHessian);
+                mBaseFunction.calculateHessianInputs(features[i], j, localHessian);
 
                 // Multiply by the error constant and add to the running total
                 for (size_t r = 0; r < N; ++r)
@@ -247,8 +250,8 @@ public:
         // H_i is the model's Hessian matrix with respect to output i
         // J is the model's Jacobian matrix
 
-        const size_t N = ErrorFunction<T, Model>::mBaseFunction.getNumParameters();
-        const size_t M = ErrorFunction<T, Model>::mBaseFunction.getOutputs();
+        const size_t N = mBaseFunction.getNumParameters();
+        const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
         Matrix<T> jacobian;
@@ -270,7 +273,7 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            ErrorFunction<T, Model>::mBaseFunction.calculateJacobianParameters(features[i], jacobian);
+            mBaseFunction.calculateJacobianParameters(features[i], jacobian);
 
             // Calculate the square of the Jacobian matrix.
             // TODO: Calculate J^T and work with that for better cache performance
@@ -288,9 +291,9 @@ public:
             }
 
             // Calculate the error for this sample
-            if (ErrorFunction<T, Model>::mBaseFunction.cachesLastEvaluation())
-                ErrorFunction<T, Model>::mBaseFunction.getLastEvaluation(evaluation);
-            else ErrorFunction<T, Model>::mBaseFunction.evaluate(features[i], evaluation);
+            if (mBaseFunction.cachesLastEvaluation())
+                mBaseFunction.getLastEvaluation(evaluation);
+            else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
                 error[j] = labels[i][j] - evaluation[j];
@@ -300,7 +303,7 @@ public:
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
-                ErrorFunction<T, Model>::mBaseFunction.calculateHessianParameters(features[i], j, localHessian);
+                mBaseFunction.calculateHessianParameters(features[i], j, localHessian);
 
                 // Multiply by the error constant and add to the running total
                 for (size_t r = 0; r < N; ++r)
@@ -329,6 +332,9 @@ template<class T>
 class SSEFunction<T, NeuralNetwork<T>> : public ErrorFunction<T, NeuralNetwork<T>>
 {
 public:
+
+    using ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction;
+
     SSEFunction(NeuralNetwork<T>& baseFunction) : ErrorFunction<T, NeuralNetwork<T>>(baseFunction)
     {
         // Do nothing
@@ -346,7 +352,7 @@ public:
         // Calculate the SSE
         for (size_t i = 0; i < N; ++i)
         {
-            ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.evaluate(features[i], prediction);
+            mBaseFunction.evaluate(features[i], prediction);
 
             const vector<T>& row = labels[i];
             for (size_t j = 0; j < M; ++j)
@@ -367,7 +373,7 @@ public:
     void calculateGradientInputs(const Matrix<T>& features, const Matrix<T>& labels,
         vector<T>& gradient)
     {
-        NeuralNetwork<T>& nn = ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction;
+        NeuralNetwork<T>& nn = mBaseFunction;
         const size_t N       = nn.getInputs();
         const size_t M       = nn.getOutputs();
         const size_t rows    = features.rows();
@@ -412,7 +418,7 @@ public:
     void calculateGradientParameters(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient)
     {
-        NeuralNetwork<T>& nn = ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction;
+        NeuralNetwork<T>& nn = mBaseFunction;
         const size_t N       = nn.getNumParameters();
         const size_t M       = nn.getOutputs();
         const size_t rows    = features.rows();
@@ -462,8 +468,8 @@ public:
         // H_i is the model's Hessian matrix with respect to output i
         // J is the model's Jacobian matrix
 
-        const size_t N = ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.getInputs();
-        const size_t M = ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.getOutputs();
+        const size_t N = mBaseFunction.getInputs();
+        const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
         Matrix<T> jacobian;
@@ -485,7 +491,7 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.calculateJacobianInputs(features[i], jacobian);
+            mBaseFunction.calculateJacobianInputs(features[i], jacobian);
 
             // Calculate the square of the Jacobian matrix.
             // TODO: Calculate J^T and work with that for better cache performance
@@ -503,9 +509,9 @@ public:
             }
 
             // Calculate the error for this sample
-            if (ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.cachesLastEvaluation())
-                ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.getLastEvaluation(evaluation);
-            else ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.evaluate(features[i], evaluation);
+            if (mBaseFunction.cachesLastEvaluation())
+                mBaseFunction.getLastEvaluation(evaluation);
+            else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
                 error[j] = labels[i][j] - evaluation[j];
@@ -515,7 +521,7 @@ public:
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
-                ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.calculateHessianInputs(features[i], j, localHessian);
+                mBaseFunction.calculateHessianInputs(features[i], j, localHessian);
 
                 // Multiply by the error constant and add to the running total
                 for (size_t r = 0; r < N; ++r)
@@ -548,8 +554,8 @@ public:
         // H_i is the model's Hessian matrix with respect to output i
         // J is the model's Jacobian matrix
 
-        const size_t N = ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.getNumParameters();
-        const size_t M = ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.getOutputs();
+        const size_t N = mBaseFunction.getNumParameters();
+        const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
         Matrix<T> jacobian;
@@ -571,7 +577,7 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.calculateJacobianParameters(features[i], jacobian);
+            mBaseFunction.calculateJacobianParameters(features[i], jacobian);
 
             // Calculate the square of the Jacobian matrix.
             // TODO: Calculate J^T and work with that for better cache performance
@@ -589,9 +595,9 @@ public:
             }
 
             // Calculate the error for this sample
-            if (ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.cachesLastEvaluation())
-                ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.getLastEvaluation(evaluation);
-            else ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.evaluate(features[i], evaluation);
+            if (mBaseFunction.cachesLastEvaluation())
+                mBaseFunction.getLastEvaluation(evaluation);
+            else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
                 error[j] = labels[i][j] - evaluation[j];
@@ -601,7 +607,7 @@ public:
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
-                ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction.calculateHessianParameters(features[i], j, localHessian);
+                mBaseFunction.calculateHessianParameters(features[i], j, localHessian);
 
                 // Multiply by the error constant and add to the running total
                 for (size_t r = 0; r < N; ++r)
