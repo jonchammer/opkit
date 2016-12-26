@@ -426,7 +426,6 @@ public:
         std::fill(gradient.begin(), gradient.end(), T{});
         static vector<T> evaluation(M);
 
-        static int x = 0;
         // Calculate a partial gradient for each row in the training data
         for (size_t i = 0; i < rows; ++i)
         {
