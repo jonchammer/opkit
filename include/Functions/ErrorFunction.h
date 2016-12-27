@@ -114,7 +114,7 @@ void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
     T y = evaluate(features, labels);
 
     size_t rows = features.rows();
-    for (size_t r = 0; r < features.rows(); ++r)
+    for (size_t r = 0; r < rows; ++r)
     {
         // Yes, 'features' is declared const. We temporarily change one value in
         // one row, re-evaluate the function, and then revert the value to its
