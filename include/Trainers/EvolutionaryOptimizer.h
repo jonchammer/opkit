@@ -9,7 +9,7 @@
 #define EVOLUTIONARYOPTIMIZATION_H
 
 #include "ErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 #include "Trainer.h"
 
 namespace opkit
@@ -72,11 +72,11 @@ public:
     
     // Constructors
     EvolutionaryOptimizer(ErrorFunction<T, Model>* function, EvolutionaryOptimizerParams& params);
-    void iterate(const Matrix<T>& features, const Matrix<T>& labels);
+    void iterate(const Dataset<T>& features, const Dataset<T>& labels);
  
 private:
     // Members
-    Matrix<T> mPopulation;                 // The population of candidate solutions
+    Dataset<T> mPopulation;                 // The population of candidate solutions
     EvolutionaryOptimizerParams* mParams;  // The meta parameters to use for the simulation
     vector<T> mErrors;                     // The fitness value of each member of the population
     vector<T> mInvErrors;                  // 1.0 / mFitnesses[i] (used for run-time optimization)
@@ -97,17 +97,17 @@ private:
 
     // Replace the vector at index with a new member (found using crossover, 
     // interpolation, or extrapolation)
-    void repopulate(int index, const Matrix<T>& features, const Matrix<T>& labels);
+    void repopulate(int index, const Dataset<T>& features, const Dataset<T>& labels);
 
     // Choose two vectors at random to fight to the death. The loser is repopulated.
-    void tournament(const Matrix<T>& features, const Matrix<T>& labels);
+    void tournament(const Dataset<T>& features, const Dataset<T>& labels);
 
     // Mutate a single given element of the given vector
     void mutateSingle(int row, int column, bool reevaluateFitness, 
-        const Matrix<T>& features, const Matrix<T>& labels);
+        const Dataset<T>& features, const Dataset<T>& labels);
 
     // Mutates all elements of a random vector
-    void mutateAll(const Matrix<T>& features, const Matrix<T>& labels);
+    void mutateAll(const Dataset<T>& features, const Dataset<T>& labels);
 
     // Returns the best fitness (lowest error) in the entire population
     T getBestError();
@@ -117,7 +117,7 @@ private:
     
     // Updates information about the given population member (reevaluating its
     // fitness and comparing it to the optimal answer).
-    void evaluateMember(int index, const Matrix<T>& features, const Matrix<T>& labels);
+    void evaluateMember(int index, const Dataset<T>& features, const Dataset<T>& labels);
 };
 
 template <class T, class Model>
@@ -187,7 +187,7 @@ void EvolutionaryOptimizer<T, Model>::chooseParents(int& out1, int& out2)
 
 template <class T, class Model>
 void EvolutionaryOptimizer<T, Model>::repopulate(int index, 
-    const Matrix<T>& features, const Matrix<T>& labels)
+    const Dataset<T>& features, const Dataset<T>& labels)
 {
 	// Fitter parents are more likely to be chosen to repopulate
 	int parent1 = -1, parent2 = -1;
@@ -238,7 +238,7 @@ void EvolutionaryOptimizer<T, Model>::repopulate(int index,
 }
 
 template <class T, class Model>
-void EvolutionaryOptimizer<T, Model>::tournament(const Matrix<T>& features, const Matrix<T>& labels)
+void EvolutionaryOptimizer<T, Model>::tournament(const Dataset<T>& features, const Dataset<T>& labels)
 {
 	// Pick two candidates
 	int c1 = (int)(mUniform(mRandGenerator) * mPopulation.rows());
@@ -263,7 +263,7 @@ void EvolutionaryOptimizer<T, Model>::tournament(const Matrix<T>& features, cons
 
 template <class T, class Model>
 void EvolutionaryOptimizer<T, Model>::mutateSingle(int row, int column, 
-    bool reevaluateFitness, const Matrix<T>& features, const Matrix<T>& labels)
+    bool reevaluateFitness, const Dataset<T>& features, const Dataset<T>& labels)
 {
 	// Perturb the element
 	mPopulation[row][column] += mNormal(mRandGenerator) * 
@@ -275,8 +275,8 @@ void EvolutionaryOptimizer<T, Model>::mutateSingle(int row, int column,
 }
 
 template <class T, class Model>
-void EvolutionaryOptimizer<T, Model>::mutateAll(const Matrix<T>& features, 
-    const Matrix<T>& labels)
+void EvolutionaryOptimizer<T, Model>::mutateAll(const Dataset<T>& features, 
+    const Dataset<T>& labels)
 {
 	// Pick the subject for mutation
 	int index = (int)(mUniform(mRandGenerator) * mPopulation.rows());
@@ -303,7 +303,7 @@ T EvolutionaryOptimizer<T, Model>::getAverageError()
 }
 
 template <class T, class Model>
-void EvolutionaryOptimizer<T, Model>::iterate(const Matrix<T>& features, const Matrix<T>& labels)
+void EvolutionaryOptimizer<T, Model>::iterate(const Dataset<T>& features, const Dataset<T>& labels)
 {
     // The first time this function is called, we calculate the fitness of each
     // member of the population
@@ -361,7 +361,7 @@ void EvolutionaryOptimizer<T, Model>::iterate(const Matrix<T>& features, const M
 
 template <class T, class Model>
 void EvolutionaryOptimizer<T, Model>::evaluateMember(int index, 
-    const Matrix<T>& features, const Matrix<T>& labels)
+    const Dataset<T>& features, const Dataset<T>& labels)
 {
     // Swap the desired parameters into the function
     vector<T>& origParams = Trainer<T, Model>::function->getParameters();

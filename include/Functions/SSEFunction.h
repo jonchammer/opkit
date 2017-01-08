@@ -11,7 +11,7 @@
 #include <vector>
 #include <cstring>
 #include "ErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 #include "NeuralNetwork.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
@@ -33,7 +33,7 @@ public:
         // Do nothing
     }
 
-    T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
+    T evaluate(const Dataset<T>& features, const Dataset<T>& labels)
     {
         // Initialize variables
         T sum{};
@@ -60,7 +60,7 @@ public:
         return sum;
     }
 
-    void calculateGradientInputs(const Matrix<T>& features, const Matrix<T>& labels,
+    void calculateGradientInputs(const Dataset<T>& features, const Dataset<T>& labels,
         vector<T>& gradient)
     {
         // When SSE is the error function, the gradient is simply the error vector
@@ -72,7 +72,7 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian;
+        static Dataset<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
 
@@ -107,8 +107,8 @@ public:
             gradient[i] /= rows;
     }
 
-    void calculateGradientParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         // When SSE is the error function, the gradient is simply the error vector
         // multiplied by the model's Jacobian.
@@ -119,7 +119,7 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), 0.0);
 
-        static Matrix<T> baseJacobian;
+        static Dataset<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
 
@@ -153,8 +153,8 @@ public:
             gradient[i] /= rows;
     }
 
-    void calculateHessianInputs(const Matrix<T>& features, const Matrix<T>& labels,
-        Matrix<T>& hessian)
+    void calculateHessianInputs(const Dataset<T>& features, const Dataset<T>& labels,
+        Dataset<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -168,10 +168,10 @@ public:
         const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
-        Matrix<T> jacobian;
-        Matrix<T> jacobianSquare;
-        Matrix<T> localHessian;
-        Matrix<T> sumOfLocalHessians;
+        Dataset<T> jacobian;
+        Dataset<T> jacobianSquare;
+        Dataset<T> localHessian;
+        Dataset<T> sumOfLocalHessians;
         vector<T> evaluation(M);
         vector<T> error(M);
 
@@ -239,8 +239,8 @@ public:
         }
     }
 
-    void calculateHessianParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, Matrix<T>& hessian)
+    void calculateHessianParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, Dataset<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -254,10 +254,10 @@ public:
         const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
-        Matrix<T> jacobian;
-        Matrix<T> jacobianSquare;
-        Matrix<T> localHessian;
-        Matrix<T> sumOfLocalHessians;
+        Dataset<T> jacobian;
+        Dataset<T> jacobianSquare;
+        Dataset<T> localHessian;
+        Dataset<T> sumOfLocalHessians;
         vector<T> evaluation(M);
         vector<T> error(M);
 
@@ -340,7 +340,7 @@ public:
         // Do nothing
     }
 
-    T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
+    T evaluate(const Dataset<T>& features, const Dataset<T>& labels)
     {
         // Initialize variables
         const size_t N = features.rows();
@@ -370,7 +370,7 @@ public:
         return sum;
     }
 
-    void calculateGradientInputs(const Matrix<T>& features, const Matrix<T>& labels,
+    void calculateGradientInputs(const Dataset<T>& features, const Dataset<T>& labels,
         vector<T>& gradient)
     {
         NeuralNetwork<T>& nn = mBaseFunction;
@@ -415,8 +415,8 @@ public:
         vScale(gradient.data(), 1.0/rows, N);
     }
 
-    void calculateGradientParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         NeuralNetwork<T>& nn = mBaseFunction;
         const size_t N       = nn.getNumParameters();
@@ -456,8 +456,8 @@ public:
         vScale(gradient.data(), -2.0/rows, N);
     }
 
-    void calculateHessianInputs(const Matrix<T>& features, const Matrix<T>& labels,
-        Matrix<T>& hessian)
+    void calculateHessianInputs(const Dataset<T>& features, const Dataset<T>& labels,
+        Dataset<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -471,10 +471,10 @@ public:
         const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
-        Matrix<T> jacobian;
-        Matrix<T> jacobianSquare;
-        Matrix<T> localHessian;
-        Matrix<T> sumOfLocalHessians;
+        Dataset<T> jacobian;
+        Dataset<T> jacobianSquare;
+        Dataset<T> localHessian;
+        Dataset<T> sumOfLocalHessians;
         vector<T> evaluation(M);
         vector<T> error(M);
 
@@ -542,8 +542,8 @@ public:
         }
     }
 
-    void calculateHessianParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, Matrix<T>& hessian)
+    void calculateHessianParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, Dataset<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -557,10 +557,10 @@ public:
         const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
-        Matrix<T> jacobian;
-        Matrix<T> jacobianSquare;
-        Matrix<T> localHessian;
-        Matrix<T> sumOfLocalHessians;
+        Dataset<T> jacobian;
+        Dataset<T> jacobianSquare;
+        Dataset<T> localHessian;
+        Dataset<T> sumOfLocalHessians;
         vector<T> evaluation(M);
         vector<T> error(M);
 

@@ -12,7 +12,7 @@
 #include "opkit/RMSProp.h"
 #include "opkit/SSEFunction.h"
 #include "opkit/CategoricalErrorFunction.h"
-#include "opkit/Matrix.h"
+#include "opkit/Dataset.h"
 #include "opkit/DataNormalizer.h"
 #include "opkit/ActivationFunction.h"
 #include "opkit/PrettyPrinter.h"
@@ -21,25 +21,25 @@
 
 using namespace std;
 
-double variance(const Matrix& matrix, size_t column)
+double variance(const Dataset& Dataset, size_t column)
 {
     // Calculate the variance
     double sum  = 0.0;
-    double mean = matrix.columnMean(column);
-    for (size_t i = 0; i < matrix.rows(); ++i)
+    double mean = Dataset.columnMean(column);
+    for (size_t i = 0; i < Dataset.rows(); ++i)
     {
-        double temp = matrix[i][column] - mean;
+        double temp = Dataset[i][column] - mean;
         sum += temp * temp;
     }
     
-    return sum / (matrix.rows() - 1);
+    return sum / (Dataset.rows() - 1);
 }
 
 int main()
 {
     // Load the data
     cout << "Loading data..." << endl;
-    Matrix trainFeatures, trainLabels, testFeatures, testLabels;
+    Dataset trainFeatures, trainLabels, testFeatures, testLabels;
     trainFeatures.loadARFF("../../data/mnist_train_features.arff");
     trainLabels.loadARFF("../../data/mnist_train_labels.arff");
     testFeatures.loadARFF("../../data/mnist_test_features.arff");
@@ -102,8 +102,8 @@ int main()
     trainer.setMomentum(0.0001);*/
     
     BatchIterator it(trainFeatures, trainLabels, 1);
-    Matrix* batchFeatures;
-    Matrix* batchLabels;
+    Dataset* batchFeatures;
+    Dataset* batchLabels;
     
     printf("%5d: %0.2f\t%.0f\t%f\n", 
         0,

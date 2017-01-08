@@ -9,7 +9,7 @@
  */
 
 #include <iostream>
-#include "Matrix.h"
+#include "Dataset.h"
 #include "DataLoader.h"
 #include "DataNormalizer.h"
 #include "SSEFunction.h"
@@ -40,7 +40,7 @@ using namespace std;
 #define TEST_ACTIVATION scaledTanhActivation
 //-----------------------------------------------//
 
-bool loadIris(Matrix& features, Matrix& labels)
+bool loadIris(Dataset& features, Dataset& labels)
 {
     const string filename = "../data/iris.arff";
 
@@ -60,7 +60,7 @@ bool loadIris(Matrix& features, Matrix& labels)
 int main()
 {
     // Load the data
-    Matrix features, labels;
+    Dataset features, labels;
     if (!loadIris(features, labels))
         return 1;
     

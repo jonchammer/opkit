@@ -86,14 +86,14 @@ bool testBackProp(NeuralNetwork& network, vector<double>& input)
     std::copy(test.begin(), test.end(), input.begin());
     
     cout << "Testing Backprop." << endl;
-    Matrix jacobian, jacobian2;
+    Dataset jacobian, jacobian2;
     network.calculateJacobianParameters(input, jacobian);
     network.Function::calculateJacobianParameters(input, jacobian2);
     
     cout << "Calculated Gradient:" << endl;
-    printMatrix(jacobian);
+    printDataset(jacobian);
     cout << "True Gradient:" << endl;
-    printMatrix(jacobian2);
+    printDataset(jacobian2);
     
     for (size_t j = 0; j < jacobian.rows(); ++j)
     {

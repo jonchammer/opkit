@@ -3,8 +3,8 @@
 // See http://creativecommons.org/publicdomain/zero/1.0/
 // ----------------------------------------------------------------
 
-#ifndef MATRIX_H
-#define MATRIX_H
+#ifndef Dataset_H
+#define Dataset_H
 
 #include <fstream>
 #include <vector>
@@ -24,15 +24,15 @@ namespace opkit
 
 #define UNKNOWN_VALUE -1e308
 
-// This stores a matrix, A.K.A. data set, A.K.A. table. Each element is
+// This stores a Dataset, A.K.A. data set, A.K.A. table. Each element is
 // represented as a double value. Nominal values are represented using their
 // corresponding zero-indexed enumeration value. For convenience,
-// the matrix also stores some meta-data which describes the columns (or attributes)
-// in the matrix. You can access the elements in the matrix using square
+// the Dataset also stores some meta-data which describes the columns (or attributes)
+// in the Dataset. You can access the elements in the Dataset using square
 // brackets. (Row comes first. Column comes second. Both are zero-indexed.)
 // For example:
 //
-// Matrix m;
+// Dataset m;
 // m.setSize(3, 2);
 // m[0][0] = 1.0;
 // m[0][1] = 1.5;
@@ -42,11 +42,11 @@ namespace opkit
 // m[2][1] = 1234.567;
 //
 template <class T>
-class Matrix
+class Dataset
 {
 private:
 	// Data
-	vector< vector<T> > m_data; // matrix elements
+	vector< vector<T> > m_data; // Dataset elements
 
 	// Meta-data
 	string m_filename; // the name of the file
@@ -55,48 +55,48 @@ private:
 	vector< map<size_t, string> > m_enum_to_str; // enumeration to value
 
 public:
-	/// Creates a 0x0 matrix. (Next, to give this matrix some dimensions, you should call:
+	/// Creates a 0x0 Dataset. (Next, to give this Dataset some dimensions, you should call:
 	///    loadARFF,
 	///    setSize,
 	///    addColumn, or
 	///    copyMetaData
-	Matrix() {}
+	Dataset() {}
 
 	/// Destructor
-	~Matrix() {}
+	~Dataset() {}
 
-	/// Loads the matrix from an ARFF file
+	/// Loads the Dataset from an ARFF file
 	void loadARFF(string filename);
 
-	/// Saves the matrix to an ARFF file
+	/// Saves the Dataset to an ARFF file
 	void saveARFF(string filename) const;
 
-	/// Makes a rows x columns matrix of *ALL CONTINUOUS VALUES*.
-	/// This method wipes out any data currently in the matrix. It also
+	/// Makes a rows x columns Dataset of *ALL CONTINUOUS VALUES*.
+	/// This method wipes out any data currently in the Dataset. It also
 	/// wipes out any meta-data.
 	void setSize(size_t rows, size_t cols);
 
-	/// Clears this matrix and copies the meta-data from that matrix.
-	/// In other words, it makes a zero-row matrix with the same number
-	/// of columns as "that" matrix. You will need to call newRow or newRows
-	/// to give the matrix some rows.
-	void copyMetaData(const Matrix& that);
+	/// Clears this Dataset and copies the meta-data from that Dataset.
+	/// In other words, it makes a zero-row Dataset with the same number
+	/// of columns as "that" Dataset. You will need to call newRow or newRows
+	/// to give the Dataset some rows.
+	void copyMetaData(const Dataset& that);
 
-	/// Adds a column to this matrix with the specified number of values. (Use 0 for
+	/// Adds a column to this Dataset with the specified number of values. (Use 0 for
 	/// a continuous attribute.) This method also sets the number of rows to 0, so
 	/// you will need to call newRow or newRows when you are done adding columns.
 	void newColumn(size_t vals = 0);
 
-	/// Adds one new row to this matrix. Returns a reference to the new row.
+	/// Adds one new row to this Dataset. Returns a reference to the new row.
 	vector<T>& newRow();
 
-	/// Adds 'n' new rows to this matrix. (These rows are not initialized.)
+	/// Adds 'n' new rows to this Dataset. (These rows are not initialized.)
 	void newRows(size_t n);
 
-	/// Returns the number of rows in the matrix
+	/// Returns the number of rows in the Dataset
 	size_t rows() const { return m_data.size(); }
 
-	/// Returns the number of columns (or attributes) in the matrix
+	/// Returns the number of columns (or attributes) in the Dataset
 	size_t cols() const { return m_attr_name.size(); }
 
 	/// Returns the name of the specified attribute
@@ -133,20 +133,20 @@ public:
 	/// Returns the most common value in the specified column. (Elements with the value UNKNOWN_VALUE are ignored.)
 	T mostCommonValue(size_t col) const;
 
-	/// Copies the specified rectangular portion of that matrix, and adds it to the bottom of this matrix.
-	/// (If colCount does not match the number of columns in this matrix, then this matrix will be cleared first.)
-	void copyPart(const Matrix& that, size_t rowBegin, size_t colBegin, size_t rowCount, size_t colCount);
+	/// Copies the specified rectangular portion of that Dataset, and adds it to the bottom of this Dataset.
+	/// (If colCount does not match the number of columns in this Dataset, then this Dataset will be cleared first.)
+	void copyPart(const Dataset& that, size_t rowBegin, size_t colBegin, size_t rowCount, size_t colCount);
 
-	/// Sets every elements in the matrix to the specified value.
+	/// Sets every elements in the Dataset to the specified value.
 	void setAll(T val);
 
 	/// Throws an exception if that has a different number of columns than
 	/// this, or if one of its columns has a different number of values.
-	void checkCompatibility(const Matrix& that) const;
+	void checkCompatibility(const Dataset& that) const;
 };
 
 template <class T>
-void Matrix<T>::setSize(size_t rows, size_t cols)
+void Dataset<T>::setSize(size_t rows, size_t cols)
 {
 	// Make space for the data
 	m_data.resize(rows);
@@ -166,7 +166,7 @@ void Matrix<T>::setSize(size_t rows, size_t cols)
 }
 
 template <class T>
-void Matrix<T>::copyMetaData(const Matrix<T>& that)
+void Dataset<T>::copyMetaData(const Dataset<T>& that)
 {
 	m_data.clear();
 	m_attr_name = that.m_attr_name;
@@ -175,7 +175,7 @@ void Matrix<T>::copyMetaData(const Matrix<T>& that)
 }
 
 template <class T>
-void Matrix<T>::newColumn(size_t vals)
+void Dataset<T>::newColumn(size_t vals)
 {
 	m_data.clear();
 	size_t c = cols();
@@ -196,7 +196,7 @@ void Matrix<T>::newColumn(size_t vals)
 }
 
 template <class T>
-std::vector<T>& Matrix<T>::newRow()
+std::vector<T>& Dataset<T>::newRow()
 {
 	size_t c = cols();
 	if(c == 0)
@@ -209,7 +209,7 @@ std::vector<T>& Matrix<T>::newRow()
 }
 
 template <class T>
-void Matrix<T>::newRows(size_t n)
+void Dataset<T>::newRows(size_t n)
 {
 	size_t c = cols();
 	if (c == 0)
@@ -221,7 +221,7 @@ void Matrix<T>::newRows(size_t n)
 }
 
 template <class T>
-T Matrix<T>::columnMean(size_t col) const
+T Dataset<T>::columnMean(size_t col) const
 {
 	T sum = 0.0;
 	size_t count = 0;
@@ -239,7 +239,7 @@ T Matrix<T>::columnMean(size_t col) const
 }
 
 template <class T>
-T Matrix<T>::columnMin(size_t col) const
+T Dataset<T>::columnMin(size_t col) const
 {
 	T m = 1e300;
 	typename std::vector< std::vector<T> >::const_iterator it;
@@ -253,7 +253,7 @@ T Matrix<T>::columnMin(size_t col) const
 }
 
 template <class T>
-T Matrix<T>::columnMax(size_t col) const
+T Dataset<T>::columnMax(size_t col) const
 {
 	T m = -1e300;
 	typename std::vector< std::vector<T> >::const_iterator it;
@@ -267,7 +267,7 @@ T Matrix<T>::columnMax(size_t col) const
 }
 
 template <class T>
-T Matrix<T>::mostCommonValue(size_t col) const
+T Dataset<T>::mostCommonValue(size_t col) const
 {
 	map<T, size_t> counts;
 	typename vector< vector<T> >::const_iterator it;
@@ -297,7 +297,7 @@ T Matrix<T>::mostCommonValue(size_t col) const
 }
 
 template <class T>
-void Matrix<T>::copyPart(const Matrix<T>& that, size_t rowBegin, size_t colBegin, size_t rowCount, size_t colCount)
+void Dataset<T>::copyPart(const Dataset<T>& that, size_t rowBegin, size_t colBegin, size_t rowCount, size_t colCount)
 {
 	if(rowBegin + rowCount > that.rows() || colBegin + colCount > that.cols())
 		throw Ex("out of range");
@@ -334,7 +334,7 @@ string toLower(string strToConvert)
 }
 
 template <class T>
-void Matrix<T>::saveARFF(string filename) const
+void Dataset<T>::saveARFF(string filename) const
 {
 	std::ofstream s;
 	s.exceptions(std::ios::failbit | std::ios::badbit);
@@ -397,7 +397,7 @@ void Matrix<T>::saveARFF(string filename) const
 }
 
 template <class T>
-void Matrix<T>::loadARFF(string fileName)
+void Dataset<T>::loadARFF(string fileName)
 {
 	size_t lineNum = 0;
 	string line;                 //line of input from the arff file
@@ -529,7 +529,7 @@ void Matrix<T>::loadARFF(string fileName)
 }
 
 template <class T>
-const std::string& Matrix<T>::attrValue(size_t attr, size_t val) const
+const std::string& Dataset<T>::attrValue(size_t attr, size_t val) const
 {
 	typename std::map<size_t, std::string>::const_iterator it = m_enum_to_str[attr].find(val);
 	if(it == m_enum_to_str[attr].end())
@@ -538,7 +538,7 @@ const std::string& Matrix<T>::attrValue(size_t attr, size_t val) const
 }
 
 template <class T>
-void Matrix<T>::setAll(T val)
+void Dataset<T>::setAll(T val)
 {
 	size_t c = cols();
 	typename std::vector< std::vector<T> >::iterator it;
@@ -547,7 +547,7 @@ void Matrix<T>::setAll(T val)
 }
 
 template <class T>
-void Matrix<T>::checkCompatibility(const Matrix<T>& that) const
+void Dataset<T>::checkCompatibility(const Dataset<T>& that) const
 {
 	size_t c = cols();
 	if(that.cols() != c)
@@ -560,4 +560,4 @@ void Matrix<T>::checkCompatibility(const Matrix<T>& that) const
 }
 };
 
-#endif // MATRIX_H
+#endif // Dataset_H

@@ -14,7 +14,7 @@
 #include <random>
 #include "Trainer.h"
 #include "ErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 using std::vector;
 
 namespace opkit
@@ -81,7 +81,7 @@ public:
         // Do nothing
     }
     
-    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
+    void iterate(const Dataset<T>& features, const Dataset<T>& labels)
     {
         // Initialization
         vector<T>& params      = Trainer<T, Model>::function->getParameters();

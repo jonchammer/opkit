@@ -12,7 +12,7 @@
 #include <cmath>
 #include "PrettyPrinter.h"
 #include "Function.h"
-#include "Matrix.h"
+#include "Dataset.h"
 #include "Error.h"
 #include "Layer.h"
 
@@ -83,12 +83,12 @@ public:
     // Calculates the Jacobian of the network with respect to the weights and
     // biases. This involves one forward pass and one backwards pass for each
     // output of the network.
-    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian) override;
+    void calculateJacobianParameters(const vector<T>& x, Dataset<T>& jacobian) override;
 
     // Calculates the Jacobian of the network with respect to the inputs. This
     // involves one forward pass and one backwards pass for each output of the
     // network.
-    void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian) override;
+    void calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobian) override;
 
     // Initializes the weights and biases with random values
     void initializeParameters();
@@ -240,7 +240,7 @@ void NeuralNetwork<T>::calculateGradientParameters(const vector<T>& input, vecto
 }
 
 template <class T>
-void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
+void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Dataset<T>& jacobian)
 {
     const size_t N = mParameters.size();
     const size_t M = getOutputs();
@@ -267,7 +267,7 @@ void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>
 }
 
 template <class T>
-void NeuralNetwork<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
+void NeuralNetwork<T>::calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobian)
 {
     const size_t N = getInputs();
     const size_t M = getOutputs();

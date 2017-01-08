@@ -11,7 +11,7 @@
 #include <vector>
 #include <cmath>
 #include "ErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 #include "NeuralNetwork.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
@@ -36,7 +36,7 @@ public:
         // Do nothing
     }
 
-    T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
+    T evaluate(const Dataset<T>& features, const Dataset<T>& labels)
     {
         // A very small number is added to the input to prevent log(0) becoming NaN.
         const T EPSILON = std::numeric_limits<T>::epsilon();
@@ -57,7 +57,7 @@ public:
         return -sum;
     }
 
-    void calculateGradientInputs(const Matrix<T>& features, const Matrix<T>& labels,
+    void calculateGradientInputs(const Dataset<T>& features, const Dataset<T>& labels,
         vector<T>& gradient)
     {
         // When SSE is the error function, the gradient is simply the error vector
@@ -69,13 +69,13 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian;
+        static Dataset<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
 
         for (size_t i = 0; i < rows; ++i)
         {
-            // Calculate the Jacobian matrix of the base function at this point with
+            // Calculate the Jacobian Dataset of the base function at this point with
             // respect to the inputs
             mBaseFunction.calculateJacobianInputs(features[i], baseJacobian);
 
@@ -103,8 +103,8 @@ public:
         vScale(gradient.data(), 1.0/rows, N);
     }
 
-    void calculateGradientParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         // When Cross-entropy is the error function, the gradient is equal to
         // -y'/y * the model's jacobian, where y' is the training sample and
@@ -116,13 +116,13 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian;
+        static Dataset<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
 
         for (size_t i = 0; i < rows; ++i)
         {
-            // Calculate the Jacobian matrix of the base function at this point with
+            // Calculate the Jacobian Dataset of the base function at this point with
             // respect to the model parameters
             mBaseFunction.calculateJacobianParameters(features[i], baseJacobian);
 
@@ -149,14 +149,14 @@ public:
         vScale(gradient.data(), 1.0/rows, N);
     }
 
-    void calculateHessianInputs(const Matrix<T>& features, const Matrix<T>& labels,
-        Matrix<T>& hessian)
+    void calculateHessianInputs(const Dataset<T>& features, const Dataset<T>& labels,
+        Dataset<T>& hessian)
     {
         // TODO
     }
 
-    void calculateHessianParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, Matrix<T>& hessian)
+    void calculateHessianParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, Dataset<T>& hessian)
     {
         // H(f(x, w)) = d/dw[-T/y(x, w)] * J(y(x, w)) +
         //              d/dw[J(y(x, w))] * (-T/y(x, w)), where
@@ -172,21 +172,21 @@ public:
         //
         // d/dw[-T/y(x, w)] works out to be:
         //   [-t_i / (y_i^2)] * d/dw_j[y_i]
-        // for each (i, j) in an MxN matrix. This doesn't turn out to be a clean
-        // vector-matrix op, but it can be calculated naively. We basically
-        // multiply each row of the model's Jacobian matrix by a constant term
+        // for each (i, j) in an MxN Dataset. This doesn't turn out to be a clean
+        // vector-Dataset op, but it can be calculated naively. We basically
+        // multiply each row of the model's Jacobian Dataset by a constant term
         // that differs for each row.
         //
         // The "d/dw[J(y(x, w))] * (-T/y(x, w))" term is difficult to evaluate
         // correctly because the derivative of the base function's jacobian
-        // matrix with respect to the parameters is actually an (M x N x N) 3D
-        // tensor, where each of the M NxN slices is a Hessian matrix of the
+        // Dataset with respect to the parameters is actually an (M x N x N) 3D
+        // tensor, where each of the M NxN slices is a Hessian Dataset of the
         // model with respect to one of the M outputs of the base function.
         // Furthermore, multiplying by the (-T/y(x, w)) term, which is a 1 x M
-        // matrix, only makes sense if the vector-matrix multiplication is
+        // Dataset, only makes sense if the vector-Dataset multiplication is
         // performed for each slice of the Hessian tensor, giving us N vector-
-        // matrix multiplications (1 x M) * (M x N) ==> 1 x N. N * (1 x N)
-        // produces a single N x N 2D matrix, which makes sense because the
+        // Dataset multiplications (1 x M) * (M x N) ==> 1 x N. N * (1 x N)
+        // produces a single N x N 2D Dataset, which makes sense because the
         // Hessian of the cross-entropy function should have the same dimensions.
 
         // H = (T/Y^2) * J^T * J - (T/Y) * H_i
@@ -194,9 +194,9 @@ public:
         const size_t M    = mBaseFunction.getOutputs();
         const size_t rows = features.rows();
 
-        Matrix<T> jacobian;
-        Matrix<T> jacobianWork;
-        Matrix<T> localHessian;
+        Dataset<T> jacobian;
+        Dataset<T> jacobianWork;
+        Dataset<T> localHessian;
         vector<T> evaluation(M);
 
         jacobian.setSize(M, N);
@@ -210,7 +210,7 @@ public:
             vector<T>& feature = features[i];
             vector<T>& label   = labels[i];
 
-            // Calculate the model's Jacobian matrix
+            // Calculate the model's Jacobian Dataset
             mBaseFunction.calculateJacobianParameters(features[i], jacobian);
             jacobianWork.copyPart(jacobian, 0, 0, M, N);
 
@@ -238,7 +238,7 @@ public:
             }
 
             // Calculate T/Y^2 * J^T * J - (T/Y) * H_i
-            vector<Matrix<T>> allLocalHessians(M);
+            vector<Dataset<T>> allLocalHessians(M);
             for (size_t j = 0; j < M; ++j)
             {
                 allLocalHessians[j].setSize(N, N);
@@ -281,7 +281,7 @@ public:
         mUseSoftmaxOptimization = (ptr != nullptr) && (mBaseFunction.getNumLayers() > 1);
     }
 
-    T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
+    T evaluate(const Dataset<T>& features, const Dataset<T>& labels)
     {
         // A very small number is added to the input to prevent log(0) becoming NaN.
         const T EPSILON = std::numeric_limits<T>::epsilon();
@@ -302,30 +302,30 @@ public:
         return -sum;
     }
 
-    void calculateGradientInputs(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         if (mUseSoftmaxOptimization)
             calculateGradientInputsOpt(features, labels, gradient);
         else calculateGradientInputsUnopt(features, labels, gradient);
     }
 
-    void calculateGradientParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         if (mUseSoftmaxOptimization)
             calculateGradientParametersOpt(features, labels, gradient);
         else calculateGradientParametersUnopt(features, labels, gradient);
     }
 
-    void calculateHessianInputs(const Matrix<T>& features, const Matrix<T>& labels,
-        Matrix<T>& hessian)
+    void calculateHessianInputs(const Dataset<T>& features, const Dataset<T>& labels,
+        Dataset<T>& hessian)
     {
         // TODO
     }
 
-    void calculateHessianParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, Matrix<T>& hessian)
+    void calculateHessianParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, Dataset<T>& hessian)
     {
         // TODO
     }
@@ -336,8 +336,8 @@ private:
     // calculateGradientXXXOpt or calculateGradientXXXUnopt will be called.
     bool mUseSoftmaxOptimization;
 
-    void calculateGradientInputsOpt(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientInputsOpt(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         const size_t N    = mBaseFunction.getInputs();
         const size_t M    = mBaseFunction.getOutputs();
@@ -396,8 +396,8 @@ private:
         vScale(gradient.data(), 1.0/rows, N);
     }
 
-    void calculateGradientInputsUnopt(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientInputsUnopt(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         const size_t N    = mBaseFunction.getInputs();
         const size_t M    = mBaseFunction.getOutputs();
@@ -436,8 +436,8 @@ private:
         vScale(gradient.data(), 1.0/rows, N);
     }
 
-    void calculateGradientParametersOpt(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientParametersOpt(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         const size_t N    = mBaseFunction.getNumParameters();
         const size_t M    = mBaseFunction.getOutputs();
@@ -494,8 +494,8 @@ private:
         vScale(gradient.data(), 1.0/rows, N);
     }
 
-    void calculateGradientParametersUnopt(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient)
+    void calculateGradientParametersUnopt(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         const size_t N    = mBaseFunction.getNumParameters();
         const size_t M    = mBaseFunction.getOutputs();

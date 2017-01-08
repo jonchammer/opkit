@@ -11,7 +11,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include "Matrix.h"
+#include "Dataset.h"
 #include "Tensor3D.h"
 
 namespace opkit
@@ -32,7 +32,7 @@ void printVector(const std::vector<T>& vec, size_t decimalPlaces = 2)
 }
 
 template <class T>
-void printMatrix(const Matrix<T>& mat, size_t decimalPlaces = 2, size_t width = 6)
+void printDataset(const Dataset<T>& mat, size_t decimalPlaces = 2, size_t width = 6)
 {
     std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
     

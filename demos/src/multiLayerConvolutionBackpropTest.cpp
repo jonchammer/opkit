@@ -21,7 +21,7 @@ using namespace std;
 bool testBackProp(NeuralNetwork& network, vector<double>& input)
 {    
     cout << "Testing Backprop." << endl;
-    Matrix jacobian, jacobian2;
+    Dataset jacobian, jacobian2;
     network.calculateJacobianInputs(input, jacobian);
     network.Function::calculateJacobianInputs(input, jacobian2);
     
@@ -32,9 +32,9 @@ bool testBackProp(NeuralNetwork& network, vector<double>& input)
             if (abs(jacobian[j][k] - jacobian2[j][k]) > 0.001)
             {
                 cout << "Calculated Gradient:" << endl;
-                printMatrix(jacobian, 2);
+                printDataset(jacobian, 2);
                 cout << "True Gradient:" << endl;
-                printMatrix(jacobian2, 2);
+                printDataset(jacobian2, 2);
     
                 cout << "Backprop - FAIL" << endl;
                 return false;

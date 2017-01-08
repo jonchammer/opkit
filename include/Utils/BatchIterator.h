@@ -10,7 +10,7 @@
 
 #include <vector>
 #include <random>
-#include "Matrix.h"
+#include "Dataset.h"
 using std::vector;
 
 namespace opkit
@@ -20,7 +20,7 @@ template <class T>
 class BatchIterator
 {
 public:
-    BatchIterator(Matrix<T>& features, Matrix<T>& labels, size_t batchSize) :
+    BatchIterator(Dataset<T>& features, Dataset<T>& labels, size_t batchSize) :
         mFeatures(features),
         mLabels(labels),
         mBatchSize(batchSize),
@@ -43,7 +43,7 @@ public:
         return mOrderIndex < mOrder.size();
     }
     
-    void lock(Matrix<T>*& features, Matrix<T>*& labels)
+    void lock(Dataset<T>*& features, Dataset<T>*& labels)
     {        
         // Swap data in
         for (size_t i = mOrderIndex; (i < mOrderIndex + mBatchSize) && (i < mOrder.size()); ++i)
@@ -89,8 +89,8 @@ public:
     }
     
 private:
-    Matrix<T>& mFeatures, mLabels;
-    Matrix<T> mBatchFeatures, mBatchLabels;
+    Dataset<T>& mFeatures, mLabels;
+    Dataset<T> mBatchFeatures, mBatchLabels;
     size_t mBatchSize;
     
     vector<size_t> mOrder;

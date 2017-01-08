@@ -9,7 +9,7 @@
 #define CATEGORICALERRORFUNCTION_H
 
 #include "ErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 
 namespace opkit
 {
@@ -19,7 +19,7 @@ class CategoricalErrorFunction : public ErrorFunction<T, Model>
 {
 public:
     CategoricalErrorFunction(Model& baseFunction);
-    T evaluate(const Matrix<T>& features, const Matrix<T>& labels);
+    T evaluate(const Dataset<T>& features, const Dataset<T>& labels);
 };
 
 template <class T, class Model>
@@ -30,7 +30,7 @@ CategoricalErrorFunction<T, Model>::CategoricalErrorFunction(Model& baseFunction
 }
 
 template <class T, class Model>
-T CategoricalErrorFunction<T, Model>::evaluate(const Matrix<T>& features, const Matrix<T>& labels)
+T CategoricalErrorFunction<T, Model>::evaluate(const Dataset<T>& features, const Dataset<T>& labels)
 {
     // Initialize variables
     int misclassifications = 0;

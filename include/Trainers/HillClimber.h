@@ -12,7 +12,7 @@
 #include <limits>
 #include "Trainer.h"
 #include "ErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 
 namespace opkit
 {
@@ -32,7 +32,7 @@ public:
         std::fill(mStepSize.begin(), mStepSize.end(), 0.1);
     }
     
-    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
+    void iterate(const Dataset<T>& features, const Dataset<T>& labels)
     {
         const static T CHANGES [4] = {-1.25, -0.8, 0.8, 1.25};
         

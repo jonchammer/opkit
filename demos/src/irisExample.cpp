@@ -12,7 +12,7 @@
 #include "GradientDescent.h"
 #include "SSEFunction.h"
 #include "CategoricalErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 #include "DataNormalizer.h"
 #include "DataLoader.h"
 #include "ActivationFunction.h"
@@ -23,7 +23,7 @@ int main()
 {
     // Load the data
     cout << "Loading data..." << endl;
-    Matrix trainFeatures, trainLabels;
+    Dataset trainFeatures, trainLabels;
     loadArff("../data/iris.arff", trainFeatures, trainLabels, 1);
     cout << "Data loaded!" << endl;
     

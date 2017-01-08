@@ -9,7 +9,7 @@
 #define TRAINER_H
 
 #include "ErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 
 namespace opkit
 {
@@ -35,7 +35,7 @@ public:
      * semantics of this call will depend largely on the underlying
      * implementation.
      */
-    virtual void iterate(const Matrix<T>& features, const Matrix<T>& labels) = 0;
+    virtual void iterate(const Dataset<T>& features, const Dataset<T>& labels) = 0;
     
     // Setters / Getters
     ErrorFunction<T, Model>* getFunction() {return function;}

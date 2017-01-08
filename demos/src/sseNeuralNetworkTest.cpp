@@ -22,7 +22,7 @@ int main()
 {
     // Load the data
     cout << "Loading data..." << endl;
-    Matrix trainFeatures, trainLabels;
+    Dataset trainFeatures, trainLabels;
     loadArff("../data/iris.arff", trainFeatures, trainLabels, 1);
     cout << "Data loaded!" << endl;
     

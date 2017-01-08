@@ -103,7 +103,7 @@
           <in>Timer.h</in>
         </df>
         <in>Error.h</in>
-        <in>Matrix.h</in>
+        <in>Dataset.h</in>
         <in>Tensor3D.h</in>
       </df>
       <df name="src">
@@ -116,7 +116,7 @@
         <df name="Utils">
           <in>PrettyPrinter.cpp</in>
         </df>
-        <in>Matrix.cpp</in>
+        <in>Dataset.cpp</in>
         <in>Tensor3D.cpp</in>
       </df>
     </df>

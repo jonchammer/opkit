@@ -29,7 +29,7 @@ public:
         output[1] = mParameters[3] * mParameters[3] * input[1] * input[1] + mParameters[4] * input[1] + mParameters[5];
     }
        
-    void calculateJacobianInputs(const vector<double>& x, Matrix& jacobian)
+    void calculateJacobianInputs(const vector<double>& x, Dataset& jacobian)
     {
         jacobian.setSize(2, 2);
         jacobian[0][0] = 2 * x[0] * mParameters[0] * mParameters[0] + mParameters[1];
@@ -38,7 +38,7 @@ public:
         jacobian[1][1] = 2 * x[1] * mParameters[3] * mParameters[3] + mParameters[4];
     }
     
-    void calculateJacobianParameters(const vector<double>& x, Matrix& jacobian)
+    void calculateJacobianParameters(const vector<double>& x, Dataset& jacobian)
     {
         jacobian.setSize(2, 6);
         jacobian.setAll(0.0);
@@ -51,7 +51,7 @@ public:
     }
     
     void calculateHessianInputs(const vector<double>& /*x*/, 
-        const size_t outputIndex, Matrix& hessian)
+        const size_t outputIndex, Dataset& hessian)
     {
         hessian.setSize(2, 2);
         hessian.setAll(0.0);
@@ -63,7 +63,7 @@ public:
     }
     
     void calculateHessianParameters(const vector<double>& x,
-        const size_t outputIndex, Matrix& hessian)
+        const size_t outputIndex, Dataset& hessian)
     {
         hessian.setSize(6, 6);
         hessian.setAll(0.0);
@@ -80,7 +80,7 @@ int main()
     vector<double> input = {2.0, 3.0};
     
     // 1. Jacobian with respect to parameters
-    Matrix jacobianParameters1, jacobianParameters2;
+    Dataset jacobianParameters1, jacobianParameters2;
     f.calculateJacobianParameters(input, jacobianParameters1);
     f.Function::calculateJacobianParameters(input, jacobianParameters2);
     
@@ -92,10 +92,10 @@ int main()
             {
                 cout << "Jacobian Parameters - FAIL" << endl;
                 cout << "Truth:" << endl;
-                printMatrix(jacobianParameters1);
+                printDataset(jacobianParameters1);
                 
                 cout << "Finite Differences:" << endl;
-                printMatrix(jacobianParameters2);
+                printDataset(jacobianParameters2);
                 return 1;
             }
         }
@@ -103,7 +103,7 @@ int main()
     cout << "Jacobian Parameters - PASS" << endl;
     
     // 2. Jacobian with respect to inputs
-    Matrix jacobianInputs1, jacobianInputs2;
+    Dataset jacobianInputs1, jacobianInputs2;
     f.calculateJacobianInputs(input, jacobianInputs1);
     f.Function::calculateJacobianInputs(input, jacobianInputs2);
     
@@ -115,10 +115,10 @@ int main()
             {
                 cout << "Jacobian Inputs - FAIL" << endl;
                 cout << "Truth:" << endl;
-                printMatrix(jacobianInputs1);
+                printDataset(jacobianInputs1);
                 
                 cout << "Finite Differences:" << endl;
-                printMatrix(jacobianInputs2);
+                printDataset(jacobianInputs2);
                 return 1;
             }
         }
@@ -126,7 +126,7 @@ int main()
     cout << "Jacobian Inputs - PASS" << endl;
     
     // 3. Hessian(0) with respect to parameters
-    Matrix hessianParameters1, hessianParameters2;
+    Dataset hessianParameters1, hessianParameters2;
     f.calculateHessianParameters(input, 0, hessianParameters1);
     f.Function::calculateHessianParameters(input, 0, hessianParameters2);
     
@@ -138,10 +138,10 @@ int main()
             {
                 cout << "Hessian Parameters - FAIL" << endl;
                 cout << "Truth:" << endl;
-                printMatrix(hessianParameters1);
+                printDataset(hessianParameters1);
                 
                 cout << "Finite Differences:" << endl;
-                printMatrix(hessianParameters2);
+                printDataset(hessianParameters2);
                 return 1;
             }
         }
@@ -149,7 +149,7 @@ int main()
     cout << "Hessian Parameters - PASS" << endl;
     
     // 4. Hessian with respect to inputs
-    Matrix hessianInputs1, hessianInputs2;
+    Dataset hessianInputs1, hessianInputs2;
     f.calculateHessianInputs(input, 0, hessianInputs1);
     f.Function::calculateHessianInputs(input, 0, hessianInputs2);
     
@@ -161,10 +161,10 @@ int main()
             {
                 cout << "Hessian Inputs - FAIL" << endl;
                 cout << "Truth:" << endl;
-                printMatrix(hessianInputs1);
+                printDataset(hessianInputs1);
                 
                 cout << "Finite Differences:" << endl;
-                printMatrix(hessianInputs2);
+                printDataset(hessianInputs2);
                 return 1;
             }
         }

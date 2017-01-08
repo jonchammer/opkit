@@ -13,7 +13,7 @@
 #include <fstream>
 #include <cstring>
 #include <vector>
-#include "Matrix.h"
+#include "Dataset.h"
 #include "Error.h"
 
 using std::vector;
@@ -29,10 +29,10 @@ namespace opkit
 // Loads data from the given .ARFF file into 'features' and 'labels'.
 // The data will be split based on the last 'numLabels' columns.
 template <class T>
-bool loadArff(const string& filename, Matrix<T>& features, 
-    Matrix<T>& labels, int numLabels)
+bool loadArff(const string& filename, Dataset<T>& features, 
+    Dataset<T>& labels, int numLabels)
 {
-    Matrix<T> temp;
+    Dataset<T> temp;
     try
     {
         temp.loadARFF(filename);
@@ -56,7 +56,7 @@ bool loadArff(const string& filename, Matrix<T>& features,
 // must be given ahead of time, as well any delimiters that separate
 // sample entries. (Spaces are the default delimiters.)
 template <class T>
-bool loadText(const string& filename, Matrix<T>& features, Matrix<T>& labels, 
+bool loadText(const string& filename, Dataset<T>& features, Dataset<T>& labels, 
     const int numFeatures, const int numLabels, const string& delimiters = " ")
 {
     // Open the file
@@ -107,7 +107,7 @@ bool loadText(const string& filename, Matrix<T>& features, Matrix<T>& labels,
 // file. Note that this is only useful for continuous attributes, since categorical
 // attributes are not supported.
 template <class T>
-bool saveDataRaw(const string& filename, const Matrix<T>& features, const Matrix<T>& labels)
+bool saveDataRaw(const string& filename, const Dataset<T>& features, const Dataset<T>& labels)
 {
 	ofstream dout;
 	dout.open(filename.c_str(), std::ios::binary);
@@ -144,7 +144,7 @@ bool saveDataRaw(const string& filename, const Matrix<T>& features, const Matrix
 // Note that this is only useful for continuous attributes, since categorical attributes 
 // are not supported.
 template <class T>
-bool loadDataRaw(const string& filename, Matrix<T>& features, Matrix<T>& labels)
+bool loadDataRaw(const string& filename, Dataset<T>& features, Dataset<T>& labels)
 {
 	ifstream din;
 	din.open(filename.c_str(), std::ios::binary);
@@ -179,7 +179,7 @@ bool loadDataRaw(const string& filename, Matrix<T>& features, Matrix<T>& labels)
 }
 
 template <class T>
-void print(const Matrix<T>& features, const Matrix<T>& labels)
+void print(const Dataset<T>& features, const Dataset<T>& labels)
 {
     cout << std::fixed << std::showpoint << std::setprecision(6);
         

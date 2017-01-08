@@ -11,7 +11,7 @@
 #include <vector>
 #include "Trainer.h"
 #include "ErrorFunction.h"
-#include "Matrix.h"
+#include "Dataset.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
 
@@ -36,7 +36,7 @@ public:
         Trainer<T, Model>(function),
         mLearningRate(DEFAULT_LEARNING_RATE) {}
 
-    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
+    void iterate(const Dataset<T>& features, const Dataset<T>& labels)
     {
         T* params      = Trainer<T, Model>::function->getParameters().data();
         const size_t N = Trainer<T, Model>::function->getNumParameters();
@@ -81,7 +81,7 @@ public:
         mLearningRate(DEFAULT_LEARNING_RATE),
         mMomentum(DEFAULT_MOMENTUM) {}
 
-    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
+    void iterate(const Dataset<T>& features, const Dataset<T>& labels)
     {
         T* params      = Trainer<T, Model>::function->getParameters().data();
         T* velocity    = mVelocity.data();

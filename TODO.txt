@@ -14,7 +14,7 @@ TODO List
     + Newton's method? 
       - 1D: x_n+1 = x_n - f'(x_n)/f''(x_n)
       - ND: x_n+1 = x_n - (H(f)(x_n)^-1)*grad(f(x_n))
-        + Invert Hessian matrix
+        + Invert Hessian Dataset
 	+ Multiply by gradient
 	  - Perhaps dampen the result a bit
 	+ x_n - alpha*(f'(x_n)/f''(x_n))

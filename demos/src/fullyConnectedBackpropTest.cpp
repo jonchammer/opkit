@@ -17,7 +17,7 @@
 #include "opkit/CategoricalErrorFunction.h"
 #include "opkit/ActivationFunction.h"
 #include "opkit/PrettyPrinter.h"
-#include "opkit/Matrix.h"
+#include "opkit/Dataset.h"
 
 using namespace opkit;
 using std::cout;
@@ -31,15 +31,15 @@ using Type = float;
 bool testBackpropParameters(NeuralNetwork<Type>& network, vector<Type>& input)
 {
     cout << "Testing Backprop." << endl;
-    Matrix<Type> jacobian, jacobian2;
+    Dataset<Type> jacobian, jacobian2;
     network.calculateJacobianParameters(input, jacobian);
     network.Function<Type>::calculateJacobianParameters(input, jacobian2);
 
     cout << "Exact:" << endl;
-    printMatrix(jacobian, 8, 11);
+    printDataset(jacobian, 8, 11);
    //
     cout << "Finite Differences:" << endl;
-    printMatrix(jacobian2, 8, 11);
+    printDataset(jacobian2, 8, 11);
 
     for (size_t j = 0; j < jacobian.rows(); ++j)
     {
@@ -63,15 +63,15 @@ bool testBackpropParameters(NeuralNetwork<Type>& network, vector<Type>& input)
 bool testBackpropInputs(NeuralNetwork<Type>& network, vector<Type>& input)
 {
     cout << "Testing Backprop." << endl;
-    Matrix<Type> jacobian, jacobian2;
+    Dataset<Type> jacobian, jacobian2;
     network.calculateJacobianInputs(input, jacobian);
     network.Function<Type>::calculateJacobianInputs(input, jacobian2);
 
 //    cout << "Exact:" << endl;
-//    printMatrix(jacobian, 8, 11);
+//    printDataset(jacobian, 8, 11);
 //
 //    cout << "Finite Differences:" << endl;
-//    printMatrix(jacobian2, 8, 11);
+//    printDataset(jacobian2, 8, 11);
 
     for (size_t j = 0; j < jacobian.rows(); ++j)
     {

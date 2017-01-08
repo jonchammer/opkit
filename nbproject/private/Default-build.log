@@ -5,7 +5,7 @@
 [ 30%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Functions/Layer.cpp.obj[0m
 [ 38%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Functions/NeuralNetwork.cpp.obj[0m
 [ 46%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Functions/SSEFunction.cpp.obj[0m
-[ 53%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Matrix.cpp.obj[0m
+[ 53%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Dataset.cpp.obj[0m
 [ 61%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Tensor3D.cpp.obj[0m
 [ 69%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Trainers/EvolutionaryOptimizer.cpp.obj[0m
 [ 76%] [32mBuilding CXX object CMakeFiles/optimization_toolkit.dir/src/Trainers/HessianFreeOptimizer.cpp.obj[0m

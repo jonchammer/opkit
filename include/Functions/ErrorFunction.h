@@ -9,7 +9,7 @@
 #define ERRORFUNCTION_H
 
 #include "Function.h"
-#include "Matrix.h"
+#include "Dataset.h"
 
 namespace opkit
 {
@@ -24,7 +24,7 @@ public:
     // to a known result. The interface presented in 'Function' for these
     // methods isn't really applicable to Error Functions, so these are
     // more intuitive replacements.
-    virtual T evaluate(const Matrix<T>& features, const Matrix<T>& labels) = 0;
+    virtual T evaluate(const Dataset<T>& features, const Dataset<T>& labels) = 0;
 
     // Note: The default implementations of the functions that calculate
     // derivatives with respect to the 'inputs' are quite slow and are not
@@ -33,15 +33,15 @@ public:
     // still be a good idea for child classes to provide better implementations
     // of all of these functions if it is possible to do so.
     // --- Use the default implementations at your own risk. ---
-    // NOTE: Gradients are averaged over each sample in the matrix.
-    virtual void calculateGradientInputs(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient);
-    virtual void calculateGradientParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, vector<T>& gradient);
-    virtual void calculateHessianInputs(const Matrix<T>& features,
-        const Matrix<T>& labels, Matrix<T>& hessian);
-    virtual void calculateHessianParameters(const Matrix<T>& features,
-        const Matrix<T>& labels, Matrix<T>& hessian);
+    // NOTE: Gradients are averaged over each sample in the Dataset.
+    virtual void calculateGradientInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient);
+    virtual void calculateGradientParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient);
+    virtual void calculateHessianInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, Dataset<T>& hessian);
+    virtual void calculateHessianParameters(const Dataset<T>& features,
+        const Dataset<T>& labels, Dataset<T>& hessian);
 
     // Returns the number of inputs to the function and the number of outputs,
     // respectively. Error functions only have 1 output.
@@ -59,7 +59,8 @@ protected:
 };
 
 template <class T, class Model>
-ErrorFunction<T, Model>::ErrorFunction(Model& baseFunction) : mBaseFunction(baseFunction)
+ErrorFunction<T, Model>::ErrorFunction(Model& baseFunction) :
+    mBaseFunction(baseFunction)
 {
     // Do nothing
 }
@@ -95,8 +96,8 @@ size_t ErrorFunction<T, Model>::getNumParameters() const
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
-    const Matrix<T>& labels, vector<T>& gradient)
+void ErrorFunction<T, Model>::calculateGradientInputs(const Dataset<T>& features,
+    const Dataset<T>& labels, vector<T>& gradient)
 {
     cout << "ErrorFunction::calculateGradientInputs()" << endl;
 
@@ -146,8 +147,8 @@ void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateGradientParameters(const Matrix<T>& features,
-    const Matrix<T>& labels, vector<T>& gradient)
+void ErrorFunction<T, Model>::calculateGradientParameters(
+    const Dataset<T>& features, const Dataset<T>& labels, vector<T>& gradient)
 {
     cout << "ErrorFunction::calculateGradientParameters()" << endl;
 
@@ -182,8 +183,8 @@ void ErrorFunction<T, Model>::calculateGradientParameters(const Matrix<T>& featu
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
-    const Matrix<T>& labels, Matrix<T>& hessian)
+void ErrorFunction<T, Model>::calculateHessianInputs(const Dataset<T>& features,
+    const Dataset<T>& labels, Dataset<T>& hessian)
 {
     cout << "ErrorFunction::calculateHessianInputs()" << endl;
 
@@ -242,8 +243,8 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateHessianParameters(const Matrix<T>& features,
-    const Matrix<T>& labels, Matrix<T>& hessian)
+void ErrorFunction<T, Model>::calculateHessianParameters(
+    const Dataset<T>& features, const Dataset<T>& labels, Dataset<T>& hessian)
 {
     cout << "ErrorFunction::calculateHessianParameters()" << endl;
 
