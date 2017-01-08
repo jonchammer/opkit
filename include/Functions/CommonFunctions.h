@@ -11,6 +11,7 @@
 #include <vector>
 #include "Function.h"
 #include "Dataset.h"
+#include "Matrix.h"
 using std::vector;
 
 namespace opkit
@@ -33,17 +34,17 @@ public:
         output[0] = m * input[0] + b;
     }
 
-    void calculateJacobianInputs(const vector<T>& /*x*/, Dataset<T>& jacobian)
+    void calculateJacobianInputs(const vector<T>& /*x*/, Matrix<T>& jacobian)
     {
-        jacobian.setSize(1, 1);
-        jacobian[0][0] = StandardFunction<T>::mParameters[0];
+        jacobian.resize(1, 1);
+        jacobian(0, 0) = StandardFunction<T>::mParameters[0];
     }
 
-    void calculateJacobianParameters(const vector<T>& x, Dataset<T>& jacobian)
+    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
     {
-        jacobian.setSize(1, 2);
-        jacobian[0][0] = x[0];
-        jacobian[0][1] = 1;
+        jacobian.resize(1, 2);
+        jacobian(0, 0) = x[0];
+        jacobian(0, 1) = 1;
     }
 };
 
@@ -65,18 +66,18 @@ public:
         output[0] = (a * input[0] * input[0]) + (b * input[0]) + c;
     }
 
-    void calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobian)
+    void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
     {
-        jacobian.setSize(1, 1);
-        jacobian[0][0] = 2 * StandardFunction<T>::mParameters[0] * x[0] + StandardFunction<T>::mParameters[1];
+        jacobian.resize(1, 1);
+        jacobian(0, 0) = 2 * StandardFunction<T>::mParameters[0] * x[0] + StandardFunction<T>::mParameters[1];
     }
 
-    void calculateJacobianParameters(const vector<T>& x, Dataset<T>& jacobian)
+    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
     {
-        jacobian.setSize(1, 3);
-        jacobian[0][0] = x[0] * x[0];
-        jacobian[0][1] = x[0];
-        jacobian[0][2] = 1;
+        jacobian.resize(1, 3);
+        jacobian(0, 0) = x[0] * x[0];
+        jacobian(0, 1) = x[0];
+        jacobian(0, 2) = 1;
     }
 };
 
@@ -104,20 +105,20 @@ public:
 };
 
 // This is a model representing a multivariate linear model of the form
-// y = Mx + b, where M is a Dataset of weights (input rows x output cols),
+// y = Mx + b, where M is a matrix of weights (input rows x output cols),
 // x is a vector (number of inputs), b is a vector (number of outputs),
 // and y is a vector (number of outputs).
 //
-// The parameters for the Dataset are stored first, followed by the parameters
+// The parameters for the matrix are stored first, followed by the parameters
 // that represent the biases. For example, if we have 3 inputs and 2 outputs,
-// the Dataset looks like this:
+// the matrix looks like this:
 //   [w11 w12]
 //   [w21 w22]
 //   [w31 w32]
 // and the parameters will be organized like this:
 //   [w11 w12] [w21 w22] [w31 w32] [b1] [b2]
 //
-// The Dataset weights represent the strength of the connection between the
+// The matrix weights represent the strength of the connection between the
 // ith input and the jth output (wij).
 template <class T>
 class MultivariateLinear : public StandardFunction<T>

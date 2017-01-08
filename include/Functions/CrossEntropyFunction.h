@@ -12,6 +12,7 @@
 #include <cmath>
 #include "ErrorFunction.h"
 #include "Dataset.h"
+#include "Matrix.h"
 #include "NeuralNetwork.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
@@ -31,7 +32,8 @@ public:
 
     using ErrorFunction<T, Model>::mBaseFunction;
 
-    CrossEntropyFunction(Model& baseFunction) : ErrorFunction<T, Model>(baseFunction)
+    CrossEntropyFunction(Model& baseFunction) :
+        ErrorFunction<T, Model>(baseFunction)
     {
         // Do nothing
     }
@@ -57,8 +59,8 @@ public:
         return -sum;
     }
 
-    void calculateGradientInputs(const Dataset<T>& features, const Dataset<T>& labels,
-        vector<T>& gradient)
+    void calculateGradientInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         // When SSE is the error function, the gradient is simply the error vector
         // multiplied by the model's Jacobian.
@@ -69,14 +71,14 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Dataset<T> baseJacobian;
+        static Matrix<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
 
         for (size_t i = 0; i < rows; ++i)
         {
-            // Calculate the Jacobian Dataset of the base function at this point with
-            // respect to the inputs
+            // Calculate the Jacobian matrix of the base function at this point
+            // with respect to the inputs
             mBaseFunction.calculateJacobianInputs(features[i], baseJacobian);
 
             // Calculate the error for this sample
@@ -92,7 +94,7 @@ public:
                 // Multiply the error by the model's Jacobian,
                 T sum{};
                 for (size_t k = 0; k < M; ++k)
-                    sum += error[k] * baseJacobian[k][j];
+                    sum += error[k] * baseJacobian(k, j);
 
                 // Add the result to the running total for the gradient
                 gradient[j] += sum;
@@ -116,14 +118,14 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Dataset<T> baseJacobian;
+        static Matrix<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
 
         for (size_t i = 0; i < rows; ++i)
         {
-            // Calculate the Jacobian Dataset of the base function at this point with
-            // respect to the model parameters
+            // Calculate the Jacobian matrix of the base function at this point
+            // with respect to the model parameters
             mBaseFunction.calculateJacobianParameters(features[i], baseJacobian);
 
             // Calculate the error for this sample
@@ -139,7 +141,7 @@ public:
                 // Multiply the error by the model's Jacobian,
                 T sum{};
                 for (size_t k = 0; k < M; ++k)
-                    sum += error[k] * baseJacobian[k][j];
+                    sum += error[k] * baseJacobian(k, j);
 
                 // Add the result to the running total for the gradient
                 gradient[j] +=  sum;
@@ -149,14 +151,14 @@ public:
         vScale(gradient.data(), 1.0/rows, N);
     }
 
-    void calculateHessianInputs(const Dataset<T>& features, const Dataset<T>& labels,
-        Dataset<T>& hessian)
+    void calculateHessianInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, Matrix<T>& hessian)
     {
         // TODO
     }
 
     void calculateHessianParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, Dataset<T>& hessian)
+        const Dataset<T>& labels, Matrix<T>& hessian)
     {
         // H(f(x, w)) = d/dw[-T/y(x, w)] * J(y(x, w)) +
         //              d/dw[J(y(x, w))] * (-T/y(x, w)), where
@@ -172,21 +174,21 @@ public:
         //
         // d/dw[-T/y(x, w)] works out to be:
         //   [-t_i / (y_i^2)] * d/dw_j[y_i]
-        // for each (i, j) in an MxN Dataset. This doesn't turn out to be a clean
-        // vector-Dataset op, but it can be calculated naively. We basically
-        // multiply each row of the model's Jacobian Dataset by a constant term
+        // for each (i, j) in an MxN matrix. This doesn't turn out to be a clean
+        // vector-matrix op, but it can be calculated naively. We basically
+        // multiply each row of the model's Jacobian matrix by a constant term
         // that differs for each row.
         //
         // The "d/dw[J(y(x, w))] * (-T/y(x, w))" term is difficult to evaluate
         // correctly because the derivative of the base function's jacobian
-        // Dataset with respect to the parameters is actually an (M x N x N) 3D
-        // tensor, where each of the M NxN slices is a Hessian Dataset of the
+        // matrix with respect to the parameters is actually an (M x N x N) 3D
+        // tensor, where each of the M NxN slices is a Hessian matrix of the
         // model with respect to one of the M outputs of the base function.
         // Furthermore, multiplying by the (-T/y(x, w)) term, which is a 1 x M
-        // Dataset, only makes sense if the vector-Dataset multiplication is
+        // matrix, only makes sense if the vector-matrix multiplication is
         // performed for each slice of the Hessian tensor, giving us N vector-
-        // Dataset multiplications (1 x M) * (M x N) ==> 1 x N. N * (1 x N)
-        // produces a single N x N 2D Dataset, which makes sense because the
+        // matrix multiplications (1 x M) * (M x N) ==> 1 x N. N * (1 x N)
+        // produces a single N x N 2D matrix, which makes sense because the
         // Hessian of the cross-entropy function should have the same dimensions.
 
         // H = (T/Y^2) * J^T * J - (T/Y) * H_i
@@ -194,16 +196,12 @@ public:
         const size_t M    = mBaseFunction.getOutputs();
         const size_t rows = features.rows();
 
-        Dataset<T> jacobian;
-        Dataset<T> jacobianWork;
-        Dataset<T> localHessian;
+        Matrix<T> jacobian(M, N);
+        Matrix<T> jacobianWork(M, N);
+        Matrix<T> localHessian(N, N);
         vector<T> evaluation(M);
 
-        jacobian.setSize(M, N);
-        jacobianWork.setSize(M, N);
-        localHessian.setSize(N, N);
-
-        hessian.setAll(T{});
+        hessian.fill(T{});
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -212,7 +210,7 @@ public:
 
             // Calculate the model's Jacobian Dataset
             mBaseFunction.calculateJacobianParameters(features[i], jacobian);
-            jacobianWork.copyPart(jacobian, 0, 0, M, N);
+            jacobianWork.copy(jacobian, 0, 0, M, N);
 
             // Evaluate this sample
             if (mBaseFunction.cachesLastEvaluation())
@@ -224,7 +222,7 @@ public:
             {
                 T c = label[j] / (evaluation[j] * evaluation[j]);
                 for (size_t k = 0; k < N; ++k)
-                    jacobianWork[j][k] *= c;
+                    jacobianWork(j, k) *= c;
             }
 
             // Calculate T/Y^2 * J^T * J
@@ -233,15 +231,15 @@ public:
                 for (size_t k = 0; k < N; ++k)
                 {
                     for (size_t l = 0; l < M; ++l)
-                        hessian[j][k] += jacobianWork[l][j] * jacobian[l][k];
+                        hessian(j, k) += jacobianWork(l, j) * jacobian(l, k);
                 }
             }
 
             // Calculate T/Y^2 * J^T * J - (T/Y) * H_i
-            vector<Dataset<T>> allLocalHessians(M);
+            vector<Matrix<T>> allLocalHessians(M);
             for (size_t j = 0; j < M; ++j)
             {
-                allLocalHessians[j].setSize(N, N);
+                allLocalHessians[j].resize(N, N);
                 mBaseFunction.calculateHessianParameters(features[i], j, allLocalHessians[j]);
             }
 
@@ -251,9 +249,9 @@ public:
                 {
                     T sum{};
                     for (size_t l = 0; l < M; ++l)
-                        sum += label[l] / evaluation[l] * jacobian[l][k];
+                        sum += label[l] / evaluation[l] * jacobian(l, k);
 
-                    hessian[j][k] -= sum;
+                    hessian(j, k) -= sum;
                 }
             }
         }
@@ -263,7 +261,8 @@ public:
 // Template specialization for Neural Networks, since there is a much more
 // efficient mechanism for calculating the gradient with them.
 template<class T>
-class CrossEntropyFunction<T, NeuralNetwork<T>> : public ErrorFunction<T, NeuralNetwork<T>>
+class CrossEntropyFunction<T, NeuralNetwork<T>> :
+    public ErrorFunction<T, NeuralNetwork<T>>
 {
 public:
 
@@ -318,14 +317,14 @@ public:
         else calculateGradientParametersUnopt(features, labels, gradient);
     }
 
-    void calculateHessianInputs(const Dataset<T>& features, const Dataset<T>& labels,
-        Dataset<T>& hessian)
+    void calculateHessianInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, Matrix<T>& hessian)
     {
         // TODO
     }
 
     void calculateHessianParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, Dataset<T>& hessian)
+        const Dataset<T>& labels, Matrix<T>& hessian)
     {
         // TODO
     }
@@ -382,13 +381,14 @@ private:
                     Layer<T>* current = mBaseFunction.getLayer(i);
                     Layer<T>* prev    = mBaseFunction.getLayer(i - 1);
 
-                    current->calculateDeltas(prev->getActivation(), prev->getDeltas());
+                    current->calculateDeltas(prev->getActivation(),
+                        prev->getDeltas().data());
                 }
             }
 
             // Calculate the gradient based on the deltas. Values are summed
             // for each pattern.
-            mBaseFunction.getLayer(0)->calculateDeltas(feature, tempGradient);
+            mBaseFunction.getLayer(0)->calculateDeltas(feature, tempGradient.data());
             vAdd(tempGradient.data(), gradient.data(), N);
         }
 
@@ -428,7 +428,7 @@ private:
 
             // Calculate the gradient based on the deltas. Values are summed
             // for each pattern.
-            mBaseFunction.getLayer(0)->calculateDeltas(feature, tempGradient);
+            mBaseFunction.getLayer(0)->calculateDeltas(feature, tempGradient.data());
             vAdd(tempGradient.data(), gradient.data(), N);
         }
 
@@ -481,13 +481,14 @@ private:
                     Layer<T>* current = mBaseFunction.getLayer(i);
                     Layer<T>* prev    = mBaseFunction.getLayer(i - 1);
 
-                    current->calculateDeltas(prev->getActivation(), prev->getDeltas());
+                    current->calculateDeltas(prev->getActivation(),
+                        prev->getDeltas().data());
                 }
             }
 
             // Calculate the gradient based on the deltas. Values are summed
             // for each pattern.
-            mBaseFunction.calculateGradientParameters(feature, gradient);
+            mBaseFunction.calculateGradientParameters(feature, gradient.data());
         }
 
         // We also need to divide by the batch size to get an average gradient.
@@ -525,7 +526,7 @@ private:
 
             // Calculate the gradient based on the deltas. Values are summed
             // for each pattern.
-            mBaseFunction.calculateGradientParameters(feature, gradient);
+            mBaseFunction.calculateGradientParameters(feature, gradient.data());
         }
 
         // We also need to divide by the batch size to get an average gradient.

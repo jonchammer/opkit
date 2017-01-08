@@ -49,7 +49,7 @@ public:
     virtual void eval(const vector<T>& x) = 0;
 
     // 2. Calculate blame terms for each node in the previous layer
-    virtual void calculateDeltas(const vector<T>& x, vector<T>& destination) = 0;
+    virtual void calculateDeltas(const vector<T>& x, T* destination) = 0;
 
     // 3. Calculate the gradient with respect to the parameters
     virtual void calculateGradient(const vector<T>& x, T* gradient) = 0;
@@ -125,13 +125,12 @@ public:
         vAdd(params + (mInputs * mOutputs), yData, mOutputs);
     }
 
-    void calculateDeltas(const vector<T>& /*x*/, vector<T>& destination) override
+    void calculateDeltas(const vector<T>& /*x*/, T* destination) override
     {
         const T* deltas = mDeltas.data();
-        T* dest         = destination.data();
 
         // Calculate destination = W^T * deltas
-        mtvMultiply(mParameters, deltas, dest, mOutputs, mInputs);
+        mtvMultiply(mParameters, deltas, destination, mOutputs, mInputs);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override
@@ -199,15 +198,14 @@ public:
 
     // The deltas for the downstream (left) layer are simply the deltas from
     // this layer multiplied by the derivative of the transformation function.
-    void calculateDeltas(const vector<T>& x, vector<T>& destination) override
+    void calculateDeltas(const vector<T>& x, T* destination) override
     {
         const T* input      = x.data();
         const T* deltas     = mDeltas.data();
         const T* activation = mActivation.data();
-        T* dest             = destination.data();
 
         for (size_t i = 0; i < mOutputs; ++i)
-            dest[i] = deltas[i] * mActivationFunction->deriv(input[i], activation[i]);
+            destination[i] = deltas[i] * mActivationFunction->deriv(input[i], activation[i]);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override
@@ -337,10 +335,9 @@ public:
         }
     }
 
-    void calculateDeltas(const vector<T>& /*x*/, vector<T>& destination) override
+    void calculateDeltas(const vector<T>& /*x*/, T* destination) override
     {
-        std::fill(destination.begin(), destination.end(), 0.0);
-
+        std::fill(destination, destination + getNumParameters(), T{});
         size_t numFilterWeights = mFilterSize * mFilterSize * mInputChannels + 1;
 
         // Wrap the important vectors in Tensor3D objects so access is easier
@@ -555,13 +552,12 @@ public:
         vScale(yData, 1.0 / sum, mOutputs);
     }
 
-    void calculateDeltas(const vector<T>& /*x*/, vector<T>& destination) override
+    void calculateDeltas(const vector<T>& /*x*/, T* destination) override
     {
         static vector<T> jacobian(mOutputs * mOutputs);
         const T* deltas     = mDeltas.data();
         const T* activation = mActivation.data();
         T* work             = jacobian.data();
-        T* dest             = destination.data();
 
         // Destination = J * deltas, where J = Diag(y) - y*y^T
         // and y is the activation of this layer. We construct J manually by
@@ -593,7 +589,7 @@ public:
             index       += mOutputs + 1;
         }
 
-        symmetricMvMultiply(work, deltas, dest, mOutputs);
+        symmetricMvMultiply(work, deltas, destination, mOutputs);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override

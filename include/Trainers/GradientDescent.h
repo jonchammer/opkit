@@ -30,6 +30,7 @@ template <class T, class Model>
 class SimpleGradientDescent : public Trainer<T, Model>
 {
 public:
+    using Trainer<T, Model>::function;
     const T DEFAULT_LEARNING_RATE = 1E-4;
 
     SimpleGradientDescent(ErrorFunction<T, Model>* function) :
@@ -38,12 +39,12 @@ public:
 
     void iterate(const Dataset<T>& features, const Dataset<T>& labels)
     {
-        T* params      = Trainer<T, Model>::function->getParameters().data();
-        const size_t N = Trainer<T, Model>::function->getNumParameters();
+        T* params      = function->getParameters().data();
+        const size_t N = function->getNumParameters();
 
         // Estimate the complete gradient
         static vector<T> gradient(N);
-        Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
+        function->calculateGradientParameters(features, labels, gradient);
 
         // Descend the gradient using accelerated vector operations
         vAdd(gradient.data(), params, N, -mLearningRate);
@@ -72,6 +73,7 @@ template <class T, class Model>
 class GradientDescent : public Trainer<T, Model>
 {
 public:
+    using Trainer<T, Model>::function;
     const T DEFAULT_LEARNING_RATE = 1E-4;
     const T DEFAULT_MOMENTUM      = 1E-3;
 
@@ -83,7 +85,7 @@ public:
 
     void iterate(const Dataset<T>& features, const Dataset<T>& labels)
     {
-        T* params      = Trainer<T, Model>::function->getParameters().data();
+        T* params      = function->getParameters().data();
         T* velocity    = mVelocity.data();
         const size_t N = mVelocity.size();
 
@@ -93,7 +95,7 @@ public:
 
         // Estimate the complete gradient
         static vector<T> gradient(N);
-        Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
+        function->calculateGradientParameters(features, labels, gradient);
 
         // Descend the gradient (and apply momentum).
         // This operation is too complex to be performed using the accelerated

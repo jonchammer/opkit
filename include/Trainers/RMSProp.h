@@ -32,6 +32,7 @@ template <class T, class Model>
 class SimpleRMSProp : public Trainer<T, Model>
 {
 public:
+    using Trainer<T, Model>::function;
     const T DEFAULT_DECAY         = 0.90;
     const T DEFAULT_LEARNING_RATE = 1E-4;
 
@@ -43,12 +44,12 @@ public:
 
     void iterate(const Dataset<T>& features, const Dataset<T>& labels)
     {
-        T* params      = Trainer<T, Model>::function->getParameters().data();
+        T* params      = function->getParameters().data();
         T* RMS         = mRMS.data();
         const size_t N = mRMS.size();
 
         static vector<T> gradient(N);
-        Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
+        function->calculateGradientParameters(features, labels, gradient);
 
         for (size_t i = 0; i < N; ++i)
         {
@@ -108,6 +109,7 @@ template <class T, class Model>
 class RMSProp : public Trainer<T, Model>
 {
 public:
+    using Trainer<T, Model>::function;
     const T DEFAULT_DECAY         = 0.90;
     const T DEFAULT_LEARNING_RATE = 1E-4;
     const T DEFAULT_MOMENTUM      = 1E-3;
@@ -122,7 +124,7 @@ public:
 
     void iterate(const Dataset<T>& features, const Dataset<T>& labels)
     {
-        T* params      = Trainer<T, Model>::function->getParameters().data();
+        T* params      = function->getParameters().data();
         T* velocity    = mVelocity.data();
         T* RMS         = mRMS.data();
         const size_t N = mVelocity.size();
@@ -132,7 +134,7 @@ public:
         vAdd(velocity, params, N, -mMomentum);
 
         static vector<T> gradient(N);
-        Trainer<T, Model>::function->calculateGradientParameters(features, labels, gradient);
+        function->calculateGradientParameters(features, labels, gradient);
 
         for (size_t i = 0; i < N; ++i)
         {

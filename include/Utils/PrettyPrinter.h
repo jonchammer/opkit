@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   PrettyPrinter.h
  * Author: Jon
  *
@@ -27,7 +27,7 @@ void printVector(const std::vector<T>& vec, size_t decimalPlaces = 2)
 
     if (vec.size() >= 1)
         std::cout << vec.back();
-     
+
     std::cout << "]" << std::endl;
 }
 
@@ -35,7 +35,7 @@ template <class T>
 void printDataset(const Dataset<T>& mat, size_t decimalPlaces = 2, size_t width = 6)
 {
     std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
-    
+
     for (size_t j = 0; j < mat.rows(); ++j)
     {
         std::cout << "[";
@@ -49,14 +49,32 @@ void printDataset(const Dataset<T>& mat, size_t decimalPlaces = 2, size_t width 
     }
 }
 
+template <class T>
+void printMatrix(const Matrix<T>& mat, size_t decimalPlaces = 2, size_t width = 6)
+{
+    std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
+    const size_t N = mat.getRows();
+    const size_t M = mat.getCols();
+
+    for (size_t j = 0; j < N; ++j)
+    {
+        std::cout << "[";
+        for (size_t i = 0; i < M - 1; ++i)
+            std::cout << std::setw(width) << mat(j, i) << ", ";
+
+        if (M >= 1)
+            std::cout << std::setw(width) << mat(j, M - 1) << "]" << std::endl;
+    }
+}
+
 // Prints a given 1D vector as if it were a 3D tensor. The front face is printed
 // first, followed by the next face, and so on.
 template <class T>
-void print3DTensor(const std::vector<T>& vec, size_t width, size_t height, 
+void print3DTensor(const std::vector<T>& vec, size_t width, size_t height,
     size_t depth, size_t decimalPlaces = 2, size_t spacing = 6)
 {
     std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
-    
+
     size_t i = 0;
     for (size_t l = 0; l < depth; ++l)
     {
@@ -76,15 +94,15 @@ void print3DTensor(const std::vector<T>& vec, size_t width, size_t height,
 }
 
 template <class T>
-void print3DTensor(const Tensor3D<T>& tensor, size_t decimalPlaces = 2, 
+void print3DTensor(const Tensor3D<T>& tensor, size_t decimalPlaces = 2,
     size_t spacing = 6)
-{    
+{
     const size_t width  = tensor.getWidth();
     const size_t height = tensor.getHeight();
     const size_t depth  = tensor.getDepth();
 
     std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
-    
+
     for (size_t l = 0; l < depth; ++l)
     {
         for (size_t j = 0; j < height; ++j)
@@ -105,4 +123,3 @@ void print3DTensor(const Tensor3D<T>& tensor, size_t decimalPlaces = 2,
 };
 
 #endif /* PRETTY_PRINTER_H */
-

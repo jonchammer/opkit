@@ -12,6 +12,7 @@
 #include <cstring>
 #include "ErrorFunction.h"
 #include "Dataset.h"
+#include "Matrix.h"
 #include "NeuralNetwork.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
@@ -72,7 +73,7 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Dataset<T> baseJacobian;
+        static Matrix<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
 
@@ -95,7 +96,7 @@ public:
                 // Multiply the error by the model's Jacobian,
                 T sum = 0.0;
                 for (size_t k = 0; k < M; ++k)
-                    sum += error[k] * baseJacobian[k][j];
+                    sum += error[k] * baseJacobian(k, j);
 
                 // Add the result to the running total for the gradient
                 gradient[j] += -2.0 * sum;
@@ -119,7 +120,7 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), 0.0);
 
-        static Dataset<T> baseJacobian;
+        static Matrix<T> baseJacobian;
         static vector<T> evaluation(M);
         static vector<T> error(M);
 
@@ -142,7 +143,7 @@ public:
                 // Multiply the error by the model's Jacobian,
                 T sum = 0.0;
                 for (size_t k = 0; k < M; ++k)
-                    sum += error[k] * baseJacobian[k][j];
+                    sum += error[k] * baseJacobian(k, j);
 
                 // Add the result to the running total for the gradient
                 gradient[j] += -2.0 * sum;
@@ -153,8 +154,8 @@ public:
             gradient[i] /= rows;
     }
 
-    void calculateHessianInputs(const Dataset<T>& features, const Dataset<T>& labels,
-        Dataset<T>& hessian)
+    void calculateHessianInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, Matrix<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -168,20 +169,15 @@ public:
         const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
-        Dataset<T> jacobian;
-        Dataset<T> jacobianSquare;
-        Dataset<T> localHessian;
-        Dataset<T> sumOfLocalHessians;
+        Matrix<T> jacobian(M, N);
+        Matrix<T> jacobianSquare(N, N);
+        Matrix<T> localHessian(N, N);
+        Matrix<T> sumOfLocalHessians(N, N);
         vector<T> evaluation(M);
         vector<T> error(M);
 
-        hessian.setSize(N, N);
-        jacobian.setSize(M, N);
-        jacobianSquare.setSize(N, N);
-        localHessian.setSize(N, N);
-        sumOfLocalHessians.setSize(N, N);
-
-        hessian.setAll(0.0);
+        hessian.resize(N, N);
+        hessian.fill(T{});
 
         for(size_t i = 0; i < features.rows(); ++i)
         {
@@ -198,9 +194,9 @@ public:
                 {
                     T sum = 0.0;
                     for (size_t r = 0; r < M; ++r)
-                        sum += jacobian[r][c1] * jacobian[r][c2];
+                        sum += jacobian(r, c1) * jacobian(r, c2);
 
-                    jacobianSquare[c1][c2] = sum;
+                    jacobianSquare(c1, c2) = sum;
                 }
             }
 
@@ -223,7 +219,7 @@ public:
                 for (size_t r = 0; r < N; ++r)
                 {
                     for (size_t c = 0; c < N; ++c)
-                        sumOfLocalHessians[r][c] += error[j] * localHessian[r][c];
+                        sumOfLocalHessians(r, c) += error[j] * localHessian(r, c);
                 }
             }
 
@@ -232,15 +228,15 @@ public:
             {
                 for (size_t c = 0; c < N; ++c)
                 {
-                    hessian[r][c] += 2.0 *
-                        (jacobianSquare[r][c] - sumOfLocalHessians[r][c]);
+                    hessian(r, c) += 2.0 *
+                        (jacobianSquare(r, c) - sumOfLocalHessians(r, c));
                 }
             }
         }
     }
 
     void calculateHessianParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, Dataset<T>& hessian)
+        const Dataset<T>& labels, Matrix<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -254,20 +250,15 @@ public:
         const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
-        Dataset<T> jacobian;
-        Dataset<T> jacobianSquare;
-        Dataset<T> localHessian;
-        Dataset<T> sumOfLocalHessians;
+        Matrix<T> jacobian(M, N);
+        Matrix<T> jacobianSquare(N, N);
+        Matrix<T> localHessian(N, N);
+        Matrix<T> sumOfLocalHessians(N, N);
         vector<T> evaluation(M);
         vector<T> error(M);
 
-        hessian.setSize(N, N);
-        jacobian.setSize(M, N);
-        jacobianSquare.setSize(N, N);
-        localHessian.setSize(N, N);
-        sumOfLocalHessians.setSize(N, N);
-
-        hessian.setAll(T{});
+        hessian.resize(N, N);
+        hessian.fill(T{});
 
         for(size_t i = 0; i < features.rows(); ++i)
         {
@@ -284,9 +275,9 @@ public:
                 {
                     T sum{};
                     for (size_t r = 0; r < M; ++r)
-                        sum += jacobian[r][c1] * jacobian[r][c2];
+                        sum += jacobian(r, c1) * jacobian(r, c2);
 
-                    jacobianSquare[c1][c2] = sum;
+                    jacobianSquare(c1, c2) = sum;
                 }
             }
 
@@ -299,7 +290,7 @@ public:
                 error[j] = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
-            sumOfLocalHessians.setAll(T{});
+            sumOfLocalHessians.fill(T{});
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
@@ -309,7 +300,7 @@ public:
                 for (size_t r = 0; r < N; ++r)
                 {
                     for (size_t c = 0; c < N; ++c)
-                        sumOfLocalHessians[r][c] += error[j] * localHessian[r][c];
+                        sumOfLocalHessians(r, c) += error[j] * localHessian(r, c);
                 }
             }
 
@@ -318,8 +309,8 @@ public:
             {
                 for (size_t c = 0; c < N; ++c)
                 {
-                    hessian[r][c] += 2.0 *
-                        (jacobianSquare[r][c] - sumOfLocalHessians[r][c]);
+                    hessian(r, c) += 2.0 *
+                        (jacobianSquare(r, c) - sumOfLocalHessians(r, c));
                 }
             }
         }
@@ -370,8 +361,8 @@ public:
         return sum;
     }
 
-    void calculateGradientInputs(const Dataset<T>& features, const Dataset<T>& labels,
-        vector<T>& gradient)
+    void calculateGradientInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, vector<T>& gradient)
     {
         NeuralNetwork<T>& nn = mBaseFunction;
         const size_t N       = nn.getInputs();
@@ -456,8 +447,8 @@ public:
         vScale(gradient.data(), -2.0/rows, N);
     }
 
-    void calculateHessianInputs(const Dataset<T>& features, const Dataset<T>& labels,
-        Dataset<T>& hessian)
+    void calculateHessianInputs(const Dataset<T>& features,
+        const Dataset<T>& labels, Matrix<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -471,20 +462,15 @@ public:
         const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
-        Dataset<T> jacobian;
-        Dataset<T> jacobianSquare;
-        Dataset<T> localHessian;
-        Dataset<T> sumOfLocalHessians;
+        Matrix<T> jacobian(M, N);
+        Matrix<T> jacobianSquare(N, N);
+        Matrix<T> localHessian(N, N);
+        Matrix<T> sumOfLocalHessians(N, N);
         vector<T> evaluation(M);
         vector<T> error(M);
 
-        hessian.setSize(N, N);
-        jacobian.setSize(M, N);
-        jacobianSquare.setSize(N, N);
-        localHessian.setSize(N, N);
-        sumOfLocalHessians.setSize(N, N);
-
-        hessian.setAll(0.0);
+        hessian.resize(N, N);
+        hessian.fill(T{});
 
         for(size_t i = 0; i < features.rows(); ++i)
         {
@@ -501,9 +487,9 @@ public:
                 {
                     T sum = 0.0;
                     for (size_t r = 0; r < M; ++r)
-                        sum += jacobian[r][c1] * jacobian[r][c2];
+                        sum += jacobian(r, c1) * jacobian(r, c2);
 
-                    jacobianSquare[c1][c2] = sum;
+                    jacobianSquare(c1, c2) = sum;
                 }
             }
 
@@ -516,7 +502,7 @@ public:
                 error[j] = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
-            sumOfLocalHessians.setAll(0.0);
+            sumOfLocalHessians.fill(T{});
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
@@ -526,7 +512,7 @@ public:
                 for (size_t r = 0; r < N; ++r)
                 {
                     for (size_t c = 0; c < N; ++c)
-                        sumOfLocalHessians[r][c] += error[j] * localHessian[r][c];
+                        sumOfLocalHessians(r, c) += error[j] * localHessian(r, c);
                 }
             }
 
@@ -535,15 +521,15 @@ public:
             {
                 for (size_t c = 0; c < N; ++c)
                 {
-                    hessian[r][c] += 2.0 *
-                        (jacobianSquare[r][c] - sumOfLocalHessians[r][c]);
+                    hessian(r, c) += 2.0 *
+                        (jacobianSquare(r, c) - sumOfLocalHessians(r, c));
                 }
             }
         }
     }
 
     void calculateHessianParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, Dataset<T>& hessian)
+        const Dataset<T>& labels, Matrix<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -557,20 +543,15 @@ public:
         const size_t M = mBaseFunction.getOutputs();
 
         // Declare the temporary variables we'll need
-        Dataset<T> jacobian;
-        Dataset<T> jacobianSquare;
-        Dataset<T> localHessian;
-        Dataset<T> sumOfLocalHessians;
+        Matrix<T> jacobian(M, N);
+        Matrix<T> jacobianSquare(N, N);
+        Matrix<T> localHessian(N, N);
+        Matrix<T> sumOfLocalHessians(N, N);
         vector<T> evaluation(M);
         vector<T> error(M);
 
-        hessian.setSize(N, N);
-        jacobian.setSize(M, N);
-        jacobianSquare.setSize(N, N);
-        localHessian.setSize(N, N);
-        sumOfLocalHessians.setSize(N, N);
-
-        hessian.setAll(0.0);
+        hessian.resize(N, N);
+        hessian.fill(T{});
 
         for(size_t i = 0; i < features.rows(); ++i)
         {
@@ -587,9 +568,9 @@ public:
                 {
                     T sum = 0.0;
                     for (size_t r = 0; r < M; ++r)
-                        sum += jacobian[r][c1] * jacobian[r][c2];
+                        sum += jacobian(r, c1) * jacobian(r, c2);
 
-                    jacobianSquare[c1][c2] = sum;
+                    jacobianSquare(c1, c2) = sum;
                 }
             }
 
@@ -602,7 +583,7 @@ public:
                 error[j] = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
-            sumOfLocalHessians.setAll(0.0);
+            sumOfLocalHessians.fill(T{});
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
@@ -612,7 +593,7 @@ public:
                 for (size_t r = 0; r < N; ++r)
                 {
                     for (size_t c = 0; c < N; ++c)
-                        sumOfLocalHessians[r][c] += error[j] * localHessian[r][c];
+                        sumOfLocalHessians(r, c) += error[j] * localHessian(r, c);
                 }
             }
 
@@ -621,8 +602,8 @@ public:
             {
                 for (size_t c = 0; c < N; ++c)
                 {
-                    hessian[r][c] += 2.0 *
-                        (jacobianSquare[r][c] - sumOfLocalHessians[r][c]);
+                    hessian(r, c) += 2.0 *
+                        (jacobianSquare(r, c) - sumOfLocalHessians(r, c));
                 }
             }
         }

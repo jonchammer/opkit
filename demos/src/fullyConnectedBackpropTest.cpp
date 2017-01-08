@@ -18,6 +18,7 @@
 #include "opkit/ActivationFunction.h"
 #include "opkit/PrettyPrinter.h"
 #include "opkit/Dataset.h"
+#include "opkit/Matrix.h"
 
 using namespace opkit;
 using std::cout;
@@ -31,21 +32,21 @@ using Type = float;
 bool testBackpropParameters(NeuralNetwork<Type>& network, vector<Type>& input)
 {
     cout << "Testing Backprop." << endl;
-    Dataset<Type> jacobian, jacobian2;
+    Matrix<Type> jacobian, jacobian2;
     network.calculateJacobianParameters(input, jacobian);
     network.Function<Type>::calculateJacobianParameters(input, jacobian2);
 
     cout << "Exact:" << endl;
-    printDataset(jacobian, 8, 11);
+    printMatrix(jacobian, 8, 11);
    //
     cout << "Finite Differences:" << endl;
-    printDataset(jacobian2, 8, 11);
+    printMatrix(jacobian2, 8, 11);
 
-    for (size_t j = 0; j < jacobian.rows(); ++j)
+    for (size_t j = 0; j < jacobian.getRows(); ++j)
     {
-        for (size_t k = 0; k < jacobian.cols(); ++k)
+        for (size_t k = 0; k < jacobian.getCols(); ++k)
         {
-            if ((jacobian[j][k] - jacobian2[j][k]) > 0.001)
+            if ((jacobian(j, k) - jacobian2(j, k)) > 0.001)
             {
                 cout << "Backprop (parameters) - FAIL" << endl;
                 return false;
@@ -63,21 +64,21 @@ bool testBackpropParameters(NeuralNetwork<Type>& network, vector<Type>& input)
 bool testBackpropInputs(NeuralNetwork<Type>& network, vector<Type>& input)
 {
     cout << "Testing Backprop." << endl;
-    Dataset<Type> jacobian, jacobian2;
+    Matrix<Type> jacobian, jacobian2;
     network.calculateJacobianInputs(input, jacobian);
     network.Function<Type>::calculateJacobianInputs(input, jacobian2);
 
 //    cout << "Exact:" << endl;
-//    printDataset(jacobian, 8, 11);
+//    printMatrix(jacobian, 8, 11);
 //
 //    cout << "Finite Differences:" << endl;
-//    printDataset(jacobian2, 8, 11);
+//    printMatrix(jacobian2, 8, 11);
 
-    for (size_t j = 0; j < jacobian.rows(); ++j)
+    for (size_t j = 0; j < jacobian.getRows(); ++j)
     {
-        for (size_t k = 0; k < jacobian.cols(); ++k)
+        for (size_t k = 0; k < jacobian.getCols(); ++k)
         {
-            if ((jacobian[j][k] - jacobian2[j][k]) > 0.001)
+            if ((jacobian(j, k) - jacobian2(j, k)) > 0.001)
             {
                 cout << "Backprop (inputs) - FAIL" << endl;
                 return false;

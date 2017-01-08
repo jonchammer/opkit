@@ -12,7 +12,7 @@
 #include <cmath>
 #include "PrettyPrinter.h"
 #include "Function.h"
-#include "Dataset.h"
+#include "Matrix.h"
 #include "Error.h"
 #include "Layer.h"
 
@@ -78,17 +78,17 @@ public:
     // to the value already in the appropriate cell in 'gradient', so make sure
     // the vector is initialized to 0 ahead of time if a fresh calculation is
     // desired.
-    void calculateGradientParameters(const vector<T>& input, vector<T>& gradient);
+    void calculateGradientParameters(const vector<T>& input, T* gradient);
 
     // Calculates the Jacobian of the network with respect to the weights and
     // biases. This involves one forward pass and one backwards pass for each
     // output of the network.
-    void calculateJacobianParameters(const vector<T>& x, Dataset<T>& jacobian) override;
+    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian) override;
 
     // Calculates the Jacobian of the network with respect to the inputs. This
     // involves one forward pass and one backwards pass for each output of the
     // network.
-    void calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobian) override;
+    void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian) override;
 
     // Initializes the weights and biases with random values
     void initializeParameters();
@@ -219,34 +219,33 @@ void NeuralNetwork<T>::calculateDeltas()
         Layer<T>*& current = mLayers[i];
         Layer<T>*& prev    = mLayers[i - 1];
 
-        current->calculateDeltas(prev->getActivation(), prev->getDeltas());
+        current->calculateDeltas(prev->getActivation(), prev->getDeltas().data());
     }
 }
 
 template <class T>
-void NeuralNetwork<T>::calculateGradientParameters(const vector<T>& input, vector<T>& gradient)
+void NeuralNetwork<T>::calculateGradientParameters(const vector<T>& input, T* gradient)
 {
     const vector<T>* x = &input;
-    T* grad            = gradient.data();
 
     for (Layer<T>*& l : mLayers)
     {
-        l->calculateGradient(*x, grad);
+        l->calculateGradient(*x, gradient);
 
         // Get ready for the next iteration
-        x     = &l->getActivation();
-        grad += l->getNumParameters();
+        x         = &l->getActivation();
+        gradient += l->getNumParameters();
     }
 }
 
 template <class T>
-void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Dataset<T>& jacobian)
+void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
 {
     const size_t N = mParameters.size();
     const size_t M = getOutputs();
     static vector<T> prediction(M);
-    jacobian.setSize(M, N);
-    jacobian.setAll(T{});
+    jacobian.resize(M, N);
+    jacobian.fill(T{});
 
     // 1. Forward propagation
     evaluate(x, prediction);
@@ -262,18 +261,18 @@ void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Dataset<T
         calculateDeltas();
 
         // 3. Relate blame terms to the gradient
-        calculateGradientParameters(x, jacobian[i]);
+        calculateGradientParameters(x, jacobian(i));
     }
 }
 
 template <class T>
-void NeuralNetwork<T>::calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobian)
+void NeuralNetwork<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
 {
     const size_t N = getInputs();
     const size_t M = getOutputs();
     static vector<T> prediction(M);
-    jacobian.setSize(M, N);
-    jacobian.setAll(T{});
+    jacobian.resize(M, N);
+    jacobian.fill(T{});
 
     // 1. Forward propagation
     evaluate(x, prediction);
@@ -291,7 +290,7 @@ void NeuralNetwork<T>::calculateJacobianInputs(const vector<T>& x, Dataset<T>& j
         // 3. Relate blame terms to the gradient. This operation is the
         // same as backpropagating the deltas in the first layer to the
         // inputs (x).
-        mLayers.front()->calculateDeltas(x, jacobian[i]);
+        mLayers.front()->calculateDeltas(x, jacobian(i));
     }
 }
 

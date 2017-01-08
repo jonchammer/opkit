@@ -10,6 +10,7 @@
 
 #include "Function.h"
 #include "Dataset.h"
+#include "Matrix.h"
 
 namespace opkit
 {
@@ -39,9 +40,9 @@ public:
     virtual void calculateGradientParameters(const Dataset<T>& features,
         const Dataset<T>& labels, vector<T>& gradient);
     virtual void calculateHessianInputs(const Dataset<T>& features,
-        const Dataset<T>& labels, Dataset<T>& hessian);
+        const Dataset<T>& labels, Matrix<T>& hessian);
     virtual void calculateHessianParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, Dataset<T>& hessian);
+        const Dataset<T>& labels, Matrix<T>& hessian);
 
     // Returns the number of inputs to the function and the number of outputs,
     // respectively. Error functions only have 1 output.
@@ -184,7 +185,7 @@ void ErrorFunction<T, Model>::calculateGradientParameters(
 
 template <class T, class Model>
 void ErrorFunction<T, Model>::calculateHessianInputs(const Dataset<T>& features,
-    const Dataset<T>& labels, Dataset<T>& hessian)
+    const Dataset<T>& labels, Matrix<T>& hessian)
 {
     cout << "ErrorFunction::calculateHessianInputs()" << endl;
 
@@ -194,8 +195,7 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Dataset<T>& features,
     const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
     const size_t N         = mBaseFunction.getInputs();
 
-    hessian.setSize(N, N);
-    hessian.setAll(T{});
+    hessian.resize(N, N);
 
     // Perform one evaluation with no changes to get a baseline measurement
     T base = evaluate(features, labels);
@@ -236,7 +236,7 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Dataset<T>& features,
                 row[j] = origJ;
 
                 // Calculate the value of the Hessian at this index
-                hessian[i][j] = (eij - ei - ej + base) / (EPSILON * EPSILON);
+                hessian(i, j) = (eij - ei - ej + base) / (EPSILON * EPSILON);
             }
         }
     }
@@ -244,7 +244,7 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Dataset<T>& features,
 
 template <class T, class Model>
 void ErrorFunction<T, Model>::calculateHessianParameters(
-    const Dataset<T>& features, const Dataset<T>& labels, Dataset<T>& hessian)
+    const Dataset<T>& features, const Dataset<T>& labels, Matrix<T>& hessian)
 {
     cout << "ErrorFunction::calculateHessianParameters()" << endl;
 
@@ -254,7 +254,7 @@ void ErrorFunction<T, Model>::calculateHessianParameters(
     const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
     const size_t N         = mBaseFunction.getNumParameters();
 
-    hessian.setSize(N, N);
+    hessian.resize(N, N);
     vector<T>& params = getParameters();
 
     // Perform one evaluation with no changes to get a baseline measurement
@@ -288,7 +288,7 @@ void ErrorFunction<T, Model>::calculateHessianParameters(
             params[j]  = origJ;
 
             // Calculate the value of the Hessian at this index
-            hessian[i][j] = (eij - ei - ej + base) / (EPSILON * EPSILON);
+            hessian(i, j) = (eij - ei - ej + base) / (EPSILON * EPSILON);
         }
     }
 }

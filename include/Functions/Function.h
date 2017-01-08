@@ -13,6 +13,7 @@
 #include <random>
 #include <algorithm>
 #include "Dataset.h"
+#include "Matrix.h"
 #include "Error.h"
 
 using std::cout;
@@ -64,32 +65,32 @@ public:
     // Calculates the Jacobian of this function df(x)/dx with respect to the
     // function inputs. 'x' is the point at which the Jacobian should be
     // calculated, and the Jacobian itself is stored in 'Jacobian'.
-    virtual void calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobian);
+    virtual void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian);
 
     // Calculates the Jacobian of this function df(x)/dx with respect to the
     // function parameters. 'x' is the point at which the Jacobian should be
     // calculated, and the Jacobian itself is stored in 'Jacobian'.
-    virtual void calculateJacobianParameters(const vector<T>& x, Dataset<T>& jacobian);
+    virtual void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian);
 
-    // Calculates the Hessian Dataset of this function with respect to the
+    // Calculates the Hessian matrix of this function with respect to the
     // function inputs. 'x' is the point at which the Hessian should be
     // calculated, and the Hessian itself is stored in 'hessian'. Since an
     // arbitrary function can have many inputs and outputs, the second
-    // derivative is technically a 3rd order tensor (3D Dataset). This function
+    // derivative is technically a 3rd order tensor (3D matrix). This function
     // will only calculate the Hessian with respect to a single output, indexed
     // by 'outputIndex'. For scalar functions, 'outputIndex' should be 0.
     virtual void calculateHessianInputs(const vector<T>& x,
-        const size_t outputIndex, Dataset<T>& hessian);
+        const size_t outputIndex, Matrix<T>& hessian);
 
-    // Calculates the Hessian Dataset of this function with respect to the
+    // Calculates the Hessian matrix of this function with respect to the
     // function parameters. 'x' is the point at which the Hessian should be
     // calculated, and the Hessian itself is stored in 'hessian'. Since an
     // arbitrary function can have many inputs and outputs, the second
-    // derivative is technically a 3rd order tensor (3D Dataset). This function
+    // derivative is technically a 3rd order tensor (3D matrix). This function
     // will only calculate the Hessian with respect to a single output, indexed
     // by 'outputIndex'. For scalar functions, 'outputIndex' should be 0.
     virtual void calculateHessianParameters(const vector<T>& x,
-        const size_t outputIndex, Dataset<T>& hessian);
+        const size_t outputIndex, Matrix<T>& hessian);
 };
 
 // Most functions will maintain a vector of parameters. They can inherit from
@@ -126,7 +127,7 @@ void Function<T>::getLastEvaluation(vector<T>& output)
 }
 
 template <class T>
-void Function<T>::calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobian)
+void Function<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
 {
     cout << "Function::calculateJacobianInputs()" << endl;
 
@@ -138,8 +139,8 @@ void Function<T>::calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobi
     const size_t N         = getInputs();
     const size_t M         = getOutputs();
 
-    // Ensure the Jacobian Dataset is large enough
-    jacobian.setSize(M, N);
+    // Ensure the Jacobian matrix is large enough
+    jacobian.resize(M, N);
 
     // Temporary vectors used for calculations
     static vector<T> prediction(M, T{});
@@ -164,7 +165,7 @@ void Function<T>::calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobi
         evaluate(input, derivativePrediction);
 
         for (size_t r = 0; r < M; ++r)
-            jacobian[r][p] = (derivativePrediction[r] - prediction[r]) / EPSILON;
+            jacobian(r,p) = (derivativePrediction[r] - prediction[r]) / EPSILON;
 
         // Change the input back to its original value
         input[p] = orig;
@@ -172,7 +173,7 @@ void Function<T>::calculateJacobianInputs(const vector<T>& x, Dataset<T>& jacobi
 }
 
 template <class T>
-void Function<T>::calculateJacobianParameters(const vector<T>& x, Dataset<T>& jacobian)
+void Function<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
 {
     cout << "Function::calculateJacobianParameters()" << endl;
 
@@ -184,8 +185,8 @@ void Function<T>::calculateJacobianParameters(const vector<T>& x, Dataset<T>& ja
     const size_t N         = getNumParameters();
     const size_t M         = getOutputs();
 
-    // Ensure the Jacobian Dataset is large enough
-    jacobian.setSize(M, N);
+    // Ensure the Jacobian matrix is large enough
+    jacobian.resize(M, N);
 
     // Temporary vectors used for calculations
     static vector<T> prediction(M, 0.0);
@@ -207,7 +208,7 @@ void Function<T>::calculateJacobianParameters(const vector<T>& x, Dataset<T>& ja
         evaluate(x, derivativePrediction);
 
         for (size_t r = 0; r < M; ++r)
-            jacobian[r][p] = (derivativePrediction[r] - prediction[r]) / EPSILON;
+            jacobian(r, p) = (derivativePrediction[r] - prediction[r]) / EPSILON;
 
         // Change the parameter back to its original value
         parameters[p] = orig;
@@ -216,7 +217,7 @@ void Function<T>::calculateJacobianParameters(const vector<T>& x, Dataset<T>& ja
 
 template <class T>
 void Function<T>::calculateHessianInputs(const vector<T>& x,
-        const size_t outputIndex, Dataset<T>& hessian)
+        const size_t outputIndex, Matrix<T>& hessian)
 {
     cout << "Function::calculateHessianInputs()" << endl;
 
@@ -226,7 +227,7 @@ void Function<T>::calculateHessianInputs(const vector<T>& x,
     const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
     const size_t N         = getInputs();
     const size_t M         = getOutputs();
-    hessian.setSize(N, N);
+    hessian.resize(N, N);
 
     // Create the temporary vectors we'll need
     static vector<T> base(M, T{});
@@ -267,7 +268,7 @@ void Function<T>::calculateHessianInputs(const vector<T>& x,
             input[j] = origJ;
 
             // Calculate the value of the Hessian at this index
-            hessian[i][j] = (eij[outputIndex] - ei[outputIndex] -
+            hessian(i, j) = (eij[outputIndex] - ei[outputIndex] -
                 ej[outputIndex] + base[outputIndex]) / (EPSILON * EPSILON);
         }
     }
@@ -275,7 +276,7 @@ void Function<T>::calculateHessianInputs(const vector<T>& x,
 
 template <class T>
 void Function<T>::calculateHessianParameters(const vector<T>& x,
-        const size_t outputIndex, Dataset<T>& hessian)
+        const size_t outputIndex, Matrix<T>& hessian)
 {
     cout << "Function::calculateHessianParameters()" << endl;
 
@@ -286,7 +287,7 @@ void Function<T>::calculateHessianParameters(const vector<T>& x,
     const size_t N         = getNumParameters();
     const size_t M         = getOutputs();
 
-    hessian.setSize(N, N);
+    hessian.resize(N, N);
     vector<T>& params = getParameters();
 
     // Create the temporary vectors we'll need
@@ -326,7 +327,7 @@ void Function<T>::calculateHessianParameters(const vector<T>& x,
             params[j]  = origJ;
 
             // Calculate the value of the Hessian at this index
-            hessian[i][j] = (eij[outputIndex] - ei[outputIndex] -
+            hessian(i, j) = (eij[outputIndex] - ei[outputIndex] -
                 ej[outputIndex] + base[outputIndex]) / (EPSILON * EPSILON);
         }
     }
