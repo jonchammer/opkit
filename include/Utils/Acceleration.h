@@ -12,6 +12,9 @@
 
 namespace opkit
 {
+    // For BLAS reference see:
+    // https://software.intel.com/sites/default/files/managed/ff/c8/mkl-2017-developer-reference-c_0.pdf
+
     // Computes C = alpha * A * B + beta * C, where A is an M x K
     // matrix, B is a K x N matrix, C is an M x N matrix, alpha is
     // a scalar, and beta is a scalar.
@@ -148,6 +151,72 @@ namespace opkit
         cblas_sgemv(CblasRowMajor, CblasNoTrans,
         M, N,
         alpha, A, N,
+        x, xInc,
+        beta, y, yInc);
+    }
+
+    // Computes y = alpha * A * x + beta * y, where A is an N x N
+    // symmetric matrix, x is a vector of size N, y is a vector of size N,
+    // and alpha and beta are scalars.
+    // xInc and yInc can be adjusted if the vectors are stored
+    // in an interlaced format.
+    inline void symmetricMvMultiply(const double* A, const double* x, double* y,
+        const size_t N, const double alpha = 1.0, const double beta = 0.0,
+        const int xInc = 1, const int yInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  Upper or lower part of matrix is used
+        // 3.  N
+        // 4.  Alpha
+        // 5.  A's data
+        // 6.  A's stride
+        // 7.  x's data
+        // 8.  x's increment (1)
+        // 9.  Beta
+        // 10. y's data
+        // 11. y's increment (1)
+        cblas_dsymv(CblasRowMajor, CblasUpper,
+        N, alpha,
+        A, N,
+        x, xInc,
+        beta, y, yInc);
+    }
+
+    // Computes y = alpha * A * x + beta * y, where A is an N x N
+    // symmetric matrix, x is a vector of size N, y is a vector of size N,
+    // and alpha and beta are scalars.
+    // xInc and yInc can be adjusted if the vectors are stored
+    // in an interlaced format.
+    inline void symmetricMvMultiply(const float* A, const float* x, float* y,
+        const size_t N, const float alpha = 1.0f, const float beta = 0.0f,
+        const int xInc = 1, const int yInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  Upper or lower part of matrix is used
+        // 3.  N
+        // 4.  Alpha
+        // 5.  A's data
+        // 6.  A's stride
+        // 7.  x's data
+        // 8.  x's increment (1)
+        // 9.  Beta
+        // 10. y's data
+        // 11. y's increment (1)
+        cblas_ssymv(CblasRowMajor, CblasUpper,
+        N, alpha,
+        A, N,
         x, xInc,
         beta, y, yInc);
     }
@@ -370,6 +439,80 @@ namespace opkit
         // 3. x's data
         // 4. x's increment (1)
         cblas_sscal(N, alpha, x, xInc);
+    }
+
+    // Returns the index where the maximum element is found in the vector x of
+    // size N. xInc can be adjusted if the vector is
+    // stored in an interlaced format.
+    inline size_t vMaxIndex(const double* x, const size_t N, const int xInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters
+        // 1. Size of vector x
+        // 2. x's data
+        // 3. x's increment (1)
+        return cblas_idamax(N, x, xInc);
+    }
+
+    // Returns the index where the maximum element is found in the vector x of
+    // size N. xInc can be adjusted if the vector is
+    // stored in an interlaced format.
+    inline size_t vMaxIndex(const float* x, const size_t N, const int xInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters
+        // 1. Size of vector x
+        // 2. x's data
+        // 3. x's increment (1)
+        return cblas_isamax(N, x, xInc);
+    }
+
+    // Copies the contents of x into y, where x and y are vectors of size N.
+    // xInc and yInc can be adjusted if the vectors are stored in an
+    // interlaced format.
+    inline void vCopy(const double* x, double* y, const size_t N,
+        const int xInc = 1, const int yInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters
+        // 1. Size of vectors x and y
+        // 2. x's data
+        // 3. x's increment (1)
+        // 4. y's data
+        // 5. y's increment (1)
+        cblas_dcopy(N, x, xInc, y, yInc);
+    }
+
+    // Copies the contents of x into y, where x and y are vectors of size N.
+    // xInc and yInc can be adjusted if the vectors are stored in an
+    // interlaced format.
+    inline void vCopy(const float* x, float* y, const size_t N,
+        const int xInc = 1, const int yInc = 1)
+    {
+        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
+        #ifdef OPENBLAS_CONFIG_H
+            openblas_set_num_threads(1);
+        #endif
+
+        // Parameters
+        // 1. Size of vectors x and y
+        // 2. x's data
+        // 3. x's increment (1)
+        // 4. y's data
+        // 5. y's increment (1)
+        cblas_scopy(N, x, xInc, y, yInc);
     }
 };
 

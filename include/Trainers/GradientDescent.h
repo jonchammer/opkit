@@ -13,6 +13,7 @@
 #include "ErrorFunction.h"
 #include "Matrix.h"
 #include "Acceleration.h"
+#include "PrettyPrinter.h"
 
 namespace opkit
 {

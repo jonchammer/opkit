@@ -101,17 +101,20 @@ void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
     cout << "ErrorFunction::calculateGradientInputs()" << endl;
 
     // Constants used in the finite differences approximation
-    const T EPSILON = 1.0E-10;
-    const size_t N  = getInputs();
+    // Epsilon needs to be a reasonably small number, but the size depends on
+    // the type (e.g. doubles need smaller values). We use the sqrt of the
+    // machine epsilon as a good starting point.
+    const static T EPSILON = std::sqrt(std::numeric_limits<T>::epsilon());
+    const size_t N         = getInputs();
 
     // Ensure the gradient vector is large enough
-    std::fill(gradient.begin(), gradient.end(), 0.0);
+    std::fill(gradient.begin(), gradient.end(), T{});
 
      // Start by evaluating the function without any modifications
     T y = evaluate(features, labels);
 
     size_t rows = features.rows();
-    for (size_t r = 0; r < features.rows(); ++r)
+    for (size_t r = 0; r < rows; ++r)
     {
         // Yes, 'features' is declared const. We temporarily change one value in
         // one row, re-evaluate the function, and then revert the value to its
@@ -149,8 +152,11 @@ void ErrorFunction<T, Model>::calculateGradientParameters(const Matrix<T>& featu
     cout << "ErrorFunction::calculateGradientParameters()" << endl;
 
     // Constants used in the finite differences approximation
-    const T EPSILON = 1.0E-10;
-    const size_t N  = getNumParameters();
+    // Epsilon needs to be a reasonably small number, but the size depends on
+    // the type (e.g. doubles need smaller values). We use the sqrt of the
+    // machine epsilon as a good starting point.
+    const static T EPSILON = std::sqrt(std::numeric_limits<T>::epsilon());
+    const size_t N         = getNumParameters();
 
      // Start by evaluating the function without any modifications
     vector<T>& parameters = getParameters();
@@ -184,11 +190,11 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
     // Epsilon has to be set to a larger value than that used in calculating
     // the gradient because it will be squared in the calculations below. If it
     // is too small, we incur more significant rounding errors.
-    const T EPSILON = 1E-4;
-    const size_t N  = mBaseFunction.getInputs();
+    const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
+    const size_t N         = mBaseFunction.getInputs();
 
     hessian.setSize(N, N);
-    hessian.setAll(0.0);
+    hessian.setAll(T{});
 
     // Perform one evaluation with no changes to get a baseline measurement
     T base = evaluate(features, labels);
@@ -244,8 +250,8 @@ void ErrorFunction<T, Model>::calculateHessianParameters(const Matrix<T>& featur
     // Epsilon has to be set to a larger value than that used in calculating
     // the gradient because it will be squared in the calculations below. If it
     // is too small, we incur more significant rounding errors.
-    const T EPSILON = 1E-4;
-    const size_t N  = mBaseFunction.getNumParameters();
+    const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
+    const size_t N         = mBaseFunction.getNumParameters();
 
     hessian.setSize(N, N);
     vector<T>& params = getParameters();
