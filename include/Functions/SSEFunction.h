@@ -73,9 +73,13 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian;
+        static Matrix<T> baseJacobian(M, N);
         static vector<T> evaluation(M);
-        static vector<T> error(M);
+        static Matrix<T> error(1, M);
+
+        // The matrix 'grad' temporarily holds the contents of the gradient
+        static Matrix<T> grad(1, N);
+        grad.swap(gradient);
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -89,19 +93,13 @@ public:
             else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error[j] = labels[i][j] - evaluation[j];
+                error(0, j) = labels[i][j] - evaluation[j];
 
-            for (size_t j = 0; j < N; ++j)
-            {
-                // Multiply the error by the model's Jacobian,
-                T sum = 0.0;
-                for (size_t k = 0; k < M; ++k)
-                    sum += error[k] * baseJacobian(k, j);
-
-                // Add the result to the running total for the gradient
-                gradient[j] += -2.0 * sum;
-            }
+            grad += -2.0 * error * baseJacobian;
         }
+
+        // Swap back so gradient contains the correct information
+        grad.swap(gradient);
 
         // Divide by the batch size to get the average gradient
         for (size_t i = 0; i < N; ++i)
@@ -120,9 +118,13 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), 0.0);
 
-        static Matrix<T> baseJacobian;
+        static Matrix<T> baseJacobian(M, N);
         static vector<T> evaluation(M);
-        static vector<T> error(M);
+        static Matrix<T> error(1, M);
+
+        // The matrix 'grad' temporarily holds the contents of the gradient
+        static Matrix<T> grad(1, N);
+        grad.swap(gradient);
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -136,19 +138,13 @@ public:
             else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error[j] = labels[i][j] - evaluation[j];
+                error(0, j) = labels[i][j] - evaluation[j];
 
-            for (size_t j = 0; j < N; ++j)
-            {
-                // Multiply the error by the model's Jacobian,
-                T sum = 0.0;
-                for (size_t k = 0; k < M; ++k)
-                    sum += error[k] * baseJacobian(k, j);
-
-                // Add the result to the running total for the gradient
-                gradient[j] += -2.0 * sum;
-            }
+            grad += -2.0 * error * baseJacobian;
         }
+
+        // Swap back so gradient contains the correct information
+        grad.swap(gradient);
 
         for (size_t i = 0; i < N; ++i)
             gradient[i] /= rows;
@@ -209,7 +205,7 @@ public:
                 error[j] = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
-            sumOfLocalHessians.setAll(0.0);
+            sumOfLocalHessians.fill(0.0);
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j

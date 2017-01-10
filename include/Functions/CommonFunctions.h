@@ -124,26 +124,75 @@ template <class T>
 class MultivariateLinear : public StandardFunction<T>
 {
 public:
+    using StandardFunction<T>::mParameters;
+    using StandardFunction<T>::mInputs;
+    using StandardFunction<T>::mOutputs;
+
     MultivariateLinear(int inputs, int outputs) :
         StandardFunction<T>(inputs, outputs, inputs * outputs + outputs) {}
 
     void evaluate(const vector<T>& input, vector<T>& output)
     {
-        output.resize(StandardFunction<T>::mOutputs);
-        std::fill(output.begin(), output.end(), 0.0);
+        output.resize(mOutputs);
+        std::fill(output.begin(), output.end(), T{});
 
         // The biases are the last 'mOutputs' terms in the parameter list
-        int biasStart = StandardFunction<T>::mParameters.size() - StandardFunction<T>::mOutputs;
+        int biasStart = mParameters.size() - mOutputs;
 
-        for (size_t j = 0; j < StandardFunction<T>::mOutputs; ++j)
+        for (size_t j = 0; j < mOutputs; ++j)
         {
             // M*x
-            for (size_t i = 0; i < StandardFunction<T>::mInputs; ++i)
-                output[j] += StandardFunction<T>::mParameters[i * StandardFunction<T>::mOutputs + j] * input[i];
+            for (size_t i = 0; i < mInputs; ++i)
+                output[j] += mParameters[j * mInputs + i] * input[i];
 
             // + b
-            output[j] += StandardFunction<T>::mParameters[biasStart + j];
+            output[j] += mParameters[biasStart + j];
         }
+    }
+
+    void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
+    {
+        jacobian.resize(mOutputs, mInputs);
+        T* data = jacobian.data();
+
+        // J = W
+        for (size_t i = 0; i < mParameters.size() - mOutputs; ++i)
+            data[i] = mParameters[i];
+    }
+
+    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
+    {
+        jacobian.resize(mOutputs, mParameters.size());
+        jacobian.fill(T{});
+
+        // Weight terms
+        size_t col = 0;
+        for (size_t row = 0; row < mOutputs; ++row)
+        {
+            for (size_t i = 0; i < x.size(); ++i, ++col)
+                jacobian(row, col) = x[i];
+        }
+
+        // Bias terms
+        for (size_t row = 0; row < mOutputs; ++row, ++col)
+            jacobian(row, col) = 1.0;
+    }
+
+    void calculateHessianInputs(const vector<T>& x,
+        const size_t outputIndex, Matrix<T>& hessian)
+    {
+        // H = 0
+        hessian.resize(mInputs, mInputs);
+        hessian.fill(T{});
+    }
+
+
+    void calculateHessianParameters(const vector<T>& x,
+        const size_t outputIndex, Matrix<T>& hessian)
+    {
+        // H = 0
+        hessian.resize(mParameters.size(), mParameters.size());
+        hessian.fill(T{});
     }
 };
 

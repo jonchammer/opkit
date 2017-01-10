@@ -11,6 +11,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include "Matrix.h"
 #include "Dataset.h"
 #include "Tensor3D.h"
 

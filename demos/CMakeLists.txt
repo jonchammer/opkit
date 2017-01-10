@@ -20,7 +20,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 include_directories("/usr/local/include/opkit")
 
 # Create lists of all of the header files and the source files
-set(SOURCES src/finiteDifferencesTest.cpp)
+set(SOURCES src/finiteDifferencesSSETest.cpp)
 add_executable(demo ${SOURCES})
 
 # Find and link the BLAS Library
