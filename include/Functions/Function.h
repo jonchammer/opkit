@@ -337,7 +337,7 @@ void Function<T>::calculateHessianParameters(const vector<T>& x,
 // of the given mean and variance
 template <class T>
 void randomizeParameters(vector<T>& parameters,
-    const T mean = T{}, const T variance = T{1.0})
+    const double mean = T{}, const double variance = 1.0)
 {
     std::default_random_engine generator;
     std::normal_distribution<> rand(mean, variance);

@@ -112,7 +112,7 @@ public:
     }
 
     // Swap the contents of this matrix with 'other'
-    void swap(const Matrix<T>& other)
+    void swap(Matrix<T>& other)
     {
         mData.swap(other.mData);
         swap(mRows, other.mRows);
@@ -124,7 +124,7 @@ public:
     // an efficient mechanism for temporarily 'wrapping' a vector. If a
     // permanent wrapping is desired, consider using the vector move constructor
     // instead.
-    void swap(vector<double>& other)
+    void swap(vector<T>& other)
     {
         mData.swap(other);
     }
@@ -146,179 +146,262 @@ private:
     size_t mRows, mCols; // Stores the matrix dimensions
 };
 
-// Multiplication machinery
-template <class LHS, class RHS>
-struct Multiplication
-{
-    Multiplication(const LHS& _lhs, const RHS& _rhs) :
-        lhs(_lhs), rhs(_rhs) {}
+//----------------------------------------------------------------------------//
 
-    const LHS& lhs;
-    const RHS& rhs;
+// Interior nodes of the AST that have two children
+template <class LHS, class RHS, class Op>
+struct BinaryExpression
+{
+    BinaryExpression(const LHS& lhs, const RHS& rhs) :
+        left(lhs), right(rhs) {}
+
+    template <class T>
+    void apply(Matrix<T>& target) const
+    {
+        Op::apply(left, right, target);
+    }
+
+    const LHS& left;
+    const RHS& right;
 };
 
-template <class LHS, class RHS>
-Multiplication<LHS, RHS> operator*(const LHS& lhs, const RHS& rhs)
+// Interior nodes of the AST that have one child
+template <class Base, class Op>
+struct UnaryExpression
 {
-    return Multiplication<LHS, RHS>(lhs, rhs);
-}
+    UnaryExpression(const Base& c) : child(c) {}
 
-template <class T>
-void apply(Multiplication<Matrix<T>, Matrix<T>> base, Matrix<T>& target)
-{
-    const Matrix<T>& m1 = base.lhs;
-    const Matrix<T>& m2 = base.rhs;
-    target.resize(m1.getRows(), m2.getCols());
-    mmMultiply(m1.data(), m2.data(), target.data(),
-        target.getRows(), target.getCols(), m1.getCols(), 1.0, 1.0);
-}
+    template <class T>
+    void apply(Matrix<T>& target) const
+    {
+        Op::apply(child, target);
+    }
 
-// Addition machinery
-template <class LHS, class RHS>
-struct Addition
-{
-    Addition(const LHS& _lhs, const RHS& _rhs) :
-        lhs(_lhs), rhs(_rhs) {}
-
-    const LHS& lhs;
-    const RHS& rhs;
+    const Base& child;
 };
 
+// Base class for all binary operations (e.g. addition, multiplication).
+// These functions would have to be declared in every binary operation
+// without this class, so it's mostly here to consolodate code a bit.
+template <class Base>
+struct BinaryOp
+{
+    // Expression on left side
+    template <class T, class LHS>
+    static void apply(const LHS& lhs, const Matrix<T>& rhs, Matrix<T>& target)
+    {
+        Matrix<T> temp;
+        lhs.apply(temp);
+        Base::apply(temp, rhs, target);
+    }
+
+    // Expression on right side
+    template <class T, class RHS>
+    static void apply(const Matrix<T>& lhs, const RHS& rhs, Matrix<T>& target)
+    {
+        Matrix<T> temp;
+        rhs.apply(temp);
+        Base::apply(lhs, temp, target);
+    }
+
+    // Expression on both sides
+    template <class T, class LHS, class RHS>
+    static void apply(const LHS& lhs, const RHS& rhs, Matrix<T>& target)
+    {
+        Matrix<T> temp1;
+        Matrix<T> temp2;
+        lhs.apply(temp1);
+        rhs.apply(temp2);
+        Base::apply(temp1, temp2, target);
+    }
+};
+
+// Base class for all unary operations (e.g. transpose)
+template <class Base>
+struct UnaryOp
+{
+    template <class T, class E>
+    static void apply(const E& e, Matrix<T>& target)
+    {
+        Matrix<T> temp;
+        e.apply(temp);
+        Base::apply(temp, target);
+    }
+};
+
+// Operator implementations
+struct Addition : public BinaryOp<Addition>
+{
+    // Required so that the compiler can find the other versions of
+    // apply that are declared in BinaryOp.
+    using BinaryOp<Addition>::apply;
+
+    template <class T>
+    static void apply(const Matrix<T>& m1,
+        const Matrix<T>& m2, Matrix<T>& target)
+    {
+        const size_t M = m1.getRows();
+        const size_t N = m1.getCols();
+
+        target.resize(M, N);
+        vAdd(m1.data(), target.data(), M * N);
+        vAdd(m2.data(), target.data(), M * N);
+    }
+};
+
+struct Subtraction : public BinaryOp<Subtraction>
+{
+    // Required so that the compiler can find the other versions of
+    // apply that are declared in BinaryOp.
+    using BinaryOp<Subtraction>::apply;
+
+    template <class T>
+    static void apply(const Matrix<T>& m1,
+        const Matrix<T>& m2, Matrix<T>& target)
+    {
+        const size_t M = m1.getRows();
+        const size_t N = m1.getCols();
+
+        // y += A - B       -->
+        // y = y + A - B    -->
+        // y = y + A + (-B) -->
+        // y = (y + A) + (-B)
+        target.resize(M, N);
+        vAdd(m1.data(), target.data(), M * N);
+        vAdd(m2.data(), target.data(), M * N, -1.0);
+    }
+};
+
+struct Multiplication : BinaryOp<Multiplication>
+{
+    // Required so that the compiler can find the other versions of
+    // apply that are declared in BinaryOp.
+    using BinaryOp<Multiplication>::apply;
+
+    template <class T>
+    static void apply(const Matrix<T>& m1, const Matrix<T>& m2, Matrix<T>& target)
+    {
+        target.resize(m1.getRows(), m2.getCols());
+        mmMultiply(m1.data(), m2.data(), target.data(),
+            target.getRows(), target.getCols(), m1.getCols(), 1.0, 1.0);
+    }
+};
+
+struct ScalarMultiplication
+{
+    template <class T>
+    static void apply(const T val, const Matrix<T>& m, Matrix<T>& target)
+    {
+        target.resize(m.getRows(), m.getCols());
+        vAdd(m.data(), target.data(), m.getRows() * m.getCols(), val);
+    }
+
+    template <class T>
+    static void apply(const Matrix<T>& m, const T val, Matrix<T>& target)
+    {
+        target.resize(m.getRows(), m.getCols());
+        vAdd(m.data(), target.data(), m.getRows() * m.getCols(), val);
+    }
+
+    // Right side is an expression
+    template <class T, class RHS>
+    static void apply(const T val, const RHS& rhs, Matrix<T>& target)
+    {
+        Matrix<T> temp;
+        rhs.apply(temp);
+        apply(val, temp, target);
+    }
+
+    // Left side is an expression
+    template <class T, class LHS>
+    static void apply(const LHS& lhs, const T val, Matrix<T>& target)
+    {
+        Matrix<T> temp;
+        lhs.apply(temp);
+        apply(temp, val, target);
+    }
+};
+
+struct Transpose : UnaryOp<Transpose>
+{
+    // Required so that the compiler can find the other versions of
+    // apply that are declared in UnaryOp.
+    using UnaryOp<Transpose>::apply;
+
+    template <class T>
+    static void apply(const Matrix<T>& m, Matrix<T>& target)
+    {
+        const size_t N = m.getRows();
+        const size_t M = m.getCols();
+
+        target.resize(M, N);
+        for (size_t i = 0; i < M; ++i)
+            for (size_t j = 0; j < N; ++j)
+                target(i, j) += m(j, i);
+    }
+};
+
+// Operators - These are used to construct the AST at compile time.
 template <class LHS, class RHS>
-Addition<LHS, RHS> operator+(const LHS& lhs, const RHS& rhs)
+BinaryExpression<LHS, RHS, Addition>
+operator+ (const LHS& lhs, const RHS& rhs)
 {
-    return Addition<LHS, RHS>(lhs, rhs);
+    return BinaryExpression<LHS, RHS, Addition>(lhs, rhs);
 }
 
-template <class T>
-void apply(Addition<Matrix<T>, Matrix<T>> base, Matrix<T>& target)
+template <class LHS, class RHS>
+BinaryExpression<LHS, RHS, Subtraction>
+operator- (const LHS& lhs, const RHS& rhs)
 {
-    const Matrix<T>& m1 = base.lhs;
-    const Matrix<T>& m2 = base.rhs;
-    const size_t M = m1.getRows();
-    const size_t N = m1.getCols();
-
-    target.resize(M, N);
-    vAdd(m1.data(), target.data(), M * N);
-    vAdd(m2.data(), target.data(), M * N);
+    return BinaryExpression<LHS, RHS, Subtraction>(lhs, rhs);
 }
 
-// Allowing multiplication by scalars
-// scalar * matrix
-template <class T>
-void apply(Multiplication<T, Matrix<T>> base, Matrix<T>& target)
-{
-    const Matrix<T>& m = base.rhs;
-    target.resize(m.getRows(), m.getCols());
-    vAdd(m.data(), target.data(), m.getRows() * m.getCols(), base.lhs);
-}
-
-// matrix * scalar
-template <class T>
-void apply(Multiplication<Matrix<T>, T> base, Matrix<T>& target)
-{
-    const Matrix<T>& m = base.lhs;
-    target.resize(m.getRows(), m.getCols());
-    vAdd(m.data(), target.data(), m.getRows() * m.getCols(), base.rhs);
-}
-
-// Multiplication<?, ?> * scalar
-template
+// Multiplication when both sides are not numbers (e.g. Matrix, Matrix)
+// enable_if is used to control the return value using the SFINAE pattern.
+// If the compile-time condition is true, the return type will be what we
+// define. If not, there is no return type.
+template <class LHS, class RHS>
+typename std::enable_if
 <
-    class T,
-    class LHS,
-    class RHS,
-    template <class LHS, class RHS> class ChildOp
->
-void apply(Multiplication<ChildOp<LHS, RHS>, T> base, Matrix<T>& target)
+    !std::is_arithmetic<LHS>::value && !std::is_arithmetic<RHS>::value,
+    BinaryExpression<LHS, RHS, Multiplication>
+>::type
+operator* (const LHS& lhs, const RHS& rhs)
 {
-    Matrix<T> temp;
-    apply(base.lhs, temp);
-    apply(Multiplication<Matrix<T>, T>(temp, base.rhs), target);
+    return BinaryExpression<LHS, RHS, Multiplication>(lhs, rhs);
 }
 
-// scalar * Multiplication<?, ?>
-template
+// Multiplication when the LHS is a number, but the RHS is not.
+template <class LHS, class RHS>
+typename std::enable_if
 <
-    class T,
-    class LHS,
-    class RHS,
-    template <class LHS, class RHS> class ChildOp
->
-void apply(Multiplication<T, ChildOp<LHS, RHS>> base, Matrix<T>& target)
+    std::is_arithmetic<LHS>::value && !std::is_arithmetic<RHS>::value,
+    BinaryExpression<LHS, RHS, ScalarMultiplication>
+>::type
+operator* (const LHS lhs, const RHS& rhs)
 {
-    Matrix<T> temp;
-    apply(base.rhs, temp);
-    apply(Multiplication<T, Matrix<T>>(base.lhs, temp), target);
+    return BinaryExpression<LHS, RHS, ScalarMultiplication>(lhs, rhs);
 }
 
-// General recursive machinery. Allows us to combine matrices and expressions to
-// evaluate any arbitrary expression. Attempts are made to reduce the number
-// of dynamic allocations, but some are unavoidable.
-// Recursive Case 1 - the left branch is a complex expression.
-template
+// Multiplication when the RHS is a number, but the LHS is not.
+template <class LHS, class RHS>
+typename std::enable_if
 <
-    class T,
-    class LHS,
-    class RHS,
-    template <class LHS, class RHS> class ChildOp,
-    template <class ChildOp, class M> class ParentOp
->
-void apply(ParentOp<ChildOp<LHS, RHS>, Matrix<T>> base, Matrix<T>& target)
+    !std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value,
+    BinaryExpression<LHS, RHS, ScalarMultiplication>
+>::type
+operator* (const LHS& lhs, const RHS rhs)
 {
-    // Complicated case - create a temporary matrix, evaluate the lhs of the
-    // tree (to populate the temporary matrix), then do a simple evaluation
-    // between two matrices (temp and base.rhs).
-    // NOTE: temp is created on the stack, but it will live long enough for
-    // the second call to apply() to finish, so it doesn't create a problem.
-    Matrix<T> temp;
-    apply(base.lhs, temp);
-    apply(ParentOp<Matrix<T>, Matrix<T>>(temp, base.rhs), target);
+    return BinaryExpression<LHS, RHS, ScalarMultiplication>(lhs, rhs);
 }
 
-// Recursive Case 2 - the right branch is a complex expression.
-template
-<
-    class T,
-    class LHS,
-    class RHS,
-    template <class LHS, class RHS> class ChildOp,
-    template <class ChildOp, class M> class ParentOp
->
-void apply(ParentOp<Matrix<T>, ChildOp<LHS, RHS>> base, Matrix<T>& target)
+// We could also overload an operator for this operation, but the function
+// syntax seems clearer to me.
+template <class Base>
+UnaryExpression<Base, Transpose>
+transpose (const Base& base)
 {
-    // Complicated case - create a temporary matrix, evaluate the rhs of the
-    // tree (to populate the temporary matrix), then do a simple evaluation
-    // between two matrices (base.lhs and temp).
-    // NOTE: temp is created on the stack, but it will live long enough for
-    // the second call to apply() to finish, so it doesn't create a problem.
-    Matrix<T> temp;
-    apply(base.rhs, temp);
-    apply(ParentOp<Matrix<T>, Matrix<T>>(base.lhs, temp), target);
-}
-
-// Recursive Case 3 - both branches are complex expressions.
-template
-<
-    class T,
-    class LHS1, class LHS2,
-    class RHS1, class RHS2,
-    template <class LHS1, class RHS1> class ChildOp1,
-    template <class LHS2, class RHS2> class ChildOp2,
-    template <class ChildOp1, class ChildOp2> class ParentOp
->
-void apply(ParentOp<ChildOp1<LHS1, RHS1>, ChildOp2<LHS2, RHS2>> base, Matrix<T>& target)
-{
-    // Really complicated case - create two temporary matrices, evaluate each
-    // side of the tree to populate them, then do a simple evaluation
-    // between the two remaining matrices (temp1 and temp2).
-    // NOTE: temp1 and temp2 are created on the stack, but they will live long
-    // enough for the final call to apply() to finish, so it doesn't create a problem.
-    Matrix<T> temp1;
-    Matrix<T> temp2;
-    apply(base.lhs, temp1);
-    apply(base.rhs, temp2);
-    apply(ParentOp<Matrix<T>, Matrix<T>>(temp1, temp2), target);
+    return UnaryExpression<Base, Transpose>(base);
 }
 
 // Forced evaluation. When these functions are called, the abstract syntax tree
@@ -326,7 +409,7 @@ void apply(ParentOp<ChildOp1<LHS1, RHS1>, ChildOp2<LHS2, RHS2>> base, Matrix<T>&
 template <class T, class Exp>
 Matrix<T>& operator+=(Matrix<T>& lhs, Exp rhs)
 {
-    apply(rhs, lhs);
+    rhs.apply(lhs);
     return lhs;
 }
 

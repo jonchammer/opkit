@@ -95,7 +95,7 @@ public:
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels[i][j] - evaluation[j];
 
-            grad += -2.0 * error * baseJacobian;
+            grad += T(-2.0) * error * baseJacobian;
         }
 
         // Swap back so gradient contains the correct information
@@ -116,7 +116,7 @@ public:
         const size_t rows = features.rows();
 
         // Set the gradient to the zero vector
-        std::fill(gradient.begin(), gradient.end(), 0.0);
+        std::fill(gradient.begin(), gradient.end(), T{});
 
         static Matrix<T> baseJacobian(M, N);
         static vector<T> evaluation(M);
@@ -140,7 +140,7 @@ public:
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels[i][j] - evaluation[j];
 
-            grad += -2.0 * error * baseJacobian;
+            grad += T(-2.0) * error * baseJacobian;
         }
 
         // Swap back so gradient contains the correct information
@@ -166,11 +166,10 @@ public:
 
         // Declare the temporary variables we'll need
         Matrix<T> jacobian(M, N);
-        Matrix<T> jacobianSquare(N, N);
         Matrix<T> localHessian(N, N);
         Matrix<T> sumOfLocalHessians(N, N);
+        Matrix<T> error(1, M);
         vector<T> evaluation(M);
-        vector<T> error(M);
 
         hessian.resize(N, N);
         hessian.fill(T{});
@@ -181,53 +180,26 @@ public:
             // respect to the model parameters
             mBaseFunction.calculateJacobianInputs(features[i], jacobian);
 
-            // Calculate the square of the Jacobian matrix.
-            // TODO: Calculate J^T and work with that for better cache performance
-            // c1 -> r1, c2 -> r2, r -> c. Reverse the indices
-            for (size_t c1 = 0; c1 < N; ++c1)
-            {
-                for (size_t c2 = 0; c2 < N; ++c2)
-                {
-                    T sum = 0.0;
-                    for (size_t r = 0; r < M; ++r)
-                        sum += jacobian(r, c1) * jacobian(r, c2);
-
-                    jacobianSquare(c1, c2) = sum;
-                }
-            }
-
             // Calculate the error for this sample
             if (mBaseFunction.cachesLastEvaluation())
                 mBaseFunction.getLastEvaluation(evaluation);
             else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error[j] = labels[i][j] - evaluation[j];
+                error(0, j) = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
-            sumOfLocalHessians.fill(0.0);
+            sumOfLocalHessians.fill(T{});
             for (size_t j = 0; j < M; ++j)
             {
-                // Calculate the local Hessian for output j
+                // Calculate the local Hessian for output j and multiply by the
+                // error for this output
                 mBaseFunction.calculateHessianInputs(features[i], j, localHessian);
-
-                // Multiply by the error constant and add to the running total
-                for (size_t r = 0; r < N; ++r)
-                {
-                    for (size_t c = 0; c < N; ++c)
-                        sumOfLocalHessians(r, c) += error[j] * localHessian(r, c);
-                }
+                sumOfLocalHessians += error(0, j) * localHessian;
             }
 
             // Finally, calculate the Hessian
-            for (size_t r = 0; r < N; ++r)
-            {
-                for (size_t c = 0; c < N; ++c)
-                {
-                    hessian(r, c) += 2.0 *
-                        (jacobianSquare(r, c) - sumOfLocalHessians(r, c));
-                }
-            }
+            hessian += T(2.0) * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
 
@@ -247,11 +219,10 @@ public:
 
         // Declare the temporary variables we'll need
         Matrix<T> jacobian(M, N);
-        Matrix<T> jacobianSquare(N, N);
         Matrix<T> localHessian(N, N);
         Matrix<T> sumOfLocalHessians(N, N);
+        Matrix<T> error(1, M);
         vector<T> evaluation(M);
-        vector<T> error(M);
 
         hessian.resize(N, N);
         hessian.fill(T{});
@@ -262,53 +233,26 @@ public:
             // respect to the model parameters
             mBaseFunction.calculateJacobianParameters(features[i], jacobian);
 
-            // Calculate the square of the Jacobian matrix.
-            // TODO: Calculate J^T and work with that for better cache performance
-            // c1 -> r1, c2 -> r2, r -> c. Reverse the indices
-            for (size_t c1 = 0; c1 < N; ++c1)
-            {
-                for (size_t c2 = 0; c2 < N; ++c2)
-                {
-                    T sum{};
-                    for (size_t r = 0; r < M; ++r)
-                        sum += jacobian(r, c1) * jacobian(r, c2);
-
-                    jacobianSquare(c1, c2) = sum;
-                }
-            }
-
             // Calculate the error for this sample
             if (mBaseFunction.cachesLastEvaluation())
                 mBaseFunction.getLastEvaluation(evaluation);
             else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error[j] = labels[i][j] - evaluation[j];
+                error(0, j) = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
             sumOfLocalHessians.fill(T{});
             for (size_t j = 0; j < M; ++j)
             {
-                // Calculate the local Hessian for output j
+                // Calculate the local Hessian for output j and multiply by the
+                // error for this output
                 mBaseFunction.calculateHessianParameters(features[i], j, localHessian);
-
-                // Multiply by the error constant and add to the running total
-                for (size_t r = 0; r < N; ++r)
-                {
-                    for (size_t c = 0; c < N; ++c)
-                        sumOfLocalHessians(r, c) += error[j] * localHessian(r, c);
-                }
+                sumOfLocalHessians += error(0, j) * localHessian;
             }
 
             // Finally, calculate the Hessian
-            for (size_t r = 0; r < N; ++r)
-            {
-                for (size_t c = 0; c < N; ++c)
-                {
-                    hessian(r, c) += 2.0 *
-                        (jacobianSquare(r, c) - sumOfLocalHessians(r, c));
-                }
-            }
+            hessian += T(2.0) * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
 };
@@ -459,11 +403,10 @@ public:
 
         // Declare the temporary variables we'll need
         Matrix<T> jacobian(M, N);
-        Matrix<T> jacobianSquare(N, N);
         Matrix<T> localHessian(N, N);
         Matrix<T> sumOfLocalHessians(N, N);
+        Matrix<T> error(1, M);
         vector<T> evaluation(M);
-        vector<T> error(M);
 
         hessian.resize(N, N);
         hessian.fill(T{});
@@ -474,28 +417,13 @@ public:
             // respect to the model parameters
             mBaseFunction.calculateJacobianInputs(features[i], jacobian);
 
-            // Calculate the square of the Jacobian matrix.
-            // TODO: Calculate J^T and work with that for better cache performance
-            // c1 -> r1, c2 -> r2, r -> c. Reverse the indices
-            for (size_t c1 = 0; c1 < N; ++c1)
-            {
-                for (size_t c2 = 0; c2 < N; ++c2)
-                {
-                    T sum = 0.0;
-                    for (size_t r = 0; r < M; ++r)
-                        sum += jacobian(r, c1) * jacobian(r, c2);
-
-                    jacobianSquare(c1, c2) = sum;
-                }
-            }
-
             // Calculate the error for this sample
             if (mBaseFunction.cachesLastEvaluation())
                 mBaseFunction.getLastEvaluation(evaluation);
             else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error[j] = labels[i][j] - evaluation[j];
+                error(0, j) = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
             sumOfLocalHessians.fill(T{});
@@ -503,24 +431,11 @@ public:
             {
                 // Calculate the local Hessian for output j
                 mBaseFunction.calculateHessianInputs(features[i], j, localHessian);
-
-                // Multiply by the error constant and add to the running total
-                for (size_t r = 0; r < N; ++r)
-                {
-                    for (size_t c = 0; c < N; ++c)
-                        sumOfLocalHessians(r, c) += error[j] * localHessian(r, c);
-                }
+                sumOfLocalHessians += error(0, j) * localHessian;
             }
 
             // Finally, calculate the Hessian
-            for (size_t r = 0; r < N; ++r)
-            {
-                for (size_t c = 0; c < N; ++c)
-                {
-                    hessian(r, c) += 2.0 *
-                        (jacobianSquare(r, c) - sumOfLocalHessians(r, c));
-                }
-            }
+            hessian += 2.0 * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
 
@@ -543,8 +458,8 @@ public:
         Matrix<T> jacobianSquare(N, N);
         Matrix<T> localHessian(N, N);
         Matrix<T> sumOfLocalHessians(N, N);
+        Matrix<T> error(1, M);
         vector<T> evaluation(M);
-        vector<T> error(M);
 
         hessian.resize(N, N);
         hessian.fill(T{});
@@ -555,28 +470,13 @@ public:
             // respect to the model parameters
             mBaseFunction.calculateJacobianParameters(features[i], jacobian);
 
-            // Calculate the square of the Jacobian matrix.
-            // TODO: Calculate J^T and work with that for better cache performance
-            // c1 -> r1, c2 -> r2, r -> c. Reverse the indices
-            for (size_t c1 = 0; c1 < N; ++c1)
-            {
-                for (size_t c2 = 0; c2 < N; ++c2)
-                {
-                    T sum = 0.0;
-                    for (size_t r = 0; r < M; ++r)
-                        sum += jacobian(r, c1) * jacobian(r, c2);
-
-                    jacobianSquare(c1, c2) = sum;
-                }
-            }
-
             // Calculate the error for this sample
             if (mBaseFunction.cachesLastEvaluation())
                 mBaseFunction.getLastEvaluation(evaluation);
             else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error[j] = labels[i][j] - evaluation[j];
+                error(0, j) = labels[i][j] - evaluation[j];
 
             // Calculate the sum of the local Hessians
             sumOfLocalHessians.fill(T{});
@@ -584,24 +484,11 @@ public:
             {
                 // Calculate the local Hessian for output j
                 mBaseFunction.calculateHessianParameters(features[i], j, localHessian);
-
-                // Multiply by the error constant and add to the running total
-                for (size_t r = 0; r < N; ++r)
-                {
-                    for (size_t c = 0; c < N; ++c)
-                        sumOfLocalHessians(r, c) += error[j] * localHessian(r, c);
-                }
+                sumOfLocalHessians += error(0, j) * localHessian;
             }
 
             // Finally, calculate the Hessian
-            for (size_t r = 0; r < N; ++r)
-            {
-                for (size_t c = 0; c < N; ++c)
-                {
-                    hessian(r, c) += 2.0 *
-                        (jacobianSquare(r, c) - sumOfLocalHessians(r, c));
-                }
-            }
+            hessian += 2.0 * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
 };
