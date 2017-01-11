@@ -10,8 +10,15 @@ using std::vector;
 namespace opkit
 {
 
+// We define several operator overloads for matrices to make working with them
+// easier (see below). However, we don't want any outside code to be able to use
+// those overloads (since they're templated on both sides). Therefore, we define
+// this tag to 'mark' all compatible classes.
+struct Operable
+{};
+
 template <class T>
-class Matrix
+class Matrix : public Operable
 {
 public:
 
@@ -148,9 +155,10 @@ private:
 
 //----------------------------------------------------------------------------//
 
-// Interior nodes of the AST that have two children
+// Interior nodes of the AST that have two children. This is marked as Operable
+// so it can be used with the operator overloads below.
 template <class LHS, class RHS, class Op>
-struct BinaryExpression
+struct BinaryExpression : public Operable
 {
     BinaryExpression(const LHS& lhs, const RHS& rhs) :
         left(lhs), right(rhs) {}
@@ -165,9 +173,10 @@ struct BinaryExpression
     const RHS& right;
 };
 
-// Interior nodes of the AST that have one child
+// Interior nodes of the AST that have one child. This is marked as Operable
+// so it can be used with the operator overloads below.
 template <class Base, class Op>
-struct UnaryExpression
+struct UnaryExpression : public Operable
 {
     UnaryExpression(const Base& c) : child(c) {}
 
@@ -181,8 +190,8 @@ struct UnaryExpression
 };
 
 // Base class for all binary operations (e.g. addition, multiplication).
-// These functions would have to be declared in every binary operation
-// without this class, so it's mostly here to consolodate code a bit.
+// Without this class, these functions would have to be declared in every binary
+// operation, so it mostly exists to consolodate the code a bit.
 template <class Base>
 struct BinaryOp
 {
@@ -341,16 +350,30 @@ struct Transpose : UnaryOp<Transpose>
     }
 };
 
-// Operators - These are used to construct the AST at compile time.
+// Operators - These are used to construct the AST at compile time. All overloads
+// use std::enable_if to sort out whether or not the template arguments can be
+// used. In all cases, only objects that have Operable as a superclass are
+// allowed to use these functions. That prevents this code from 'leaking' and
+// breaking implementations outside of this library.
 template <class LHS, class RHS>
-BinaryExpression<LHS, RHS, Addition>
+typename std::enable_if
+<
+    std::is_base_of<Operable, LHS>::value &&
+        std::is_base_of<Operable, RHS>::value,
+    BinaryExpression<LHS, RHS, Addition>
+>::type
 operator+ (const LHS& lhs, const RHS& rhs)
 {
     return BinaryExpression<LHS, RHS, Addition>(lhs, rhs);
 }
 
 template <class LHS, class RHS>
-BinaryExpression<LHS, RHS, Subtraction>
+typename std::enable_if
+<
+    std::is_base_of<Operable, LHS>::value &&
+        std::is_base_of<Operable, RHS>::value,
+    BinaryExpression<LHS, RHS, Subtraction>
+>::type
 operator- (const LHS& lhs, const RHS& rhs)
 {
     return BinaryExpression<LHS, RHS, Subtraction>(lhs, rhs);
@@ -363,7 +386,10 @@ operator- (const LHS& lhs, const RHS& rhs)
 template <class LHS, class RHS>
 typename std::enable_if
 <
-    !std::is_arithmetic<LHS>::value && !std::is_arithmetic<RHS>::value,
+    !std::is_arithmetic<LHS>::value           &&
+        !std::is_arithmetic<RHS>::value       &&
+        std::is_base_of<Operable, LHS>::value &&
+        std::is_base_of<Operable, RHS>::value,
     BinaryExpression<LHS, RHS, Multiplication>
 >::type
 operator* (const LHS& lhs, const RHS& rhs)
@@ -375,7 +401,9 @@ operator* (const LHS& lhs, const RHS& rhs)
 template <class LHS, class RHS>
 typename std::enable_if
 <
-    std::is_arithmetic<LHS>::value && !std::is_arithmetic<RHS>::value,
+    std::is_arithmetic<LHS>::value      &&
+        !std::is_arithmetic<RHS>::value &&
+        std::is_base_of<Operable, RHS>::value,
     BinaryExpression<LHS, RHS, ScalarMultiplication>
 >::type
 operator* (const LHS lhs, const RHS& rhs)
@@ -387,7 +415,9 @@ operator* (const LHS lhs, const RHS& rhs)
 template <class LHS, class RHS>
 typename std::enable_if
 <
-    !std::is_arithmetic<LHS>::value && std::is_arithmetic<RHS>::value,
+    !std::is_arithmetic<LHS>::value    && 
+        std::is_arithmetic<RHS>::value &&
+        std::is_base_of<Operable, LHS>::value,
     BinaryExpression<LHS, RHS, ScalarMultiplication>
 >::type
 operator* (const LHS& lhs, const RHS rhs)
@@ -398,7 +428,11 @@ operator* (const LHS& lhs, const RHS rhs)
 // We could also overload an operator for this operation, but the function
 // syntax seems clearer to me.
 template <class Base>
-UnaryExpression<Base, Transpose>
+typename std::enable_if
+<
+    std::is_base_of<Operable, Base>::value,
+    UnaryExpression<Base, Transpose>
+>::type
 transpose (const Base& base)
 {
     return UnaryExpression<Base, Transpose>(base);
@@ -407,7 +441,12 @@ transpose (const Base& base)
 // Forced evaluation. When these functions are called, the abstract syntax tree
 // is collapsed to create the final result.
 template <class T, class Exp>
-Matrix<T>& operator+=(Matrix<T>& lhs, Exp rhs)
+typename std::enable_if
+<
+    std::is_base_of<Operable, Exp>::value,
+    Matrix<T>&
+>::type
+operator+=(Matrix<T>& lhs, Exp rhs)
 {
     rhs.apply(lhs);
     return lhs;
