@@ -98,7 +98,7 @@ public:
             grad += T(-2.0) * error * baseJacobian;
         }
 
-        // Swap back so gradient contains the correct information
+        // Swap back so 'gradient' contains the correct information
         grad.swap(gradient);
 
         // Divide by the batch size to get the average gradient
@@ -143,7 +143,7 @@ public:
             grad += T(-2.0) * error * baseJacobian;
         }
 
-        // Swap back so gradient contains the correct information
+        // Swap back so 'gradient' contains the correct information
         grad.swap(gradient);
 
         for (size_t i = 0; i < N; ++i)

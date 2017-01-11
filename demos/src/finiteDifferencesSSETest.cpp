@@ -15,6 +15,7 @@
 #include "Dataset.h"
 #include "Matrix.h"
 #include "SSEFunction.h"
+#include "CrossEntropyFunction.h"
 #include "CommonFunctions.h"
 
 using namespace opkit;
@@ -82,7 +83,7 @@ public:
     }
 };
 
-using Type = float;
+using Type = double;
 
 int main()
 {
@@ -100,7 +101,7 @@ int main()
     features.row(3) = {-0.5, 1.0};  labels.row(3) = {0.5, -0.5, -1.0};
     features.row(4) = {-2.0, -1.0}; labels.row(4) = {-3.0, 2.0, 4.0};
 
-    SSEFunction<Type, TestFunction<Type>> errorFunction(func);
+    CrossEntropyFunction<Type, TestFunction<Type>> errorFunction(func);
 
     // 1. Gradient with respect to parameters
     const size_t N = func.getNumParameters();
@@ -120,6 +121,8 @@ int main()
     }
     cout << "Gradient Parameters - PASS" << endl;
 
+    printVector(gradientParameters1); cout << endl;
+
     // 2. Gradient with respect to inputs
     const size_t M = func.getInputs();
     vector<Type> gradientInputs1(M), gradientInputs2(M);
@@ -137,6 +140,7 @@ int main()
         }
     }
     cout << "Gradient Inputs - PASS" << endl;
+    printVector(gradientInputs1); cout << endl;
 
     // 3. Hessian with respect to parameters
     Matrix<Type> hessianParameters1(N, N);
@@ -156,6 +160,7 @@ int main()
         }
     }
     cout << "Hessian Parameters - PASS" << endl;
+    printMatrix(hessianParameters1); cout << endl;
 
     // 4. Hessian with respect to inputs
     Matrix<Type> hessianInputs1(M, M);
@@ -175,6 +180,6 @@ int main()
         }
     }
     cout << "Hessian Inputs - PASS" << endl;
-
+    printMatrix(hessianInputs1); cout << endl;
     return 0;
 }

@@ -62,8 +62,9 @@ public:
     void calculateGradientInputs(const Dataset<T>& features,
         const Dataset<T>& labels, vector<T>& gradient)
     {
-        // When SSE is the error function, the gradient is simply the error vector
-        // multiplied by the model's Jacobian.
+        // When Cross-entropy is the error function, the gradient is
+        // sum_i((-y_i / f(theta, x_i)) * J)
+        // where J is the model's Jacobian, and i goes over the number of inputs
         const size_t N    = mBaseFunction.getInputs();
         const size_t M    = mBaseFunction.getOutputs();
         const size_t rows = features.rows();
@@ -71,9 +72,13 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian;
+        static Matrix<T> baseJacobian(M, N);
+        static Matrix<T> error(1, M);
         static vector<T> evaluation(M);
-        static vector<T> error(M);
+
+        // The matrix 'grad' temporarily holds the contents of the gradient
+        static Matrix<T> grad(1, N);
+        grad.swap(gradient);
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -87,19 +92,13 @@ public:
             else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error[j] = -labels[i][j] / evaluation[j];
+                error(0, j) = -labels[i][j] / evaluation[j];
 
-            for (size_t j = 0; j < N; ++j)
-            {
-                // Multiply the error by the model's Jacobian,
-                T sum{};
-                for (size_t k = 0; k < M; ++k)
-                    sum += error[k] * baseJacobian(k, j);
-
-                // Add the result to the running total for the gradient
-                gradient[j] += sum;
-            }
+            grad += error * baseJacobian;
         }
+
+        // Swap back so 'gradient' contains the correct information
+        grad.swap(gradient);
 
         // Divide by the batch size to get the average gradient
         vScale(gradient.data(), 1.0/rows, N);
@@ -119,8 +118,12 @@ public:
         std::fill(gradient.begin(), gradient.end(), T{});
 
         static Matrix<T> baseJacobian;
+        static Matrix<T> error(1, M);
         static vector<T> evaluation(M);
-        static vector<T> error(M);
+
+        // The matrix 'grad' temporarily holds the contents of the gradient
+        static Matrix<T> grad(1, N);
+        grad.swap(gradient);
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -134,19 +137,13 @@ public:
             else mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error[j] = -labels[i][j] / evaluation[j];
+                error(0, j) = -labels[i][j] / evaluation[j];
 
-            for (size_t j = 0; j < N; ++j)
-            {
-                // Multiply the error by the model's Jacobian,
-                T sum{};
-                for (size_t k = 0; k < M; ++k)
-                    sum += error[k] * baseJacobian(k, j);
-
-                // Add the result to the running total for the gradient
-                gradient[j] +=  sum;
-            }
+            grad += error * baseJacobian;
         }
+
+        // Swap back so 'gradient' contains the correct information
+        grad.swap(gradient);
 
         vScale(gradient.data(), 1.0/rows, N);
     }
@@ -205,8 +202,8 @@ public:
 
         for (size_t i = 0; i < rows; ++i)
         {
-            vector<T>& feature = features[i];
-            vector<T>& label   = labels[i];
+            const vector<T>& feature = features[i];
+            const vector<T>& label   = labels[i];
 
             // Calculate the model's Jacobian Dataset
             mBaseFunction.calculateJacobianParameters(features[i], jacobian);

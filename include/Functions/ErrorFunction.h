@@ -19,7 +19,11 @@ template <class T, class Model>
 class ErrorFunction
 {
 public:
-    ErrorFunction(Model& baseFunction);
+    ErrorFunction(Model& baseFunction) :
+        mBaseFunction(baseFunction)
+    {
+        // Do nothing
+    }
 
     // Error functions compare the output of a base function on a given feature
     // to a known result. The interface presented in 'Function' for these
@@ -46,55 +50,36 @@ public:
 
     // Returns the number of inputs to the function and the number of outputs,
     // respectively. Error functions only have 1 output.
-    virtual size_t getInputs()  const;
-    virtual size_t getOutputs() const;
+    virtual size_t getInputs()  const
+    {
+        return mBaseFunction.getInputs();
+    }
+
+    virtual size_t getOutputs() const
+    {
+        return 1;
+    }
 
     // Our 'parameters' are simply those of the base function. We forward the
     // calls wherever necessary.
-    virtual vector<T>& getParameters();
-    virtual const vector<T>& getParameters() const;
-    virtual size_t getNumParameters() const;
+    virtual vector<T>& getParameters()
+    {
+        return mBaseFunction.getParameters();
+    }
+
+    virtual const vector<T>& getParameters() const
+    {
+        return mBaseFunction.getParameters();
+    }
+
+    virtual size_t getNumParameters() const
+    {
+        return mBaseFunction.getNumParameters();
+    }
 
 protected:
     Model& mBaseFunction;
 };
-
-template <class T, class Model>
-ErrorFunction<T, Model>::ErrorFunction(Model& baseFunction) :
-    mBaseFunction(baseFunction)
-{
-    // Do nothing
-}
-
-template <class T, class Model>
-size_t ErrorFunction<T, Model>::getInputs()  const
-{
-    return mBaseFunction.getInputs();
-}
-
-template <class T, class Model>
-size_t ErrorFunction<T, Model>::getOutputs() const
-{
-    return 1;
-}
-
-template <class T, class Model>
-vector<T>& ErrorFunction<T, Model>::getParameters()
-{
-    return mBaseFunction.getParameters();
-}
-
-template <class T, class Model>
-const vector<T>& ErrorFunction<T, Model>::getParameters() const
-{
-    return mBaseFunction.getParameters();
-}
-
-template <class T, class Model>
-size_t ErrorFunction<T, Model>::getNumParameters() const
-{
-    return mBaseFunction.getNumParameters();
-}
 
 template <class T, class Model>
 void ErrorFunction<T, Model>::calculateGradientInputs(const Dataset<T>& features,
