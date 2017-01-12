@@ -272,9 +272,18 @@ public:
         // optimization for simplified gradient caluclations. The dynamic cast
         // should return a null pointer if the last layer is not softmax.
         // We also make sure there are at least 2 layers.
-        Layer<T>* outputLayer   = mBaseFunction.getOutputLayer();
-        SoftmaxLayer<T>* ptr    = dynamic_cast<SoftmaxLayer<T>*>(outputLayer);
-        mUseSoftmaxOptimization = (ptr != nullptr) && (mBaseFunction.getNumLayers() > 1);
+        Layer<T>* outputLayer = mBaseFunction.getOutputLayer();
+        SoftmaxLayer<T>* ptr  = dynamic_cast<SoftmaxLayer<T>*>(outputLayer);
+
+        if ((ptr != nullptr) && (mBaseFunction.getNumLayers() > 1))
+            mImp = new OptimizedImp(mBaseFunction);
+        else mImp = new UnoptimizedImp(mBaseFunction);
+    }
+
+    ~CrossEntropyFunction()
+    {
+        delete mImp;
+        mImp = nullptr;
     }
 
     T evaluate(const Dataset<T>& features, const Dataset<T>& labels)
@@ -301,234 +310,286 @@ public:
     void calculateGradientInputs(const Dataset<T>& features,
         const Dataset<T>& labels, vector<T>& gradient)
     {
-        if (mUseSoftmaxOptimization)
-            calculateGradientInputsOpt(features, labels, gradient);
-        else calculateGradientInputsUnopt(features, labels, gradient);
+        mImp->calculateGradientInputs(features, labels, gradient);
     }
 
     void calculateGradientParameters(const Dataset<T>& features,
         const Dataset<T>& labels, vector<T>& gradient)
     {
-        if (mUseSoftmaxOptimization)
-            calculateGradientParametersOpt(features, labels, gradient);
-        else calculateGradientParametersUnopt(features, labels, gradient);
+        mImp->calculateGradientParameters(features, labels, gradient);
     }
 
     void calculateHessianInputs(const Dataset<T>& features,
         const Dataset<T>& labels, Matrix<T>& hessian)
     {
-        // TODO
+        mImp->calculateHessianInputs(features, labels, hessian);
     }
 
     void calculateHessianParameters(const Dataset<T>& features,
         const Dataset<T>& labels, Matrix<T>& hessian)
     {
-        // TODO
+        mImp->calculateHessianParameters(features, labels, hessian);
     }
 
 private:
-    // When the last layer is a softmax, the gradient calculation process can
-    // be simplified computationally. This flag controls whether
-    // calculateGradientXXXOpt or calculateGradientXXXUnopt will be called.
-    bool mUseSoftmaxOptimization;
 
-    void calculateGradientInputsOpt(const Dataset<T>& features,
-        const Dataset<T>& labels, vector<T>& gradient)
+    // The PIMPL idiom is used here. The implementation will be chosen in
+    // the constructor, and all the normal calls are forwarded to that
+    // implementation.
+    struct Imp
     {
-        const size_t N    = mBaseFunction.getInputs();
-        const size_t M    = mBaseFunction.getOutputs();
-        const size_t rows = features.rows();
+        Imp(NeuralNetwork<T>& baseFunction) :
+            mBaseFunction(baseFunction) {};
 
-        std::fill(gradient.begin(), gradient.end(), T{});
-        static vector<T> evaluation(M);
-        static vector<T> tempGradient(N);
+        virtual void calculateGradientInputs(const Dataset<T>& features,
+            const Dataset<T>& labels, vector<T>& gradient) = 0;
+        virtual void calculateGradientParameters(const Dataset<T>& features,
+            const Dataset<T>& labels, vector<T>& gradient) = 0;
+        virtual void calculateHessianInputs(const Dataset<T>& features,
+            const Dataset<T>& labels, Matrix<T>& hessian) = 0;
+        virtual void calculateHessianParameters(const Dataset<T>& features,
+            const Dataset<T>& labels, Matrix<T>& hessian) = 0;
 
-        // Calculate a partial gradient for each row in the training data
-        for (size_t i = 0; i < rows; ++i)
+        protected:
+            NeuralNetwork<T>& mBaseFunction;
+    };
+
+    struct OptimizedImp : public Imp
+    {
+        OptimizedImp(NeuralNetwork<T>& baseFunction) :
+            Imp(baseFunction) {}
+
+        void calculateGradientInputs(const Dataset<T>& features,
+            const Dataset<T>& labels, vector<T>& gradient) override
         {
-            const vector<T>& feature = features[i];
-            const vector<T>& label   = labels[i];
+            const size_t N    = mBaseFunction.getInputs();
+            const size_t M    = mBaseFunction.getOutputs();
+            const size_t rows = features.rows();
 
-            // Forward prop
-            mBaseFunction.evaluate(feature, evaluation);
+            std::fill(gradient.begin(), gradient.end(), T{});
+            static vector<T> evaluation(M);
+            static vector<T> tempGradient(N);
 
-            // Calculate the deltas for each node in the network
+            // Calculate a partial gradient for each row in the training data
+            for (size_t i = 0; i < rows; ++i)
             {
-                int layer = mBaseFunction.getNumLayers() - 1;
+                const vector<T>& feature = features[i];
+                const vector<T>& label   = labels[i];
 
-                // Calculate the deltas on the last layer first. Since the last
-                // layer is known to be a softmax, and the softmax layer
-                // doesn't use its deltas for gradient calculation, we can
-                // actually skip this step completely.
-                // vector<T>& outputDeltas = mBaseFunction.getLayer(layer)->getDeltas();
-                // for (size_t j = 0; j < M; ++j)
-                //    outputDeltas[j] = -label[j] / evaluation[j];
-                layer--;
+                // Forward prop
+                mBaseFunction.evaluate(feature, evaluation);
 
-                // Calculate the deltas for the layer preceeding the softmax layer
-                // using the optimized approach (since we know what the answer
-                // should be already).
-                vector<T>& preDeltas = mBaseFunction.getLayer(layer)->getDeltas();
-                for (size_t j = 0; j < M; ++j)
-                    preDeltas[j] = evaluation[j] - label[j];
-
-                // Calculate the remaining deltas like normal
-                for (int i = layer; i >= 1; --i)
+                // Calculate the deltas for each node in the network
                 {
-                    Layer<T>* current = mBaseFunction.getLayer(i);
-                    Layer<T>* prev    = mBaseFunction.getLayer(i - 1);
+                    int layer = mBaseFunction.getNumLayers() - 1;
 
-                    current->calculateDeltas(prev->getActivation(),
-                        prev->getDeltas().data());
+                    // Calculate the deltas on the last layer first. Since the last
+                    // layer is known to be a softmax, and the softmax layer
+                    // doesn't use its deltas for gradient calculation, we can
+                    // actually skip this step completely.
+                    // vector<T>& outputDeltas = mBaseFunction.getLayer(layer)->getDeltas();
+                    // for (size_t j = 0; j < M; ++j)
+                    //    outputDeltas[j] = -label[j] / evaluation[j];
+                    layer--;
+
+                    // Calculate the deltas for the layer preceeding the softmax layer
+                    // using the optimized approach (since we know what the answer
+                    // should be already).
+                    vector<T>& preDeltas = mBaseFunction.getLayer(layer)->getDeltas();
+                    for (size_t j = 0; j < M; ++j)
+                        preDeltas[j] = evaluation[j] - label[j];
+
+                    // Calculate the remaining deltas like normal
+                    for (int i = layer; i >= 1; --i)
+                    {
+                        Layer<T>* current = mBaseFunction.getLayer(i);
+                        Layer<T>* prev    = mBaseFunction.getLayer(i - 1);
+
+                        current->calculateDeltas(prev->getActivation(),
+                            prev->getDeltas().data());
+                    }
                 }
+
+                // Calculate the gradient based on the deltas. Values are summed
+                // for each pattern.
+                mBaseFunction.getLayer(0)->calculateDeltas(feature, tempGradient.data());
+                vAdd(tempGradient.data(), gradient.data(), N);
             }
 
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
-            mBaseFunction.getLayer(0)->calculateDeltas(feature, tempGradient.data());
-            vAdd(tempGradient.data(), gradient.data(), N);
+            // We also need to divide by the batch size to get an average gradient.
+            vScale(gradient.data(), 1.0/rows, N);
         }
 
-        // We also need to divide by the batch size to get an average gradient.
-        vScale(gradient.data(), 1.0/rows, N);
-    }
-
-    void calculateGradientInputsUnopt(const Dataset<T>& features,
-        const Dataset<T>& labels, vector<T>& gradient)
-    {
-        const size_t N    = mBaseFunction.getInputs();
-        const size_t M    = mBaseFunction.getOutputs();
-        const size_t rows = features.rows();
-
-        std::fill(gradient.begin(), gradient.end(), T{});
-        static vector<T> evaluation(M);
-        static vector<T> tempGradient(N);
-
-        // Calculate a partial gradient for each row in the training data
-        for (size_t i = 0; i < rows; ++i)
+        void calculateGradientParameters(const Dataset<T>& features,
+            const Dataset<T>& labels, vector<T>& gradient) override
         {
-            const vector<T>& feature = features[i];
-            const vector<T>& label   = labels[i];
+            const size_t N    = mBaseFunction.getNumParameters();
+            const size_t M    = mBaseFunction.getOutputs();
+            const size_t rows = features.rows();
 
-            // Forward prop
-            mBaseFunction.evaluate(feature, evaluation);
+            std::fill(gradient.begin(), gradient.end(), T{});
+            static vector<T> evaluation(M);
 
-            // Calculate the deltas for each node in the network
+            // Calculate a partial gradient for each row in the training data
+            for (size_t i = 0; i < rows; ++i)
             {
-                // Calculate the deltas on the last layer first
-                vector<T>& outputDeltas = mBaseFunction.getOutputLayer()->getDeltas();
-                for (size_t j = 0; j < M; ++j)
-                    outputDeltas[j] = -label[j] / evaluation[j];
+                const vector<T>& feature = features[i];
+                const vector<T>& label   = labels[i];
 
-                mBaseFunction.calculateDeltas();
-            }
+                // Forward prop
+                mBaseFunction.evaluate(feature, evaluation);
 
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
-            mBaseFunction.getLayer(0)->calculateDeltas(feature, tempGradient.data());
-            vAdd(tempGradient.data(), gradient.data(), N);
-        }
-
-        // We also need to divide by the batch size to get an average gradient.
-        vScale(gradient.data(), 1.0/rows, N);
-    }
-
-    void calculateGradientParametersOpt(const Dataset<T>& features,
-        const Dataset<T>& labels, vector<T>& gradient)
-    {
-        const size_t N    = mBaseFunction.getNumParameters();
-        const size_t M    = mBaseFunction.getOutputs();
-        const size_t rows = features.rows();
-
-        std::fill(gradient.begin(), gradient.end(), T{});
-        static vector<T> evaluation(M);
-
-        // Calculate a partial gradient for each row in the training data
-        for (size_t i = 0; i < rows; ++i)
-        {
-            const vector<T>& feature = features[i];
-            const vector<T>& label   = labels[i];
-
-            // Forward prop
-            mBaseFunction.evaluate(feature, evaluation);
-
-            // Calculate the deltas for each node in the network
-            {
-                int layer = mBaseFunction.getNumLayers() - 1;
-
-                // Calculate the deltas on the last layer first. Since the last
-                // layer is known to be a softmax, and the softmax layer
-                // doesn't use its deltas for gradient calculation, we can
-                // actually skip this step completely.
-                //vector<T>& outputDeltas = mBaseFunction.getLayer(layer)->getDeltas();
-                //for (size_t j = 0; j < M; ++j)
-                //    outputDeltas[j] = -label[j] / evaluation[j];
-                layer--;
-
-                // Calculate the deltas for the layer preceeding the softmax layer
-                // using the optimized approach (since we know what the answer
-                // should be already).
-                vector<T>& preDeltas = mBaseFunction.getLayer(layer)->getDeltas();
-                for (size_t j = 0; j < M; ++j)
-                    preDeltas[j] = evaluation[j] - label[j];
-
-                // Calculate the remaining deltas like normal
-                for (int i = layer; i >= 1; --i)
+                // Calculate the deltas for each node in the network
                 {
-                    Layer<T>* current = mBaseFunction.getLayer(i);
-                    Layer<T>* prev    = mBaseFunction.getLayer(i - 1);
+                    int layer = mBaseFunction.getNumLayers() - 1;
 
-                    current->calculateDeltas(prev->getActivation(),
-                        prev->getDeltas().data());
+                    // Calculate the deltas on the last layer first. Since the last
+                    // layer is known to be a softmax, and the softmax layer
+                    // doesn't use its deltas for gradient calculation, we can
+                    // actually skip this step completely.
+                    //vector<T>& outputDeltas = mBaseFunction.getLayer(layer)->getDeltas();
+                    //for (size_t j = 0; j < M; ++j)
+                    //    outputDeltas[j] = -label[j] / evaluation[j];
+                    layer--;
+
+                    // Calculate the deltas for the layer preceeding the softmax layer
+                    // using the optimized approach (since we know what the answer
+                    // should be already).
+                    vector<T>& preDeltas = mBaseFunction.getLayer(layer)->getDeltas();
+                    for (size_t j = 0; j < M; ++j)
+                        preDeltas[j] = evaluation[j] - label[j];
+
+                    // Calculate the remaining deltas like normal
+                    for (int i = layer; i >= 1; --i)
+                    {
+                        Layer<T>* current = mBaseFunction.getLayer(i);
+                        Layer<T>* prev    = mBaseFunction.getLayer(i - 1);
+
+                        current->calculateDeltas(prev->getActivation(),
+                            prev->getDeltas().data());
+                    }
                 }
+
+                // Calculate the gradient based on the deltas. Values are summed
+                // for each pattern.
+                mBaseFunction.calculateGradientParameters(feature, gradient.data());
             }
 
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
-            mBaseFunction.calculateGradientParameters(feature, gradient.data());
+            // We also need to divide by the batch size to get an average gradient.
+            vScale(gradient.data(), 1.0/rows, N);
         }
 
-        // We also need to divide by the batch size to get an average gradient.
-        vScale(gradient.data(), 1.0/rows, N);
-    }
-
-    void calculateGradientParametersUnopt(const Dataset<T>& features,
-        const Dataset<T>& labels, vector<T>& gradient)
-    {
-        const size_t N    = mBaseFunction.getNumParameters();
-        const size_t M    = mBaseFunction.getOutputs();
-        const size_t rows = features.rows();
-
-        std::fill(gradient.begin(), gradient.end(), T{});
-        static vector<T> evaluation(M);
-
-        // Calculate a partial gradient for each row in the training data
-        for (size_t i = 0; i < rows; ++i)
+        void calculateHessianInputs(const Dataset<T>& features,
+            const Dataset<T>& labels, Matrix<T>& hessian) override
         {
-            const vector<T>& feature = features[i];
-            const vector<T>& label   = labels[i];
-
-            // Forward prop
-            mBaseFunction.evaluate(feature, evaluation);
-
-            // Calculate the deltas for each node in the network
-            {
-                // Calculate the deltas on the last layer first
-                vector<T>& outputDeltas = mBaseFunction.getOutputLayer()->getDeltas();
-                for (size_t j = 0; j < M; ++j)
-                    outputDeltas[j] = -label[j] / evaluation[j];
-
-                mBaseFunction.calculateDeltas();
-            }
-
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
-            mBaseFunction.calculateGradientParameters(feature, gradient.data());
+            // TODO
         }
 
-        // We also need to divide by the batch size to get an average gradient.
-        vScale(gradient.data(), 1.0/rows, N);
-    }
+        void calculateHessianParameters(const Dataset<T>& features,
+            const Dataset<T>& labels, Matrix<T>& hessian) override
+        {
+            // TODO
+        }
+    };
+
+    struct UnoptimizedImp : public Imp
+    {
+        UnoptimizedImp(NeuralNetwork<T>& baseFunction) :
+            Imp(baseFunction) {}
+
+        void calculateGradientInputs(const Dataset<T>& features,
+            const Dataset<T>& labels, vector<T>& gradient) override
+        {
+            const size_t N    = mBaseFunction.getInputs();
+            const size_t M    = mBaseFunction.getOutputs();
+            const size_t rows = features.rows();
+
+            std::fill(gradient.begin(), gradient.end(), T{});
+            static vector<T> evaluation(M);
+            static vector<T> tempGradient(N);
+
+            // Calculate a partial gradient for each row in the training data
+            for (size_t i = 0; i < rows; ++i)
+            {
+                const vector<T>& feature = features[i];
+                const vector<T>& label   = labels[i];
+
+                // Forward prop
+                mBaseFunction.evaluate(feature, evaluation);
+
+                // Calculate the deltas for each node in the network
+                {
+                    // Calculate the deltas on the last layer first
+                    vector<T>& outputDeltas = mBaseFunction.getOutputLayer()->getDeltas();
+                    for (size_t j = 0; j < M; ++j)
+                        outputDeltas[j] = -label[j] / evaluation[j];
+
+                    mBaseFunction.calculateDeltas();
+                }
+
+                // Calculate the gradient based on the deltas. Values are summed
+                // for each pattern.
+                mBaseFunction.getLayer(0)->calculateDeltas(feature, tempGradient.data());
+                vAdd(tempGradient.data(), gradient.data(), N);
+            }
+
+            // We also need to divide by the batch size to get an average gradient.
+            vScale(gradient.data(), 1.0/rows, N);
+        }
+
+        void calculateGradientParameters(const Dataset<T>& features,
+            const Dataset<T>& labels, vector<T>& gradient) override
+        {
+            const size_t N    = mBaseFunction.getNumParameters();
+            const size_t M    = mBaseFunction.getOutputs();
+            const size_t rows = features.rows();
+
+            std::fill(gradient.begin(), gradient.end(), T{});
+            static vector<T> evaluation(M);
+
+            // Calculate a partial gradient for each row in the training data
+            for (size_t i = 0; i < rows; ++i)
+            {
+                const vector<T>& feature = features[i];
+                const vector<T>& label   = labels[i];
+
+                // Forward prop
+                mBaseFunction.evaluate(feature, evaluation);
+
+                // Calculate the deltas for each node in the network
+                {
+                    // Calculate the deltas on the last layer first
+                    vector<T>& outputDeltas = mBaseFunction.getOutputLayer()->getDeltas();
+                    for (size_t j = 0; j < M; ++j)
+                        outputDeltas[j] = -label[j] / evaluation[j];
+
+                    mBaseFunction.calculateDeltas();
+                }
+
+                // Calculate the gradient based on the deltas. Values are summed
+                // for each pattern.
+                mBaseFunction.calculateGradientParameters(feature, gradient.data());
+            }
+
+            // We also need to divide by the batch size to get an average gradient.
+            vScale(gradient.data(), 1.0/rows, N);
+        }
+
+        void calculateHessianInputs(const Dataset<T>& features,
+            const Dataset<T>& labels, Matrix<T>& hessian) override
+        {
+            // TODO
+        }
+
+        void calculateHessianParameters(const Dataset<T>& features,
+            const Dataset<T>& labels, Matrix<T>& hessian) override
+        {
+            // TODO
+        }
+    };
+
+    // The only piece of data for this class - a pointer to the chosen implementation
+    Imp* mImp;
 };
 
 };
