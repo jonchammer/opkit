@@ -22,24 +22,37 @@ class Matrix : public Operable
 {
 public:
 
-    // Default Constructor
+    // Default Constructor - Creates an empty matrix.
     Matrix() : mRows(0), mCols(0) {}
 
-    // Non-default Constructors
+    // Non-default Constructors - The first creates an empty matrix of the given
+    // size. The second allows the matrix to be initialized with the given values
+    // (specified in row-major order).
     Matrix(const size_t rows, const size_t cols) :
         mData(rows * cols), mRows(rows), mCols(cols) {}
-
     Matrix(const size_t rows, const size_t cols, std::initializer_list<T> list) :
         mData(list), mRows(rows), mCols(cols) {}
 
     // Vector constructors - The first version copies the contents of 'data'
     // into this matrix. The second moves the contents, which is much cheaper.
-    Matrix(vector<T>& data)  : mData(data), mRows(1), mCols(data.size()) {}
+    Matrix(const vector<T>& data)  : mData(data), mRows(1), mCols(data.size()) {}
     Matrix(vector<T>&& data) : mData(data), mRows(1), mCols(data.size()) {}
 
-    // Copy constructor
-    Matrix(Matrix& other) :
+    // Matrix constructors - Used for copying and moving, respectively.
+    Matrix(const Matrix& other) :
         mData(other.mData), mRows(other.mRows), mCols(other.mCols) {}
+    Matrix(Matrix&& other) :
+        mData(other.mData), mRows(other.mRows), mCols(other.mCols) {}
+
+    // Expression constructor - Allows syntax like:
+    // Matrix y(transpose(x) * x);
+    template <class Exp,
+        class = typename std::enable_if
+        <std::is_base_of<Operable, Exp>::value>::type>
+    Matrix(const Exp& exp)
+    {
+        exp.apply(*this);
+    }
 
     // Returns a contiguous array that is used internally to store
     // the contents of the matrix.
@@ -99,7 +112,7 @@ public:
     // 'colBegin', 'rowCount', and 'colCount' specify where the source data
     // is relative to 'source'. 'destRowBegin' and 'destColBegin' specify where
     // the data should go in this matrix.
-    void copy(const Matrix<T> source,
+    void copy(const Matrix<T>& source,
         const size_t rowBegin, const size_t colBegin,
         const size_t rowCount, const size_t colCount,
         const size_t destRowBegin = 0, const size_t destColBegin = 0)
@@ -146,6 +159,50 @@ public:
     size_t getCols() const
     {
         return mCols;
+    }
+
+    // Operators - Some take expressions as arguments, which allows syntax like:
+    // Matrix<double> y;
+    // y += transpose(x) * x;
+    template <class Exp,
+        class = typename std::enable_if
+        <std::is_base_of<Operable, Exp>::value>::type>
+    Matrix& operator=(const Exp& exp)
+    {
+        mData.clear();
+        exp.apply(*this);
+        return *this;
+    }
+
+    Matrix& operator=(const Matrix& other)
+    {
+        // Check for self-assignment
+        if (this == &other)
+            return *this;
+
+        // Copy the data as appropriate
+        mRows = other.mRows;
+        mCols = other.mCols;
+        mData = other.mData;
+        return *this;
+    }
+
+    template <class Exp>
+    Matrix& operator+=(
+        typename std::enable_if
+        <
+            std::is_base_of<Operable, Exp>::value,
+            const Exp&
+        >::type exp)
+    {
+        exp.apply(*this);
+        return *this;
+    }
+
+    Matrix& operator+=(const Matrix& other)
+    {
+        resize(other.mRows, other.mCols);
+        vAdd(other.mData.data(), mData.data(), mRows * mCols);
     }
 
 private:
@@ -415,7 +472,7 @@ operator* (const LHS lhs, const RHS& rhs)
 template <class LHS, class RHS>
 typename std::enable_if
 <
-    !std::is_arithmetic<LHS>::value    && 
+    !std::is_arithmetic<LHS>::value    &&
         std::is_arithmetic<RHS>::value &&
         std::is_base_of<Operable, LHS>::value,
     BinaryExpression<LHS, RHS, ScalarMultiplication>
