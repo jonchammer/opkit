@@ -225,11 +225,11 @@ private:
 };
 
 // Convolutional layers are often used for image processing. They take as input
-// // a 3D volume of numbers and produce as output another 3D volume. Typically,
-// // the three dimensions will correspond to the width of an image, the height of
-// // an image, and the number of channels in the image. Convolutional layers use
-// // weights that are connected to a small area, in addition to weight sharing.
-// // A set of 1 or more kernels are what are learned during training.
+// a 3D volume of numbers and produce as output another 3D volume. Typically,
+// the three dimensions will correspond to the width of an image, the height of
+// an image, and the number of channels in the image. Convolutional layers use
+// weights that are connected to a small area, in addition to weight sharing.
+// A set of 1 or more kernels are what are learned during training.
 template <class T>
 class Convolutional2DLayer : public Layer<T>
 {
