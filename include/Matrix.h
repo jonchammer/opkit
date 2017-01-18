@@ -495,20 +495,6 @@ transpose (const Base& base)
     return UnaryExpression<Base, Transpose>(base);
 }
 
-// Forced evaluation. When these functions are called, the abstract syntax tree
-// is collapsed to create the final result.
-template <class T, class Exp>
-typename std::enable_if
-<
-    std::is_base_of<Operable, Exp>::value,
-    Matrix<T>&
->::type
-operator+=(Matrix<T>& lhs, Exp rhs)
-{
-    rhs.apply(lhs);
-    return lhs;
-}
-
 };
 
 #endif
