@@ -129,21 +129,21 @@ void Function<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobia
     // Epsilon needs to be a reasonably small number, but the size depends on
     // the type (e.g. doubles need smaller values). We use the sqrt of the
     // machine epsilon as a good starting point.
-    const static T EPSILON = std::sqrt(std::numeric_limits<T>::epsilon());
-    const size_t N         = getInputs();
-    const size_t M         = getOutputs();
+    const static T EPSILON            = std::sqrt(std::numeric_limits<T>::epsilon());
+    const static T INV_DOUBLE_EPSILON = T{0.5} / EPSILON;
+    const size_t N                    = getInputs();
+    const size_t M                    = getOutputs();
 
     // Ensure the Jacobian matrix is large enough
     jacobian.resize(M, N);
 
     // Temporary vectors used for calculations
-    static vector<T> prediction(M, T{});
-    static vector<T> derivativePrediction(M, T{});
+    static vector<T> derivativePrediction1(M, T{});
+    static vector<T> derivativePrediction2(M, T{});
     static vector<T> input(N, T{});
 
-    // Start by evaluating the function without any modifications
+    // Start by copying the input so we can update it freely
     std::copy(x.begin(), x.end(), input.begin());
-    evaluate(input, prediction);
 
     // The Jacobian is calculated one column at a time by changing one input
     // and measuring the effect on all M outputs.
@@ -153,13 +153,21 @@ void Function<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobia
         T orig = input[p];
 
         // Calculate the derivative of the function (y) with respect to
-        // the current input, p, by slightly changing that input
-        // and measuring comparing the output that with no change applied.
+        // the current input, p, by slightly evaluating the function at
+        // two points, one ahead and one behind p. This should yield a
+        // better approximation of the derivative than only using one
+        // point.
         input[p] += EPSILON;
-        evaluate(input, derivativePrediction);
+        evaluate(input, derivativePrediction1);
+
+        input[p] = orig - EPSILON;
+        evaluate(input, derivativePrediction2);
 
         for (size_t r = 0; r < M; ++r)
-            jacobian(r,p) = (derivativePrediction[r] - prediction[r]) / EPSILON;
+        {
+            jacobian(r,p) = INV_DOUBLE_EPSILON * 
+                (derivativePrediction1[r] - derivativePrediction2[r]);
+        }
 
         // Change the input back to its original value
         input[p] = orig;
@@ -175,37 +183,46 @@ void Function<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>& jac
     // Epsilon needs to be a reasonably small number, but the size depends on
     // the type (e.g. doubles need smaller values). We use the sqrt of the
     // machine epsilon as a good starting point.
-    const static T EPSILON = std::sqrt(std::numeric_limits<T>::epsilon());
-    const size_t N         = getNumParameters();
-    const size_t M         = getOutputs();
+    const static T EPSILON            = std::sqrt(std::numeric_limits<T>::epsilon());
+    const static T INV_DOUBLE_EPSILON = T{0.5} / EPSILON;
+    const size_t N                    = getNumParameters();
+    const size_t M                    = getOutputs();
 
     // Ensure the Jacobian matrix is large enough
     jacobian.resize(M, N);
 
     // Temporary vectors used for calculations
-    static vector<T> prediction(M, 0.0);
-    static vector<T> derivativePrediction(M, 0.0);
-
-    // Start by evaluating the function without any modifications
-    vector<T>& parameters = getParameters();
-    evaluate(x, prediction);
-
+    static vector<T> derivativePrediction1(M, T{});
+    static vector<T> derivativePrediction2(M, T{});
+  
+    T* params = getParameters().data();
+    
+    // The Jacobian is calculated one column at a time by changing one 
+    // parameter and measuring the effect on all M outputs.
     for (size_t p = 0; p < N; ++p)
     {
         // Save the original value of this parameter
-        T orig = parameters[p];
+        T orig = params[p];
 
         // Calculate the derivative of the function (y) with respect to
-        // the current parameter, p, by slightly changing that parameter
-        // and measuring comparing the output that with no change applied.
-        parameters[p] += EPSILON;
-        evaluate(x, derivativePrediction);
+        // the current parameter, p, by slightly evaluating the function
+        // at two points, one ahead and one behind p. This should yield
+        // a better approximation of the derivative than only using one
+        // point.
+        params[p] += EPSILON;
+        evaluate(x, derivativePrediction1);
+
+        params[p] = orig - EPSILON;
+        evaluate(x, derivativePrediction2);
 
         for (size_t r = 0; r < M; ++r)
-            jacobian(r, p) = (derivativePrediction[r] - prediction[r]) / EPSILON;
+        {
+            jacobian(r,p) = INV_DOUBLE_EPSILON * 
+                (derivativePrediction1[r] - derivativePrediction2[r]);
+        }
 
         // Change the parameter back to its original value
-        parameters[p] = orig;
+        params[p] = orig;
     }
 }
 

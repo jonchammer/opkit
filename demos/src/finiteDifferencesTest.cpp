@@ -105,6 +105,12 @@ int main()
         }
     }
     cout << "Jacobian Parameters - PASS" << endl;
+    
+    cout << "Real: " << endl;
+    printMatrix(jacobianParameters1, 14);
+    
+    cout << endl << "Generated: " << endl;
+    printMatrix(jacobianParameters2, 14);
 
     // 2. Jacobian with respect to inputs
     Matrix<double> jacobianInputs1, jacobianInputs2;
@@ -129,6 +135,12 @@ int main()
     }
     cout << "Jacobian Inputs - PASS" << endl;
 
+    cout << "Real: " << endl;
+    printMatrix(jacobianInputs1, 14);
+    
+    cout << endl << "Generated: " << endl;
+    printMatrix(jacobianInputs2, 14);
+    
     // 3. Hessian(0) with respect to parameters
     Matrix<double> hessianParameters1, hessianParameters2;
     f.calculateHessianParameters(input, 0, hessianParameters1);
