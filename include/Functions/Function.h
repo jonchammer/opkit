@@ -101,7 +101,6 @@ namespace
     // vector. Although 'params' is not declared const, it is guaranteed to have
     // the same values after this function is called as it did before the
     // function was called.
-    // NOTE 2: This method requires O(4*N^2) evaluations of the given
     // function. If there is a more efficient means for generating a Hessian for
     // a particular function, it should be used instead.
     // NOTE 3: "Fn" is assumed to be a functor that has the methods getOutputs()
