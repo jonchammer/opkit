@@ -47,10 +47,10 @@ namespace
         // Epsilon needs to be a reasonably small number, but the size depends on
         // the type (e.g. doubles need smaller values). We use the sqrt of the
         // machine epsilon as a good starting point.
-        const static T EPSILON            = std::sqrt(std::numeric_limits<T>::epsilon());
-        const static T INV_DOUBLE_EPSILON = T{0.5} / EPSILON;
-        const size_t N                    = params.size();
-        const size_t M                    = function.getOutputs();
+        const static T EPSILON   = std::sqrt(std::numeric_limits<T>::epsilon());
+        const static T INV_DENOM = T{0.5} / EPSILON;
+        const size_t N           = params.size();
+        const size_t M           = function.getOutputs();
 
         // Ensure the Jacobian matrix is large enough
         jacobian.resize(M, N);
@@ -82,7 +82,7 @@ namespace
 
             for (size_t r = 0; r < M; ++r)
             {
-                jacobian(r,p) = INV_DOUBLE_EPSILON *
+                jacobian(r,p) = INV_DENOM *
                     (derivativePrediction1[r] - derivativePrediction2[r]);
             }
 
@@ -114,7 +114,7 @@ namespace
         // the gradient because it will be squared in the calculations below. If it
         // is too small, we incur more significant rounding errors.
         const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
-        const static T DENOM   = T{0.25} / (EPSILON * EPSILON);
+        const static T DENOM   = T{4.0} * EPSILON * EPSILON;
 
         const size_t N = params.size();
         const size_t M = function.getOutputs();
@@ -164,7 +164,7 @@ namespace
 
                 // Calculate the value of the Hessian at this index
                 hessian(i, j) = (plusplus[outputIndex] - plusminus[outputIndex] -
-                    minusplus[outputIndex] + minusminus[outputIndex]) * DENOM;
+                    minusplus[outputIndex] + minusminus[outputIndex]) / DENOM;
             }
         }
     }

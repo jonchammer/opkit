@@ -11,6 +11,8 @@
 #include "Function.h"
 #include "Dataset.h"
 #include "Matrix.h"
+#include "Acceleration.h"
+#include "PrettyPrinter.h"
 
 namespace opkit
 {
@@ -91,14 +93,12 @@ void ErrorFunction<T, Model>::calculateGradientInputs(const Dataset<T>& features
     // Epsilon needs to be a reasonably small number, but the size depends on
     // the type (e.g. doubles need smaller values). We use the sqrt of the
     // machine epsilon as a good starting point.
-    const static T EPSILON = std::sqrt(std::numeric_limits<T>::epsilon());
-    const size_t N         = getInputs();
+    const static T EPSILON   = std::sqrt(std::numeric_limits<T>::epsilon());
+    const static T DENOM     = T{2.0} * EPSILON;
+    const size_t N           = getInputs();
 
     // Ensure the gradient vector is large enough
     std::fill(gradient.begin(), gradient.end(), T{});
-
-     // Start by evaluating the function without any modifications
-    T y = evaluate(features, labels);
 
     size_t rows = features.rows();
     for (size_t r = 0; r < rows; ++r)
@@ -114,22 +114,23 @@ void ErrorFunction<T, Model>::calculateGradientInputs(const Dataset<T>& features
             // Save the original value of this input
             T orig = row[p];
 
+            // Start by evaluating the function for a point slightly ahead
+            row[p] += EPSILON;
+            T y     = evaluate(features, labels);
+
             // Calculate the derivative of the function (y) with respect to
             // the current parameter, p, by slightly changing that parameter
             // and measuring comparing the output that with no change applied.
-            row[p] += EPSILON;
-            T y2 = evaluate(features, labels);
-
-            gradient[p] += ((y2 - y) / EPSILON);
-
-            // Change the parameter back to its original value
+            row[p] = orig - EPSILON;
+            T y2   = evaluate(features, labels);
             row[p] = orig;
+
+            gradient[p] += ((y - y2) / DENOM);
         }
     }
 
     // Calculate the average gradient for the batch
-    for (size_t i = 0; i < N; ++i)
-        gradient[i] /= rows;
+    vScale(gradient.data(), T{1.0/rows}, N);
 }
 
 template <class T, class Model>
@@ -143,28 +144,30 @@ void ErrorFunction<T, Model>::calculateGradientParameters(
     // the type (e.g. doubles need smaller values). We use the sqrt of the
     // machine epsilon as a good starting point.
     const static T EPSILON = std::sqrt(std::numeric_limits<T>::epsilon());
+    const static T DENOM   = features.rows() * T{2.0} * EPSILON;
     const size_t N         = getNumParameters();
 
      // Start by evaluating the function without any modifications
-    vector<T>& parameters = getParameters();
-    T y = evaluate(features, labels);
+    T* parameters = getParameters().data();
 
     for (size_t p = 0; p < N; ++p)
     {
         // Save the original value of this parameter
         T orig = parameters[p];
 
+        // Start by evaluating the function for a point slightly ahead
+        parameters[p] += EPSILON;
+        T y            = evaluate(features, labels);
+
         // Calculate the derivative of the function (y) with respect to
         // the current parameter, p, by slightly changing that parameter
         // and measuring comparing the output that with no change applied.
-        parameters[p] += EPSILON;
-        T y2 = evaluate(features, labels);
+        parameters[p] = orig - EPSILON;
+        T y2          = evaluate(features, labels);
+        parameters[p] = orig;
 
         // Divide by the number of rows to get the average gradient
-        gradient[p] = (y2 - y) / (EPSILON * features.rows());
-
-        // Change the parameter back to its original value
-        parameters[p] = orig;
+        gradient[p] = (y - y2) / DENOM;
     }
 }
 
@@ -178,17 +181,14 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Dataset<T>& features,
     // the gradient because it will be squared in the calculations below. If it
     // is too small, we incur more significant rounding errors.
     const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
+    const static T DENOM   = T{4.0} * EPSILON * EPSILON;
     const size_t N         = mBaseFunction.getInputs();
 
     hessian.resize(N, N);
 
-    // Perform one evaluation with no changes to get a baseline measurement
-    T base = evaluate(features, labels);
-
     // Using the method of finite differences, each element of the Hessian
     // can be approximated using the following formula:
-    // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn)
-    //- f(x1, x2, ... xj + k ... xn) + f(x1...xn)) / hk
+    // H(i,j) = (f(x+h, y+h) - f(x+h, y-h) - f(x-h, y+h) + f(x-h, y-h)) / 4h^2
     for (size_t k = 0; k < features.rows(); ++k)
     {
         // Yes, 'features' is declared const. We temporarily change one value in
@@ -199,29 +199,37 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Dataset<T>& features,
 
         for (size_t i = 0; i < N; ++i)
         {
-            // Modify i alone
-            T origI = row[i];
-            row[i] += EPSILON;
-            T ei    = evaluate(features, labels);
-            row[i]  = origI;
-
             for (size_t j = 0; j < N; ++j)
             {
-                // Modify i and j
+                T origI = row[i];
                 T origJ = row[j];
-                row[i] += EPSILON;
-                row[j] += EPSILON;
-                T eij   = evaluate(features, labels);
-                row[i]  = origI;
-                row[j]  = origJ;
 
-                // Modify j alone
-                row[j]+= EPSILON;
-                T ej   = evaluate(features, labels);
-                row[j] = origJ;
+                row[i]    += EPSILON;
+                row[j]    += EPSILON;
+                T plusplus = evaluate(features, labels);
+                row[i]     = origI;
+                row[j]     = origJ;
+
+                row[i]     += EPSILON;
+                row[j]     -= EPSILON;
+                T plusminus = evaluate(features, labels);
+                row[i]      = origI;
+                row[j]      = origJ;
+
+                row[i]     -= EPSILON;
+                row[j]     += EPSILON;
+                T minusplus = evaluate(features, labels);
+                row[i]      = origI;
+                row[j]      = origJ;
+
+                row[i]      -= EPSILON;
+                row[j]      -= EPSILON;
+                T minusminus = evaluate(features, labels);
+                row[i]       = origI;
+                row[j]       = origJ;
 
                 // Calculate the value of the Hessian at this index
-                hessian(i, j) = (eij - ei - ej + base) / (EPSILON * EPSILON);
+                hessian(i, j) += ((plusplus - plusminus - minusplus + minusminus) / DENOM);
             }
         }
     }
@@ -237,43 +245,48 @@ void ErrorFunction<T, Model>::calculateHessianParameters(
     // the gradient because it will be squared in the calculations below. If it
     // is too small, we incur more significant rounding errors.
     const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
+    const static T DENOM   = T{4.0} * EPSILON * EPSILON;
     const size_t N         = mBaseFunction.getNumParameters();
 
     hessian.resize(N, N);
-    vector<T>& params = getParameters();
-
-    // Perform one evaluation with no changes to get a baseline measurement
-    T base = evaluate(features, labels);
+    T* params = getParameters().data();
 
     // Using the method of finite differences, each element of the Hessian
     // can be approximated using the following formula:
-    // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn)
-    //- f(x1, x2, ... xj + k ... xn) + f(x1...xn)) / hk
+    // H(i,j) = (f(x+h, y+h) - f(x+h, y-h) - f(x-h, y+h) + f(x-h, y-h)) / 4h^2
     for (size_t i = 0; i < N; ++i)
     {
-        // Modify i alone
-        T origI    = params[i];
-        params[i] += EPSILON;
-        T ei       = evaluate(features, labels);
-        params[i]  = origI;
-
         for (size_t j = 0; j < N; ++j)
         {
-            // Modify i and j
-            T origJ      = params[j];
-            params[i]   += EPSILON;
-            params[j]   += EPSILON;
-            T eij        = evaluate(features, labels);
+            T origI = params[i];
+            T origJ = params[j];
+
+            params[i] += EPSILON;
+            params[j] += EPSILON;
+            T plusplus = evaluate(features, labels);
+            params[i]  = origI;
+            params[j]  = origJ;
+
+            params[i]  += EPSILON;
+            params[j]  -= EPSILON;
+            T plusminus = evaluate(features, labels);
+            params[i]   = origI;
+            params[j]   = origJ;
+
+            params[i]  -= EPSILON;
+            params[j]  += EPSILON;
+            T minusplus = evaluate(features, labels);
+            params[i]   = origI;
+            params[j]   = origJ;
+
+            params[i]   -= EPSILON;
+            params[j]   -= EPSILON;
+            T minusminus = evaluate(features, labels);
             params[i]    = origI;
             params[j]    = origJ;
 
-            // Modify j alone
-            params[j] += EPSILON;
-            T ej       = evaluate(features, labels);
-            params[j]  = origJ;
-
             // Calculate the value of the Hessian at this index
-            hessian(i, j) = (eij - ei - ej + base) / (EPSILON * EPSILON);
+            hessian(i, j) += ((plusplus - plusminus - minusplus + minusminus) / DENOM);
         }
     }
 }
