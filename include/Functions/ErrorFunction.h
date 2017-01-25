@@ -50,29 +50,29 @@ public:
 
     // Returns the number of inputs to the function and the number of outputs,
     // respectively. Error functions only have 1 output.
-    virtual size_t getInputs()  const
+    size_t getInputs()  const
     {
         return mBaseFunction.getInputs();
     }
 
-    virtual size_t getOutputs() const
+    size_t getOutputs() const
     {
         return 1;
     }
 
     // Our 'parameters' are simply those of the base function. We forward the
     // calls wherever necessary.
-    virtual vector<T>& getParameters()
+    vector<T>& getParameters()
     {
         return mBaseFunction.getParameters();
     }
 
-    virtual const vector<T>& getParameters() const
+    const vector<T>& getParameters() const
     {
         return mBaseFunction.getParameters();
     }
 
-    virtual size_t getNumParameters() const
+    size_t getNumParameters() const
     {
         return mBaseFunction.getNumParameters();
     }

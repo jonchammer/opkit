@@ -101,7 +101,7 @@ namespace
     // vector. Although 'params' is not declared const, it is guaranteed to have
     // the same values after this function is called as it did before the
     // function was called.
-    // NOTE 2: This method requires O(2*N^2 + N + 1) evaluations of the given
+    // NOTE 2: This method requires O(4*N^2) evaluations of the given
     // function. If there is a more efficient means for generating a Hessian for
     // a particular function, it should be used instead.
     // NOTE 3: "Fn" is assumed to be a functor that has the methods getOutputs()
@@ -114,9 +114,8 @@ namespace
         // Epsilon has to be set to a larger value than that used in calculating
         // the gradient because it will be squared in the calculations below. If it
         // is too small, we incur more significant rounding errors.
-        const static T EPSILON =
-            std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
-        const static T INV_EPSILON_SQUARE = T{1.0} / (EPSILON * EPSILON);
+        const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
+        const static T DENOM   = T{0.25} / (EPSILON * EPSILON);
 
         const size_t N = params.size();
         const size_t M = function.getOutputs();
@@ -125,44 +124,48 @@ namespace
         T* data = params.data();
 
         // Create the temporary vectors we'll need
-        static vector<T> base(M, T{});
-        static vector<T> ei(M, T{});
-        static vector<T> ej(M, T{});
-        static vector<T> eij(M, T{});
-
-        // Perform one evaluation with no changes to get a baseline measurement
-        function.evaluate(x, base);
+        static vector<T> plusplus(M, T{});
+        static vector<T> plusminus(M, T{});
+        static vector<T> minusplus(M, T{});
+        static vector<T> minusminus(M, T{});
 
         // Using the method of finite differences, each element of the Hessian
         // can be approximated using the following formula:
-        // H(i,j) = (f(x1,x2,...xi + h, ...xj + k...xn) - f(x1, x2 ,...xi + h...xn)
-        //          - f(x1, x2, ... xj + k ... xn) + f(x1...xn)) / hk
+        // H(i,j) = (f(x+h, y+h) - f(x+h, y-h) - f(x-h, y+h) + f(x-h, y-h)) / 4h^2
         for (size_t i = 0; i < N; ++i)
         {
-            // Modify i alone
-            T origI  = data[i];
-            data[i] += EPSILON;
-            function.evaluate(x, ei);
-            data[i]  = origI;
-
             for (size_t j = 0; j < N; ++j)
             {
-                // Modify i and j
-                T origJ  = data[j];
+                T origI = data[i];
+                T origJ = data[j];
+
                 data[i] += EPSILON;
                 data[j] += EPSILON;
-                function.evaluate(x, eij);
-                data[i]  = origI;
-                data[j]  = origJ;
+                function.evaluate(x, plusplus);
+                data[i] = origI;
+                data[j] = origJ;
 
-                // Modify j alone
+                data[i] += EPSILON;
+                data[j] -= EPSILON;
+                function.evaluate(x, plusminus);
+                data[i] = origI;
+                data[j] = origJ;
+
+                data[i] -= EPSILON;
                 data[j] += EPSILON;
-                function.evaluate(x, ej);
-                data[j]  = origJ;
+                function.evaluate(x, minusplus);
+                data[i] = origI;
+                data[j] = origJ;
+
+                data[i] -= EPSILON;
+                data[j] -= EPSILON;
+                function.evaluate(x, minusminus);
+                data[i] = origI;
+                data[j] = origJ;
 
                 // Calculate the value of the Hessian at this index
-                hessian(i, j) = (eij[outputIndex] - ei[outputIndex] -
-                    ej[outputIndex] + base[outputIndex]) * INV_EPSILON_SQUARE;
+                hessian(i, j) = (plusplus[outputIndex] - plusminus[outputIndex] -
+                    minusplus[outputIndex] + minusminus[outputIndex]) * DENOM;
             }
         }
     }

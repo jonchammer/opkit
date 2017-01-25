@@ -83,6 +83,14 @@ int main()
     TestFunction f;
     vector<double> input = {2.0, 3.0};
 
+    vector<double>& params = f.getParameters();
+    params[0] = 1.0;
+    params[1] = 2.0;
+    params[2] = 3.0;
+    params[3] = 4.0;
+    params[4] = 5.0;
+    params[5] = 6.0;
+
     // 1. Jacobian with respect to parameters
     Matrix<double> jacobianParameters1, jacobianParameters2;
     f.calculateJacobianParameters(input, jacobianParameters1);
@@ -105,7 +113,7 @@ int main()
         }
     }
     cout << "Jacobian Parameters - PASS" << endl;
-    
+
     // 2. Jacobian with respect to inputs
     Matrix<double> jacobianInputs1, jacobianInputs2;
     f.calculateJacobianInputs(input, jacobianInputs1);
@@ -128,52 +136,60 @@ int main()
         }
     }
     cout << "Jacobian Inputs - PASS" << endl;
-    
-    // 3. Hessian(0) with respect to parameters
-    Matrix<double> hessianParameters1, hessianParameters2;
-    f.calculateHessianParameters(input, 0, hessianParameters1);
-    f.Function::calculateHessianParameters(input, 0, hessianParameters2);
 
-    for (size_t i = 0; i < hessianParameters1.getRows(); ++i)
+    // 3. Hessian(index) with respect to parameters
+    for (size_t index = 0; index < f.getOutputs(); ++index)
     {
-        for (size_t j = 0; j < hessianParameters1.getCols(); ++j)
-        {
-            if (abs(hessianParameters1(i, j) - hessianParameters2(i, j)) > 0.001)
-            {
-                cout << "Hessian Parameters - FAIL" << endl;
-                cout << "Truth:" << endl;
-                printMatrix(hessianParameters1);
+        Matrix<double> hessianParameters1, hessianParameters2;
+        f.calculateHessianParameters(input, index, hessianParameters1);
+        f.Function::calculateHessianParameters(input, index, hessianParameters2);
 
-                cout << "Finite Differences:" << endl;
-                printMatrix(hessianParameters2);
-                return 1;
+        cout << "Hessian Parameters - Output: " << index << endl;
+        for (size_t i = 0; i < hessianParameters1.getRows(); ++i)
+        {
+            for (size_t j = 0; j < hessianParameters1.getCols(); ++j)
+            {
+                if (abs(hessianParameters1(i, j) - hessianParameters2(i, j)) > 0.001)
+                {
+                    cout << "Hessian Parameters - FAIL" << endl;
+                    cout << "Truth:" << endl;
+                    printMatrix(hessianParameters1);
+
+                    cout << "Finite Differences:" << endl;
+                    printMatrix(hessianParameters2);
+                    return 1;
+                }
             }
         }
+        cout << "Hessian Parameters - PASS" << endl;
     }
-    cout << "Hessian Parameters - PASS" << endl;
 
-    // 4. Hessian with respect to inputs
-    Matrix<double> hessianInputs1, hessianInputs2;
-    f.calculateHessianInputs(input, 0, hessianInputs1);
-    f.Function::calculateHessianInputs(input, 0, hessianInputs2);
-
-    for (size_t i = 0; i < hessianInputs1.getRows(); ++i)
+        // 4. Hessian(index) with respect to inputs
+    for (size_t index = 0; index < f.getOutputs(); ++index)
     {
-        for (size_t j = 0; j < hessianInputs1.getCols(); ++j)
-        {
-            if (abs(hessianInputs1(i, j) - hessianInputs2(i, j)) > 0.001)
-            {
-                cout << "Hessian Inputs - FAIL" << endl;
-                cout << "Truth:" << endl;
-                printMatrix(hessianInputs1);
+        Matrix<double> hessianInputs1, hessianInputs2;
+        f.calculateHessianInputs(input, index, hessianInputs1);
+        f.Function::calculateHessianInputs(input, index, hessianInputs2);
 
-                cout << "Finite Differences:" << endl;
-                printMatrix(hessianInputs2);
-                return 1;
+        cout << "Hessian - Input: " << index << endl;
+        for (size_t i = 0; i < hessianInputs1.getRows(); ++i)
+        {
+            for (size_t j = 0; j < hessianInputs1.getCols(); ++j)
+            {
+                if (abs(hessianInputs1(i, j) - hessianInputs2(i, j)) > 0.001)
+                {
+                    cout << "Hessian Inputs - FAIL" << endl;
+                    cout << "Truth:" << endl;
+                    printMatrix(hessianInputs1);
+
+                    cout << "Finite Differences:" << endl;
+                    printMatrix(hessianInputs2);
+                    return 1;
+                }
             }
         }
+        cout << "Hessian Inputs - PASS" << endl;
     }
-    cout << "Hessian Inputs - PASS" << endl;
 
     return 0;
 }
