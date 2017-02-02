@@ -65,7 +65,13 @@ public:
     void assignStorage(T* parameters)
     {
         mParameters = parameters;
+        onStorageAssigned();
     }
+
+    // This method is essentially a callback that implementing Layers can use
+    // if they need to know when the Layer has been assigned to a network (and
+    // thus given storage parameters to use).
+    virtual void onStorageAssigned() {}
 
     // General layer properties
     size_t getInputs() const    { return mInputs;     }
@@ -222,6 +228,80 @@ public:
 private:
     Activation<T>* mActivationFunction;
     bool mOwnActivation;
+};
+
+template <class T>
+class SparseLayer : public Layer<T>
+{
+public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mParameters;
+    using Layer<T>::mInputs;
+    using Layer<T>::mOutputs;
+    using Layer<T>::mDeltas;
+    using Layer<T>::mActivation;
+
+    SparseLayer(const size_t inputs, const size_t outputs,
+        const double fillPercentage) :
+        Layer<T>(inputs, outputs),
+        mNumConnections(size_t(fillPercentage * inputs * outputs)),
+        mWeights(nullptr) {}
+
+    ~SparseLayer()
+    {
+        delete mWeights;
+        mWeights = nullptr;
+    }
+
+    void eval(const vector<T>& x) override
+    {
+        // Cache these so we can avoid repeated pointer dereferencing
+        const T* params = mParameters;
+        const T* xData  = x.data();
+        T* yData        = mActivation.data();
+
+        mWeights->multiply(xData, yData);
+        vAdd(params + mNumConnections, yData, mOutputs)
+    }
+
+    void calculateDeltas(const vector<T>& /*x*/, T* destination) override
+    {
+        const T* deltas = mDeltas.data();
+
+        // Calculate destination = W^T * deltas
+        mWeights->multiplyTranspose(deltas, destination);
+    }
+
+    void calculateGradient(const vector<T>& x, T* gradient) override
+    {
+        // Cache the raw pointer so we can avoid calling vector::operator[]
+        // const T* input  = x.data();
+        // const T* deltas = mDeltas.data();
+        //
+        // // Calculate gradient for the weights and for the biases.
+        // // The gradients are added to the values already present.
+        // // gradient(weights) = outerProduct(x, deltas);
+        // // gradient(biases)  = deltas
+        // outerProduct(deltas, input, gradient, mOutputs, mInputs);
+        // vAdd(deltas, gradient + (mInputs * mOutputs), mOutputs);
+    }
+
+    size_t getNumParameters() const override
+    {
+        return mNumConnections + mOutputs;
+    }
+
+    void onStorageAssigned() override
+    {
+        mWeights = new SparseMatrixWrapper(mParameters,
+            mOutputs, mInputs, mNumConnections);
+    }
+
+private:
+    size_t mNumConnections;
+    SparseMatrixWrapper* mWeights;
 };
 
 // Convolutional layers are often used for image processing. They take as input
