@@ -335,7 +335,7 @@ public:
 
             // Calculate the gradient based on the deltas. Values are summed
             // for each pattern.
-            nn.getLayer(0)->calculateDeltas(feature, tempGradient);
+            nn.getLayer(0)->calculateDeltas(feature, tempGradient.data());
 
             // Technically, we need to multiply the final gradient by a factor
             // of -2 to get the true gradient with respect to the SSE function.
@@ -378,7 +378,7 @@ public:
 
             // Calculate the gradient based on the deltas. Values are summed
             // for each pattern.
-            nn.calculateGradientParameters(feature, gradient);
+            nn.calculateGradientParameters(feature, gradient.data());
         }
 
         // Technically, we need to multiply the final gradient by a factor

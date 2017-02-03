@@ -11,6 +11,7 @@
 #include <vector>
 #include <iostream>
 #include "Tensor3D.h"
+#include "SparseMatrixWrapper.h"
 #include "ActivationFunction.h"
 #include "Error.h"
 #include "Acceleration.h"
@@ -263,7 +264,7 @@ public:
         T* yData        = mActivation.data();
 
         mWeights->multiply(xData, yData);
-        vAdd(params + mNumConnections, yData, mOutputs)
+        vAdd(params + mNumConnections, yData, mOutputs);
     }
 
     void calculateDeltas(const vector<T>& /*x*/, T* destination) override
@@ -277,15 +278,11 @@ public:
     void calculateGradient(const vector<T>& x, T* gradient) override
     {
         // Cache the raw pointer so we can avoid calling vector::operator[]
-        // const T* input  = x.data();
-        // const T* deltas = mDeltas.data();
-        //
-        // // Calculate gradient for the weights and for the biases.
-        // // The gradients are added to the values already present.
-        // // gradient(weights) = outerProduct(x, deltas);
-        // // gradient(biases)  = deltas
-        // outerProduct(deltas, input, gradient, mOutputs, mInputs);
-        // vAdd(deltas, gradient + (mInputs * mOutputs), mOutputs);
+        const T* input  = x.data();
+        const T* deltas = mDeltas.data();
+
+        mWeights->outerProduct(deltas, input, gradient);
+        vAdd(deltas, gradient + mNumConnections, mOutputs);
     }
 
     size_t getNumParameters() const override
@@ -295,13 +292,13 @@ public:
 
     void onStorageAssigned() override
     {
-        mWeights = new SparseMatrixWrapper(mParameters,
+        mWeights = new SparseMatrixWrapper<T>(mParameters,
             mOutputs, mInputs, mNumConnections);
     }
 
 private:
     size_t mNumConnections;
-    SparseMatrixWrapper* mWeights;
+    SparseMatrixWrapper<T>* mWeights;
 };
 
 // Convolutional layers are often used for image processing. They take as input

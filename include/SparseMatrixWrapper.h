@@ -3,12 +3,13 @@
 
 #include <vector>
 #include <unordered_map>
+#include <random>
 
 namespace opkit
 {
 
 // Maps x -> Index
-typedef SparseVector std::unordered_map<size_t, size_t>;
+typedef std::unordered_map<size_t, size_t> SparseVector;
 
 template <class T>
 class SparseMatrixWrapper
@@ -49,7 +50,7 @@ public:
                     r = rRows(generator);
                     c = rCols(generator);
                 }
-                while(mIndices[r].find(c) != mIndices.end());
+                while(mIndices[r].find(c) != mIndices[r].end());
 
                 // Tie this index to the given row and column
                 mIndices[r].insert( {c, i} );
@@ -65,7 +66,7 @@ public:
         // Calculate y += mData * x
         for (size_t r = 0; r < mRows; ++r)
         {
-            for (auto it = mIndices.begin(); it != mIndices.end(); ++it)
+            for (auto it = mIndices[r].begin(); it != mIndices[r].end(); ++it)
             {
                 size_t c = it->first;
                 size_t i = it->second;
@@ -81,7 +82,7 @@ public:
         // Calculate y += mData^T * x
         for (size_t r = 0; r < mRows; ++r)
         {
-            for (auto it = mIndices.begin(); it != mIndices.end(); ++it)
+            for (auto it = mIndices[r].begin(); it != mIndices[r].end(); ++it)
             {
                 size_t c = it->first;
                 size_t i = it->second;
@@ -91,11 +92,22 @@ public:
     }
 
     // Multiply the dense vectors x and y together (to generate the outer
-    // product between the two.) This outer product should have the same
-    // sparcity as this matrix.
+    // product between the two.) Technically, the result should be dense,
+    // but we will throw away those connections that aren't present in this
+    // sparse matrix.
+    // NOTE: This operation will add the outer product to whatever is already
+    // present in A.
     void outerProduct(const T* x, const T* y, T* A)
     {
-        // TODO: Implement
+        for (size_t r = 0; r < mRows; ++r)
+        {
+            for (auto it = mIndices[r].begin(); it != mIndices[r].end(); ++it)
+            {
+                size_t c = it->first;
+                size_t i = it->second;
+                A[i]    += x[r] * y[c];
+            }
+        }
     }
 
 private:
