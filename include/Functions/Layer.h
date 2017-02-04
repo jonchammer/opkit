@@ -248,7 +248,46 @@ public:
         const double fillPercentage) :
         Layer<T>(inputs, outputs),
         mNumConnections(size_t(fillPercentage * inputs * outputs)),
-        mWeights(nullptr) {}
+        mWeights(new SparseMatrixWrapper<T>(mOutputs, mInputs))
+    {
+        // Assign rows and columns for each connection
+        if (outputs * inputs == mNumConnections)
+        {
+            size_t i = 0;
+            for (size_t r = 0; r < outputs; ++r)
+            {
+                for (size_t c = 0; c < inputs; ++c)
+                {
+                    mWeights->set(r, c, i);
+                    ++i;
+                }
+            }
+        }
+
+        else
+        {
+            std::default_random_engine generator;
+            std::uniform_int_distribution<int> rRows(0, outputs - 1);
+            std::uniform_int_distribution<int> rCols(0, inputs - 1);
+
+            size_t i = 0;
+            for (size_t j = 0; j < mNumConnections; ++j)
+            {
+                // Pick a random row and column
+                size_t r, c;
+                do
+                {
+                    r = rRows(generator);
+                    c = rCols(generator);
+                }
+                while(mWeights->isSet(r, c));
+
+                // Tie this index to the given row and column
+                mWeights->set(r, c, i);
+                ++i;
+            }
+        }
+    }
 
     ~SparseLayer()
     {
@@ -258,30 +297,22 @@ public:
 
     void eval(const vector<T>& x) override
     {
-        // Cache these so we can avoid repeated pointer dereferencing
-        const T* params = mParameters;
-        const T* xData  = x.data();
-        T* yData        = mActivation.data();
-
-        mWeights->multiply(xData, yData);
-        vAdd(params + mNumConnections, yData, mOutputs);
+        T* yData = mActivation.data();
+        mWeights->multiply(x.data(), yData);
+        vAdd(mParameters + mNumConnections, yData, mOutputs);
     }
 
     void calculateDeltas(const vector<T>& /*x*/, T* destination) override
     {
-        const T* deltas = mDeltas.data();
-
         // Calculate destination = W^T * deltas
-        mWeights->multiplyTranspose(deltas, destination);
+        mWeights->multiplyTranspose(mDeltas.data(), destination);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override
     {
-        // Cache the raw pointer so we can avoid calling vector::operator[]
-        const T* input  = x.data();
         const T* deltas = mDeltas.data();
 
-        mWeights->outerProduct(deltas, input, gradient);
+        mWeights->outerProduct(deltas, x.data(), gradient);
         vAdd(deltas, gradient + mNumConnections, mOutputs);
     }
 
@@ -292,8 +323,17 @@ public:
 
     void onStorageAssigned() override
     {
-        mWeights = new SparseMatrixWrapper<T>(mParameters,
-            mOutputs, mInputs, mNumConnections);
+        mWeights->setData(mParameters);
+    }
+
+    size_t getNumConnections()
+    {
+        return mNumConnections;
+    }
+
+    SparseMatrixWrapper<T>* getWeights()
+    {
+        return mWeights;
     }
 
 private:

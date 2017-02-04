@@ -4,6 +4,9 @@
 #include <vector>
 #include <unordered_map>
 #include <random>
+#include <iostream>
+using std::cout;
+using std::endl;
 
 namespace opkit
 {
@@ -15,48 +18,29 @@ template <class T>
 class SparseMatrixWrapper
 {
 public:
-    SparseMatrixWrapper(T* data, const size_t rows,
-        const size_t cols, const size_t numConnections) :
-        mData(data), mRows(rows), mCols(cols),
-        mIndices(rows)
+    SparseMatrixWrapper(const size_t rows, const size_t cols) :
+        mData(nullptr), mRows(rows), mCols(cols), mIndices(rows) {}
+
+    void clear()
     {
-        // Assign rows and columns for each connection
-        if (rows * cols == numConnections)
-        {
-            size_t i = 0;
-            for (size_t r = 0; r < rows; ++r)
-            {
-                for (size_t c = 0; c < cols; ++c)
-                {
-                    mIndices[r].insert( {c, i} );
-                    ++i;
-                }
-            }
-        }
+        for (size_t r = 0; r < mRows; ++r)
+            mIndices[r].clear();
+    }
 
-        else
-        {
-            std::default_random_engine generator;
-            std::uniform_int_distribution<int> rRows(0, rows);
-            std::uniform_int_distribution<int> rCols(0, cols);
+    void set(const size_t row, const size_t col, size_t index)
+    {
+        mIndices[row].insert( {col, index} );
+    }
 
-            size_t i = 0;
-            for (size_t j = 0; j < numConnections; ++j)
-            {
-                // Pick a random row and column
-                size_t r, c;
-                do
-                {
-                    r = rRows(generator);
-                    c = rCols(generator);
-                }
-                while(mIndices[r].find(c) != mIndices[r].end());
+    bool isSet(const size_t row, const size_t col) const
+    {
+        return mIndices[row].find(col) != mIndices[row].end();
+    }
 
-                // Tie this index to the given row and column
-                mIndices[r].insert( {c, i} );
-                ++i;
-            }
-        }
+    T get(const size_t row, const size_t col) const
+    {
+        auto it = mIndices[row].find(col);
+        return it != mIndices[row].end() ? mData[it->second] : T{};
     }
 
     // Multiply this sparse matrix by a dense vector (x), and add the result
@@ -108,6 +92,21 @@ public:
                 A[i]    += x[r] * y[c];
             }
         }
+    }
+
+    void setData(T* data)
+    {
+        mData = data;
+    }
+
+    size_t getRows() const
+    {
+        return mRows;
+    }
+
+    size_t getCols() const
+    {
+        return mCols;
     }
 
 private:

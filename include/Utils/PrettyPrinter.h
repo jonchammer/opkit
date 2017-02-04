@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <vector>
 #include "Matrix.h"
+#include "SparseMatrixWrapper.h"
 #include "Dataset.h"
 #include "Tensor3D.h"
 
@@ -67,6 +68,26 @@ void printMatrix(const Matrix<T>& mat, size_t decimalPlaces = 2, size_t width = 
             std::cout << std::setw(width) << mat(j, M - 1) << "]" << std::endl;
     }
 }
+
+template <class T>
+void printSparseMatrix(const SparseMatrixWrapper<T>& mat,
+    size_t decimalPlaces = 2, size_t width = 6)
+{
+    std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
+    const size_t N = mat.getRows();
+    const size_t M = mat.getCols();
+
+    for (size_t j = 0; j < N; ++j)
+    {
+        std::cout << "[";
+        for (size_t i = 0; i < M - 1; ++i)
+            std::cout << std::setw(width) << mat.get(j, i) << ", ";
+
+        if (M >= 1)
+            std::cout << std::setw(width) << mat.get(j, M - 1) << "]" << std::endl;
+    }
+}
+
 
 // Prints a given 1D vector as if it were a 3D tensor. The front face is printed
 // first, followed by the next face, and so on.
