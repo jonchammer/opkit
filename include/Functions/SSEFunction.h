@@ -95,7 +95,7 @@ public:
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels[i][j] - evaluation[j];
 
-            grad += T(-2.0) * error * baseJacobian;
+            grad += T{-2.0} * error * baseJacobian;
         }
 
         // Swap back so 'gradient' contains the correct information
@@ -140,7 +140,7 @@ public:
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels[i][j] - evaluation[j];
 
-            grad += T(-2.0) * error * baseJacobian;
+            grad += T{-2.0} * error * baseJacobian;
         }
 
         // Swap back so 'gradient' contains the correct information
@@ -199,7 +199,7 @@ public:
             }
 
             // Finally, calculate the Hessian
-            hessian += T(2.0) * (transpose(jacobian) * jacobian - sumOfLocalHessians);
+            hessian += T{2.0} * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
 
@@ -252,7 +252,7 @@ public:
             }
 
             // Finally, calculate the Hessian
-            hessian += T(2.0) * (transpose(jacobian) * jacobian - sumOfLocalHessians);
+            hessian += T{2.0} * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
 };
@@ -339,11 +339,11 @@ public:
 
             // Technically, we need to multiply the final gradient by a factor
             // of -2 to get the true gradient with respect to the SSE function.
-            vAdd(tempGradient.data(), gradient.data(), N, -2.0);
+            vAdd(tempGradient.data(), gradient.data(), N, T{-2.0});
         }
 
         // Divide by the batch size to get the average gradient
-        vScale(gradient.data(), 1.0/rows, N);
+        vScale(gradient.data(), T{1.0}/rows, N);
     }
 
     void calculateGradientParameters(const Dataset<T>& features,
@@ -384,7 +384,16 @@ public:
         // Technically, we need to multiply the final gradient by a factor
         // of -2 to get the true gradient with respect to the SSE function.
         // We also need to divide by the batch size to get an average gradient.
-        vScale(gradient.data(), -2.0/rows, N);
+        vScale(gradient.data(), T{-2.0}/rows, N);
+
+        // normalize(gradient);
+        //
+        // for (size_t j = 0; j < nn.getNumLayers(); ++j)
+        // {
+        //     cout << "Layer: " << (j + 1) << endl;
+        //     printVector(nn.getLayer(j)->getActivation()); cout << endl;
+        // }
+        // exit(0);
     }
 
     void calculateHessianInputs(const Dataset<T>& features,
@@ -435,7 +444,7 @@ public:
             }
 
             // Finally, calculate the Hessian
-            hessian += 2.0 * (transpose(jacobian) * jacobian - sumOfLocalHessians);
+            hessian += T{2.0} * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
 
@@ -488,7 +497,7 @@ public:
             }
 
             // Finally, calculate the Hessian
-            hessian += 2.0 * (transpose(jacobian) * jacobian - sumOfLocalHessians);
+            hessian += T{2.0} * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
 };

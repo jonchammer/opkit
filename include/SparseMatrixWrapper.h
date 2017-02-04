@@ -19,7 +19,8 @@ class SparseMatrixWrapper
 {
 public:
     SparseMatrixWrapper(const size_t rows, const size_t cols) :
-        mData(nullptr), mRows(rows), mCols(cols), mIndices(rows) {}
+        mData(nullptr), mRows(rows), mCols(cols), mIndices(rows)
+    {}
 
     void clear()
     {
@@ -43,34 +44,34 @@ public:
         return it != mIndices[row].end() ? mData[it->second] : T{};
     }
 
-    // Multiply this sparse matrix by a dense vector (x), and add the result
-    // to the dense vector y.
+    // Multiply this sparse matrix by a dense vector (x), and put the result
+    // in the dense vector y.
     void multiply(const T* x, T* y)
     {
-        // Calculate y += mData * x
+        // Calculate y = mData * x
         for (size_t r = 0; r < mRows; ++r)
         {
             for (auto it = mIndices[r].begin(); it != mIndices[r].end(); ++it)
             {
                 size_t c = it->first;
                 size_t i = it->second;
-                y[r]    += mData[i] * x[c];
+                y[r]     = mData[i] * x[c];
             }
         }
     }
 
     // Multiply the transpose of this sparse matrix by a dense vector (x),
-    // and add the result to the dense vector y.
+    // and put the result in the dense vector y.
     void multiplyTranspose(const T* x, T* y)
     {
-        // Calculate y += mData^T * x
+        // Calculate y = mData^T * x
         for (size_t r = 0; r < mRows; ++r)
         {
             for (auto it = mIndices[r].begin(); it != mIndices[r].end(); ++it)
             {
                 size_t c = it->first;
                 size_t i = it->second;
-                y[c]    += mData[i] * x[r];
+                y[c]     = mData[i] * x[r];
             }
         }
     }
@@ -113,6 +114,52 @@ private:
     T* mData;
     size_t mRows, mCols;
     std::vector<SparseVector> mIndices;
+
+    // void test()
+    // {
+    //     // Initialize m1
+    //     Matrix<double> m1(2, 5);
+    //     m1(0, 0) = 1.0; m1(0, 3) = 4.0;
+    //     m1(1, 1) = 7.0; m1(1, 2) = 8.0; m1(1, 4) = 10.0;
+    //
+    //     // Initialize m2
+    //     SparseMatrixWrapper<double> m2(2, 5);
+    //     m2.set(0, 0, 0); m2.set(0, 3, 1);
+    //     m2.set(1, 1, 2); m2.set(1, 2, 3); m2.set(1, 4, 4);
+    //     double data[] = {1.0, 4.0, 7.0, 8.0, 10.0};
+    //     m2.setData(data);
+    //
+    //     printMatrix(m1);       cout << endl;
+    //     printSparseMatrix(m2); cout << endl;
+    //
+    //     // Check multiplication
+    //     Matrix<double> x(5, 1, {1.0, 2.0, 3.0, 4.0, 5.0});
+    //     Matrix<double> y(m1 * x);
+    //     printMatrix(y); cout << endl;
+    //
+    //     y.fill();
+    //     m2.multiply(x.data(), y.data());
+    //     printMatrix(y); cout << endl;
+    //
+    //     // Check transposed multiplication
+    //     Matrix<double> x2(2, 1, {1.0, 2.0});
+    //     Matrix<double> y2(transpose(m1) * x2);
+    //     printMatrix(y2); cout << endl;
+    //
+    //     y2.fill();
+    //     m2.multiplyTranspose(x2.data(), y2.data());
+    //     printMatrix(y2); cout << endl;
+    //
+    //     // Check outer product
+    //     Matrix<double> y3(x2 * transpose(x));
+    //     printMatrix(y3); cout << endl;
+    //
+    //     y3.fill();
+    //     double outerProductResult[5];
+    //     m2.outerProduct(x2.data(), x.data(), outerProductResult);
+    //     m2.setData(outerProductResult);
+    //     printSparseMatrix(m2); cout << endl;
+    // }
 };
 
 }
