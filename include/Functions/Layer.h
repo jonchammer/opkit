@@ -231,6 +231,9 @@ private:
     bool mOwnActivation;
 };
 
+// Fundamentally, SparseLayer is exceptionally similar to FullyConnectedLayer.
+// The only difference is that this class uses sparse storage to reduce the
+// computational complexity of the evaluation and backprop steps.
 template <class T>
 class SparseLayer : public Layer<T>
 {
@@ -247,42 +250,18 @@ public:
     SparseLayer(const size_t inputs, const size_t outputs,
         const double fillPercentage) :
         Layer<T>(inputs, outputs),
-        mNumConnections(size_t(fillPercentage * inputs * outputs)),
-        mWeights(new SparseMatrixWrapper<T>(mOutputs, mInputs))
+        mNumConnections(size_t(fillPercentage * inputs * outputs))
     {
         // Assign rows and columns for each connection
         if (outputs * inputs == mNumConnections)
-        {
-            size_t i = 0;
-            for (size_t r = 0; r < outputs; ++r)
-            {
-                for (size_t c = 0; c < inputs; ++c)
-                    mWeights->set(r, c, i++);
-            }
-        }
+            mWeights = new SparseMatrixWrapper<T>(outputs, inputs);
 
+        // Fill the connections randomly
         else
         {
-            std::default_random_engine generator;
-            std::uniform_int_distribution<int> rRows(0, outputs - 1);
-            std::uniform_int_distribution<int> rCols(0, inputs - 1);
-
-            size_t i = 0;
-            for (size_t j = 0; j < mNumConnections; ++j)
-            {
-                // Pick a random row and column
-                size_t r, c;
-                do
-                {
-                    r = rRows(generator);
-                    c = rCols(generator);
-                }
-                while(mWeights->isSet(r, c));
-
-                // Tie this index to the given row and column
-                mWeights->set(r, c, i);
-                ++i;
-            }
+            Rand<size_t> rand;
+            mWeights = new SparseMatrixWrapper<T>(outputs, inputs,
+                mNumConnections, rand);
         }
     }
 
@@ -294,6 +273,7 @@ public:
 
     void eval(const vector<T>& x) override
     {
+        // Calculate activation = W * x + b
         T* yData = mActivation.data();
         mWeights->multiply(x.data(), yData);
         vAdd(mParameters + mNumConnections, yData, mOutputs);
@@ -301,14 +281,14 @@ public:
 
     void calculateDeltas(const vector<T>& /*x*/, T* destination) override
     {
-        //Calculate destination = W^T * deltas
+        // Calculate destination = W^T * deltas
         mWeights->multiplyTranspose(mDeltas.data(), destination);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override
     {
+        // gradient += deltas * x^T
         const T* deltas = mDeltas.data();
-
         mWeights->outerProduct(deltas, x.data(), gradient);
         vAdd(deltas, gradient + mNumConnections, mOutputs);
     }
@@ -320,18 +300,15 @@ public:
 
     void onStorageAssigned() override
     {
+        // As soon as this layer is assigned storage, we will need to sync the
+        // parameters to the sparse weights matrix. (This might happen multiple
+        // times as multiple layers are added to the network).
         mWeights->setData(mParameters);
     }
 
-    size_t getNumConnections()
-    {
-        return mNumConnections;
-    }
-
-    SparseMatrixWrapper<T>* getWeights()
-    {
-        return mWeights;
-    }
+    // Simple getters
+    size_t getNumConnections()           const { return mNumConnections; }
+    SparseMatrixWrapper<T>* getWeights() const { return mWeights;        }
 
 private:
     size_t mNumConnections;
