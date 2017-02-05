@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <random>
 #include <iostream>
+#include "Matrix.h"
+
 using std::cout;
 using std::endl;
 
@@ -49,13 +51,14 @@ public:
     void multiply(const T* x, T* y)
     {
         // Calculate y = mData * x
+        std::fill(y, y + mRows, T{});
         for (size_t r = 0; r < mRows; ++r)
         {
             for (auto it = mIndices[r].begin(); it != mIndices[r].end(); ++it)
             {
                 size_t c = it->first;
                 size_t i = it->second;
-                y[r]     = mData[i] * x[c];
+                y[r]    += mData[i] * x[c];
             }
         }
     }
@@ -65,13 +68,14 @@ public:
     void multiplyTranspose(const T* x, T* y)
     {
         // Calculate y = mData^T * x
+        std::fill(y, y + mCols, T{});
         for (size_t r = 0; r < mRows; ++r)
         {
             for (auto it = mIndices[r].begin(); it != mIndices[r].end(); ++it)
             {
                 size_t c = it->first;
                 size_t i = it->second;
-                y[c]     = mData[i] * x[r];
+                y[c]    += mData[i] * x[r];
             }
         }
     }
@@ -93,6 +97,23 @@ public:
                 A[i]    += x[r] * y[c];
             }
         }
+    }
+
+    Matrix<T> toMatrix() const
+    {
+        Matrix<T> res(mRows, mCols);
+
+        for (size_t r = 0; r < mRows; ++r)
+        {
+            for (auto it = mIndices[r].begin(); it != mIndices[r].end(); ++it)
+            {
+                size_t c  = it->first;
+                size_t i  = it->second;
+                res(r, c) = mData[i];
+            }
+        }
+
+        return res;
     }
 
     void setData(T* data)

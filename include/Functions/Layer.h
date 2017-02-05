@@ -257,10 +257,7 @@ public:
             for (size_t r = 0; r < outputs; ++r)
             {
                 for (size_t c = 0; c < inputs; ++c)
-                {
-                    mWeights->set(r, c, i);
-                    ++i;
-                }
+                    mWeights->set(r, c, i++);
             }
         }
 
@@ -304,7 +301,7 @@ public:
 
     void calculateDeltas(const vector<T>& /*x*/, T* destination) override
     {
-        // Calculate destination = W^T * deltas
+        //Calculate destination = W^T * deltas
         mWeights->multiplyTranspose(mDeltas.data(), destination);
     }
 

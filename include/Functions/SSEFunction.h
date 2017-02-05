@@ -385,15 +385,6 @@ public:
         // of -2 to get the true gradient with respect to the SSE function.
         // We also need to divide by the batch size to get an average gradient.
         vScale(gradient.data(), T{-2.0}/rows, N);
-
-        // normalize(gradient);
-        //
-        // for (size_t j = 0; j < nn.getNumLayers(); ++j)
-        // {
-        //     cout << "Layer: " << (j + 1) << endl;
-        //     printVector(nn.getLayer(j)->getActivation()); cout << endl;
-        // }
-        // exit(0);
     }
 
     void calculateHessianInputs(const Dataset<T>& features,
