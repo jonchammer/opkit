@@ -7,61 +7,54 @@
 namespace opkit
 {
 
-// General template
-template <class T, class U = void>
+// This class should be used to easily generate random numbers.
+//
+// NOTE: Instances of this class should not be qualified as 'const'. You will
+// get some very unhelpful error messages if you do.
 class Rand
-{};
-
-// For integral types
-template <class T>
-class Rand <T, typename std::enable_if<std::is_integral<T>::value>::type>
 {
 public:
+
+    // Create a new RNG with the given seed
+    Rand(const size_t seed) : mSeed(seed), mGenerator(seed)
+    {}
+
+    // Create a new RNG that uses the current time as the seed
     Rand() :
-        mGenerator(std::chrono::system_clock::now().time_since_epoch().count()),
-        mDistribution(T{}, T{1.0}) {}
+        mSeed(std::chrono::system_clock::now().time_since_epoch().count()),
+        mGenerator(mSeed)
+    {}
 
-    Rand(const size_t seed) :
-        mGenerator(seed),
-        mDistribution(T{}, T{1.0}) {}
-
-    T operator()(T min, T max)
+    // Generate an integral type (e.g. int, long, short, size_t) within the
+    // given range.
+    template <class T>
+    T nextInteger(T min, T max)
     {
-        return T(mDistribution(mGenerator) * (max - min) + min);
+        std::uniform_int_distribution<T> distribution (min, max);
+        return distribution(mGenerator);
+    }
+
+    // Generate a real type (e.g. float, double) within the given range.
+    template <class T>
+    T nextReal(T min, T max)
+    {
+        std::uniform_real_distribution<T> distribution(min, max);
+        return distribution(mGenerator);
+    }
+
+    // Generate a real number from the given normal distribution
+    template <class T>
+    T nextGaussian(const T mean, const T stdev)
+    {
+        std::normal_distribution<T> distribution (mean, stdev);
+        return distribution(mGenerator);
     }
 
 private:
+    size_t mSeed;
     std::default_random_engine mGenerator;
-    std::uniform_real_distribution<double> mDistribution;
 };
 
-// For real types
-template <class T>
-class Rand <T, typename std::enable_if<!std::is_integral<T>::value>::type>
-{
-public:
-    Rand() :
-        mGenerator(std::chrono::system_clock::now().time_since_epoch().count()),
-        mDistribution(T{}, T{1.0}) {}
-
-    Rand(const size_t seed) :
-        mGenerator(seed),
-        mDistribution(T{}, T{1.0}) {}
-
-    T operator()()
-    {
-        return mDistribution(mGenerator);
-    }
-
-    T operator()(T min, T max)
-    {
-        return mDistribution(mGenerator) * (max - min) + min;
-    }
-
-private:
-    std::default_random_engine mGenerator;
-    std::uniform_real_distribution<T> mDistribution;
-};
 }
 
 #endif

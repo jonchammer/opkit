@@ -74,7 +74,7 @@ public:
     // @param numConnections - The number of non-zero elements in the matrix.
     // @param rand           - Source of randomness for the connections.
     SparseMatrixWrapper(const size_t rows, const size_t cols,
-        const size_t numConnections, Rand<size_t>& rand) :
+        const size_t numConnections, Rand& rand) :
         mData(nullptr), mRows(rows), mCols(cols),
         mNumConnections(numConnections), mRowIndices(new size_t[numConnections]),
         mColIndices(new size_t[numConnections])
@@ -95,8 +95,8 @@ public:
             size_t r, c;
             do
             {
-                r = rand(0, rows - 1);
-                c = rand(0, cols - 1);
+                r = rand.nextInteger<size_t>(0, rows - 1);
+                c = rand.nextInteger<size_t>(0, cols - 1);
             }
             while(mIndices.find({r, c}) != mIndices.end());
 

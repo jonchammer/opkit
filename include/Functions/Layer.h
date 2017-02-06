@@ -248,7 +248,7 @@ public:
     using Layer<T>::mActivation;
 
     SparseLayer(const size_t inputs, const size_t outputs,
-        const double fillPercentage) :
+        const double fillPercentage, Rand& rand) :
         Layer<T>(inputs, outputs),
         mNumConnections(size_t(fillPercentage * inputs * outputs))
     {
@@ -259,7 +259,6 @@ public:
         // Fill the connections randomly
         else
         {
-            Rand<size_t> rand;
             mWeights = new SparseMatrixWrapper<T>(outputs, inputs,
                 mNumConnections, rand);
         }

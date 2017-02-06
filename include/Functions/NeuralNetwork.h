@@ -91,7 +91,7 @@ public:
     void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian) override;
 
     // Initializes the weights and biases with random values
-    void initializeParameters();
+    void initializeParameters(Rand& rand);
 
     // Neural networks do cache the last evaluation, so this function will
     // always return true.
@@ -295,11 +295,8 @@ void NeuralNetwork<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& ja
 }
 
 template <class T>
-void NeuralNetwork<T>::initializeParameters()
+void NeuralNetwork<T>::initializeParameters(Rand& rand)
 {
-    std::default_random_engine generator;
-    std::normal_distribution<> normal(0.0, 1.0);
-
     size_t index = 0;
     for (Layer<T>*& l : mLayers)
     {
@@ -307,7 +304,7 @@ void NeuralNetwork<T>::initializeParameters()
         const size_t N = l->getNumParameters();
 
         for (size_t j = 0; j < N; ++j)
-            mParameters[index++] = normal(generator) * mag;
+            mParameters[index++] = rand.nextGaussian(0.0, 1.0) * mag;
     }
 }
 

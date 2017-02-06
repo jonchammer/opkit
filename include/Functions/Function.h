@@ -39,7 +39,7 @@ namespace
     // NOTE 3: "Fn" is assumed to be a functor that has the methods getOutputs()
     // and evaluate(). The Function class defined below will work, but it's not
     // required.
-    template <class T, template <class T> class Fn>
+    template <class T, template <class U> class Fn>
     void calculateJacobian(Fn<T>& function, const vector<T>& x,
         vector<T>& params, opkit::Matrix<T>& jacobian)
     {
@@ -107,7 +107,7 @@ namespace
     // NOTE 3: "Fn" is assumed to be a functor that has the methods getOutputs()
     // and evaluate(). The Function class defined below will work, but it's not
     // required.
-    template <class T, template <class T> class Fn>
+    template <class T, template <class U = T> class Fn>
     void calculateHessian(Fn<T>& function, const vector<T>& x,
         vector<T>& params, const size_t outputIndex, opkit::Matrix<T>& hessian)
     {
