@@ -3,6 +3,7 @@
 
 #include <bitset>
 #include <climits>
+#include <cstdint>
 #include "Rand.h"
 
 namespace opkit
@@ -20,11 +21,12 @@ void printBinary(const T& a)
 // T is the raw type (e.g. unsigned char)
 // U is the logical type (e.g. double)
 template <typename T, typename U>
-void printBinary(const T* array, size_t length)
+void printBinary(const T* array, const size_t length)
 {
-    for (size_t i = 0; i < length; i += sizeof(U))
+    size_t multiplier = sizeof(U) / sizeof(T);
+    for (size_t i = 0; i < length; i += multiplier)
     {
-        for (size_t j = 0; j < sizeof(U); ++j)
+        for (size_t j = 0; j < multiplier; ++j)
             printBinary(array[i + j]);
         cout << '\n';
     }
@@ -34,22 +36,22 @@ void printBinary(const T* array, size_t length)
 // input in bytes. The default is unsigned char, which should always work.
 template <size_t S> struct MaskType
 {
-    using type = unsigned char;
+    using type = uint8_t;
 };
 
 template <> struct MaskType<2>
 {
-    using type = unsigned short;
+    using type = uint16_t;
 };
 
 template <> struct MaskType<4>
 {
-    using type = unsigned int;
+    using type = uint32_t;
 };
 
 template <> struct MaskType<8>
 {
-    using type = unsigned long;
+    using type = uint64_t;
 };
 
 // This class represents a general bitmask that can be used for filtering
@@ -63,8 +65,8 @@ public:
 
     // Create a new bitmask large enough to cover an array of the given size.
     Bitmask(size_t size) :
-    mMultiplier(sizeof(T) / sizeof(BaseType)),
-    mMask(mMultiplier * size) {}
+        mMultiplier(sizeof(T) / sizeof(BaseType)),
+        mMask(mMultiplier * size) {}
 
     // Clear the bitmask. Every element will be masked out when Bitmask::apply
     // is called.
@@ -147,7 +149,8 @@ public:
 private:
     // The mask is represented as an array of bytes in order to achieve maximum
     // generality. If it is possible to use a larger datatype, we will, since
-    // the mask operation is more efficient that way.
+    // the mask operation is more efficient that way. The multiplier represents
+    // the ratio between the source type and the mask type.
     size_t mMultiplier;
     vector< BaseType > mMask;
 };
