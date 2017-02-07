@@ -12,6 +12,7 @@
 #include <iostream>
 #include "Tensor3D.h"
 #include "SparseMatrixWrapper.h"
+#include "Bitmask.h"
 #include "ActivationFunction.h"
 #include "Error.h"
 #include "Acceleration.h"
@@ -229,6 +230,95 @@ public:
 private:
     Activation<T>* mActivationFunction;
     bool mOwnActivation;
+};
+
+template <class T>
+class SparseLayerAlt : public Layer<T>
+{
+public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mParameters;
+    using Layer<T>::mInputs;
+    using Layer<T>::mOutputs;
+    using Layer<T>::mDeltas;
+    using Layer<T>::mActivation;
+
+    // Create a new FullyConnectedLayer. We need only specify the input and
+    // output dimensions.
+    SparseLayerAlt(const size_t inputs, const size_t outputs,
+        const double fillPercentage, Rand& rand) :
+        Layer<T>(inputs, outputs), mMask(inputs * outputs)
+    {
+        // Effectively no mask when all cells are filled
+        if (fillPercentage >= 1.0)
+            mMask.setAll();
+
+        // Mask a certain percentage of the connections
+        else mMask.setRandom(rand, fillPercentage);
+    }
+
+    void eval(const vector<T>& x) override
+    {
+        //Cache these so we can avoid repeated pointer dereferencing
+        T* yData  = mActivation.data();
+
+        // Apply the mask
+        mMask.apply(mParameters);
+
+        // y = W * x + b
+        // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
+        // ordering, followed directly by the biases. E.g.:
+        // [w11, w21, ... wn1]
+        // [w12, w22, ... wn2]
+        // [...  ...  ... ...]
+        // [w1m, w2m, ... wnm]
+        // [b1, b2,   ...  bm]
+        //
+        // This could be done with one BLAS call, but it would override the bias,
+        // which means a copy would have to be made ahead of time. It's easier
+        // to just use two calls.
+        mvMultiply(mParameters, x.data(), yData, mOutputs, mInputs);
+        vAdd(mParameters + (mInputs * mOutputs), yData, mOutputs);
+    }
+
+    void calculateDeltas(const vector<T>& /*x*/, T* destination) override
+    {
+        const T* deltas = mDeltas.data();
+
+        // Apply the mask
+        mMask.apply(mParameters);
+
+        // Calculate destination = W^T * deltas
+        mtvMultiply(mParameters, deltas, destination, mOutputs, mInputs);
+    }
+
+    void calculateGradient(const vector<T>& x, T* gradient) override
+    {
+        // Cache the raw pointer so we can avoid calling vector::operator[]
+        const T* input  = x.data();
+        const T* deltas = mDeltas.data();
+
+        // Calculate gradient for the weights and for the biases.
+        // The gradients are added to the values already present.
+        // gradient(weights) = outerProduct(x, deltas);
+        // gradient(biases)  = deltas
+        outerProduct(deltas, input, gradient, mOutputs, mInputs);
+        vAdd(deltas, gradient + (mInputs * mOutputs), mOutputs);
+
+        // Apply the mask
+        mMask.apply(gradient);
+    }
+
+    size_t getNumParameters() const override
+    {
+        // N * M for the weights matrix and M for the bias terms
+        return mInputs * mOutputs + mOutputs;
+    }
+
+private:
+    Bitmask<T> mMask;
 };
 
 // Fundamentally, SparseLayer is exceptionally similar to FullyConnectedLayer.

@@ -414,6 +414,7 @@ void Dataset<T>::loadARFF(string fileName)
 		//Iterate through each line of the file
 		getline ( inputFile, line );
 		lineNum++;
+
 		if ( toLower ( line ).find ( "@relation" ) == 0 )
 			m_filename = line.substr ( line.find_first_of ( " " ) );
 		else if ( toLower ( line ).find ( "@attribute" ) == 0 )
