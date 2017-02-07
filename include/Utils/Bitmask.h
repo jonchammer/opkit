@@ -30,6 +30,28 @@ void printBinary(const T* array, size_t length)
     }
 }
 
+// Used to determine which type the mask should be based on the size of the
+// input in bytes. The default is unsigned char, which should always work.
+template <size_t S> struct MaskType
+{
+    using type = unsigned char;
+};
+
+template <> struct MaskType<2>
+{
+    using type = unsigned short;
+};
+
+template <> struct MaskType<4>
+{
+    using type = unsigned int;
+};
+
+template <> struct MaskType<8>
+{
+    using type = unsigned long;
+};
+
 // This class represents a general bitmask that can be used for filtering
 // arrays of (usually simple) types.
 template <class T>
@@ -37,36 +59,40 @@ class Bitmask
 {
 public:
 
+    using BaseType = typename MaskType<sizeof(T)>::type;
+
     // Create a new bitmask large enough to cover an array of the given size.
-    Bitmask(size_t size) : mMask(sizeof(T) * size) {}
+    Bitmask(size_t size) :
+    mMultiplier(sizeof(T) / sizeof(BaseType)),
+    mMask(mMultiplier * size) {}
 
     // Clear the bitmask. Every element will be masked out when Bitmask::apply
     // is called.
     void clear()
     {
-        std::fill(mMask.begin(), mMask.end(), 0x00);
+        std::fill(mMask.begin(), mMask.end(), 0);
     }
 
     // Set an individual element of the bitmask. Those elements that are set
     // will be kept when Bitmask::apply() is called.
     void set(const size_t index)
     {
-        for (size_t j = 0; j < sizeof(T); ++j)
-            mMask[sizeof(T) * index + j] = 0xFF;
+        for (size_t j = 0; j < mMultiplier; ++j)
+            mMask[mMultiplier * index + j] = ~(0);
     }
 
     // Set all elements of the bitmask. This effectively means the bitmask uses
     // an identity masking. No elements will be masked.
     void setAll()
     {
-        std::fill(mMask.begin(), mMask.end(), 0xFF);
+        std::fill(mMask.begin(), mMask.end(), ~(0));
     }
 
     // Randomly set a given percentage (between [0.0, 1.0]) of the elements of
     // this mask.
     void setRandom(Rand& rand, const double fillPercentage)
     {
-        const size_t length         = mMask.size() / sizeof(T);
+        const size_t length         = mMask.size() / mMultiplier;
         const size_t numConnections = (size_t)(length * fillPercentage);
 
         // Create a mask from the bottom up
@@ -78,29 +104,29 @@ public:
                 size_t index;
                 do
                 {
-                    index = sizeof(T) * rand.nextInteger(0ul, length - 1);
-                } while(mMask[index] == 0xFF);
+                    index = mMultiplier * rand.nextInteger(0ul, length - 1);
+                } while(mMask[index] == ~(0));
 
-                for (size_t j = 0; j < sizeof(T); ++j)
-                    mMask[index + j] = 0xFF;
+                for (size_t j = 0; j < mMultiplier; ++j)
+                    mMask[index + j] = ~(0);
             }
         }
 
         // Create a mask from the top down
         else
         {
-            std::fill(mMask.begin(), mMask.end(), 0xFF);
+            std::fill(mMask.begin(), mMask.end(), ~(0));
             for (size_t i = 0; i < length - numConnections; ++i)
             {
                 // Pick random index
                 size_t index;
                 do
                 {
-                    index = sizeof(T) * rand.nextInteger(0ul, length - 1);
-                } while(mMask[index] == 0x00);
+                    index = mMultiplier * rand.nextInteger(0ul, length - 1);
+                } while(mMask[index] == 0);
 
-                for (size_t j = 0; j < sizeof(T); ++j)
-                    mMask[index + j] = 0x00;
+                for (size_t j = 0; j < mMultiplier; ++j)
+                    mMask[index + j] = 0;
             }
         }
     }
@@ -110,8 +136,8 @@ public:
     // not been set, data[i] will be set to 0.
     void apply(T* data)
     {
-        unsigned char* ptr  = reinterpret_cast<unsigned char*>(data);
-        unsigned char* mask = mMask.data();
+        BaseType* ptr  = reinterpret_cast<BaseType*>(data);
+        BaseType* mask = mMask.data();
 
         const size_t length = mMask.size();
         for (size_t i = 0; i < length; ++i)
@@ -120,8 +146,10 @@ public:
 
 private:
     // The mask is represented as an array of bytes in order to achieve maximum
-    // generality.
-    vector<unsigned char> mMask;
+    // generality. If it is possible to use a larger datatype, we will, since
+    // the mask operation is more efficient that way.
+    size_t mMultiplier;
+    vector< BaseType > mMask;
 };
 }
 
