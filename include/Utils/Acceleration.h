@@ -12,6 +12,17 @@
 
 namespace opkit
 {
+    // If using OpenBLAS, we only want to use as many threads as possible for
+    // expensive computations, but for cheaper ones, we really only need one.
+    // These macros allow us to decide which is used at runtime.
+    #ifdef OPENBLAS_CONFIG_H
+        #define USE_ALL_CORES() openblas_set_num_threads(openblas_get_num_procs())
+        #define USE_ONE_CORE()  openblas_set_num_threads(1)
+     #else
+        #define USE_ALL_CORES()
+        #define USE_ONE_CORE()
+     #endif
+
     // For BLAS reference see:
     // https://software.intel.com/sites/default/files/managed/ff/c8/mkl-2017-developer-reference-c_0.pdf
 
@@ -22,11 +33,7 @@ namespace opkit
         const size_t M, const size_t N, const size_t K,
         const double alpha = 1.0, const double beta = 0.0)
     {
-        // If using OpenBLAS, we only want to use as many threads
-        // as possible for expensive computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(openblas_get_num_procs());
-        #endif
+        USE_ALL_CORES();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -57,11 +64,7 @@ namespace opkit
         const size_t M, const size_t N, const size_t K,
         const float alpha = 1.0f, const float beta = 0.0f)
     {
-        // If using OpenBLAS, we only want to use as many threads
-        // as possible for expensive computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(openblas_get_num_procs());
-        #endif
+        USE_ALL_CORES();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -95,10 +98,7 @@ namespace opkit
         const double alpha = 1.0, const double beta = 0.0,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -130,10 +130,7 @@ namespace opkit
         const float alpha = 1.0f, const float beta = 0.0f,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -164,10 +161,7 @@ namespace opkit
         const size_t N, const double alpha = 1.0, const double beta = 0.0,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -197,10 +191,7 @@ namespace opkit
         const size_t N, const float alpha = 1.0f, const float beta = 0.0f,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -231,10 +222,7 @@ namespace opkit
         const double alpha = 1.0, const double beta = 0.0,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -266,10 +254,7 @@ namespace opkit
         const float alpha = 1.0f, const float beta = 0.0f,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -302,10 +287,7 @@ namespace opkit
         const size_t M, const size_t N, const double alpha = 1.0,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -335,10 +317,7 @@ namespace opkit
         const size_t M, const size_t N, const float alpha = 1.0f,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -365,10 +344,7 @@ namespace opkit
         const size_t N, const double alpha = 1.0,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters
         // 1. Size of vectors x and y
@@ -388,10 +364,7 @@ namespace opkit
         const size_t N, const float alpha = 1.0f,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters
         // 1. Size of vectors x and y
@@ -409,10 +382,7 @@ namespace opkit
     inline void vScale(double* x, const double alpha,
         const size_t N, const int xInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters
         // 1. Size of vector x
@@ -428,10 +398,7 @@ namespace opkit
     inline void vScale(float* x, const float alpha,
         const size_t N, const int xInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters
         // 1. Size of vector x
@@ -446,10 +413,7 @@ namespace opkit
     // stored in an interlaced format.
     inline size_t vMaxIndex(const double* x, const size_t N, const int xInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters
         // 1. Size of vector x
@@ -463,10 +427,7 @@ namespace opkit
     // stored in an interlaced format.
     inline size_t vMaxIndex(const float* x, const size_t N, const int xInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters
         // 1. Size of vector x
@@ -481,10 +442,7 @@ namespace opkit
     inline void vCopy(const double* x, double* y, const size_t N,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters
         // 1. Size of vectors x and y
@@ -501,10 +459,7 @@ namespace opkit
     inline void vCopy(const float* x, float* y, const size_t N,
         const int xInc = 1, const int yInc = 1)
     {
-        // If using OpenBLAS, we only want to use 1 thread for cheap computations.
-        #ifdef OPENBLAS_CONFIG_H
-            openblas_set_num_threads(1);
-        #endif
+        USE_ONE_CORE();
 
         // Parameters
         // 1. Size of vectors x and y
