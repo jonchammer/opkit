@@ -10,10 +10,7 @@
  */
 
 #include <vector>
-#include "Function.h"
-#include "PrettyPrinter.h"
-#include "Dataset.h"
-#include "Matrix.h"
+#include "opkit/opkit.h"
 
 using namespace opkit;
 using std::vector;
@@ -105,7 +102,7 @@ int main()
         }
     }
     cout << "Jacobian Parameters - PASS" << endl;
-    
+
     // 2. Jacobian with respect to inputs
     Matrix<double> jacobianInputs1, jacobianInputs2;
     f.calculateJacobianInputs(input, jacobianInputs1);
@@ -128,7 +125,7 @@ int main()
         }
     }
     cout << "Jacobian Inputs - PASS" << endl;
-    
+
     // 3. Hessian(0) with respect to parameters
     Matrix<double> hessianParameters1, hessianParameters2;
     f.calculateHessianParameters(input, 0, hessianParameters1);

@@ -60,8 +60,9 @@ include_directories(include/Utils)
 # Create lists of all of the header files and the source files
 file(GLOB_RECURSE HEADERS "include/*.h")
 
-# Write the master header
+# Generage the master header and include it with the other sources
 createMasterHeader("${HEADERS}" "opkit.h" "OPKIT_H")
+set(HEADERS ${HEADERS} "opkit.h")
 
-# Copy the .h files to /usr/local/include
+# Copy all of the .h files to /usr/local/include
 INSTALL(FILES ${HEADERS} DESTINATION "include/opkit")

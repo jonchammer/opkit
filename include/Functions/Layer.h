@@ -288,7 +288,7 @@ public:
         const T* deltas = mDeltas.data();
 
         // Apply the mask
-        mMask.apply(mParameters);
+        // mMask.apply(mParameters);
 
         // Calculate destination = W^T * deltas
         mtvMultiply(mParameters, deltas, destination, mOutputs, mInputs);
@@ -308,7 +308,7 @@ public:
         vAdd(deltas, gradient + (mInputs * mOutputs), mOutputs);
 
         // Apply the mask
-        mMask.apply(gradient);
+        //mMask.apply(gradient);
     }
 
     size_t getNumParameters() const override

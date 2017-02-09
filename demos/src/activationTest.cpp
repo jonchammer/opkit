@@ -1,20 +1,15 @@
-/* 
+/*
  * File:    activationTest.cpp
  * Author:  Jon C. Hammer
- * Purpose: This is a testbench for comparing different Neural Network 
- *          activation functions. The results are summarized in data/Activation 
+ * Purpose: This is a testbench for comparing different Neural Network
+ *          activation functions. The results are summarized in data/Activation
  *          Function Tests.xlsx.
- * 
+ *
  * Created on August 24, 2016, 6:09 PM
  */
 
 #include <iostream>
-#include "Dataset.h"
-#include "DataLoader.h"
-#include "DataNormalizer.h"
-#include "SSEFunction.h"
-#include "GradientDescent.h"
-#include "NeuralNetwork.h"
+#include "opkit/opkit.h"
 
 using namespace std;
 
@@ -50,10 +45,10 @@ bool loadIris(Dataset& features, Dataset& labels)
         cout << "Unable to open file: " << filename << endl;
         return false;
     }
-    
+
     // Normalize the data
     scaleAllColumns(features, 0.0, 1.0);
-    labels = convertColumnToOneHot(labels, 0); 
+    labels = convertColumnToOneHot(labels, 0);
     return true;
 }
 
@@ -63,7 +58,7 @@ int main()
     Dataset features, labels;
     if (!loadIris(features, labels))
         return 1;
-    
+
     // Create the model
     NeuralNetwork base;
 
@@ -72,7 +67,7 @@ int main()
 
         FeedforwardLayer l1(features.cols(), labels.cols());
         base.addLayer(&l1);
-        l1.setActivationFunction(TEST_ACTIVATION); 
+        l1.setActivationFunction(TEST_ACTIVATION);
 
     // Two layer Neural Network
     #elif defined TWO_LAYER
@@ -114,21 +109,20 @@ int main()
         #endif
 
     #endif
-    
+
     ErrorFunction<NeuralNetwork>* f = new SSEFunction<NeuralNetwork>(base);
     randomizeParameters(base.getParameters(), 0.0, 0.01);
-        
+
     cout << "Working..." << endl;
-    
+
     // Optimize the model
     GradientDescent<NeuralNetwork> trainer(f);
     for (int i = 0; i < NUM_ITERATIONS; ++i)
     {
-        trainer.iterate(features, labels); 
+        trainer.iterate(features, labels);
     }
     cout << "SSE: " << f->evaluate(features, labels) << endl;
-    
-    delete f;    
+
+    delete f;
     return 0;
 }
-

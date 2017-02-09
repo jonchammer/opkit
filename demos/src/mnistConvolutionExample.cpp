@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   mnistConvolutionExample.cpp
  * Author: Jon C. Hammer
  *
@@ -6,18 +6,7 @@
  */
 
 #include <iostream>
-#include "opkit/Layer.h"
-#include "opkit/NeuralNetwork.h"
-#include "opkit/GradientDescent.h"
-#include "opkit/RMSProp.h"
-#include "opkit/SSEFunction.h"
-#include "opkit/CategoricalErrorFunction.h"
-#include "opkit/Dataset.h"
-#include "opkit/DataNormalizer.h"
-#include "opkit/ActivationFunction.h"
-#include "opkit/PrettyPrinter.h"
-#include "opkit/BatchIterator.h"
-#include "opkit/Timer.h"
+#include "opkit/opkit.h"
 
 using namespace std;
 
@@ -31,7 +20,7 @@ double variance(const Dataset& Dataset, size_t column)
         double temp = Dataset[i][column] - mean;
         sum += temp * temp;
     }
-    
+
     return sum / (Dataset.rows() - 1);
 }
 
@@ -44,11 +33,11 @@ int main()
     trainLabels.loadARFF("../../data/mnist_train_labels.arff");
     testFeatures.loadARFF("../../data/mnist_test_features.arff");
     testLabels.loadARFF("../../data/mnist_test_labels.arff");
-    
+
     cout << "Train samples: " << trainFeatures.rows() << endl;
     cout << "Test samples:  " << testFeatures.rows()  << endl;
     cout << "Data loaded!" << endl;
-    
+
     // Process the data
     cout << "Preprocessing the data..." << endl;
     scaleAllColumns(trainFeatures, 0.0, 255.0, -1.0, 1.0);
@@ -58,14 +47,14 @@ int main()
     trainLabels = convertColumnToOneHot(trainLabels, 0);
     testLabels  = convertColumnToOneHot(testLabels, 0);
     cout << "Data ready!" << endl;
-    
-    
-    
+
+
+
     // Create a testing network
     FeedforwardLayer layer1(784, 80);
     FeedforwardLayer layer2(80, 30);
     FeedforwardLayer layer3(30, 10);
-    
+
     //FeedforwardLayer layer1(784, 300);
     //Convolutional2DLayer layer1(28, 28, 1, 3, 32, 3, 1);
 //    layer1.setActivationFunction(reluActivation);
@@ -73,50 +62,50 @@ int main()
 //    layer2.setActivationFunction(reluActivation);
     //FeedforwardLayer layer3(layer2.getOutputs(), 10);
     //layer3.setActivationFunction(reluActivation);
-    
+
     NeuralNetwork network;
     network.addLayer(&layer1);
     network.addLayer(&layer2);
     network.addLayer(&layer3);
     network.initializeParameters();
-    
+
     printf("%zu x %zu\n", layer1.getInputs(), layer1.getOutputs());
     printf("%zu x %zu\n", layer2.getInputs(), layer2.getOutputs());
     printf("%zu x %zu\n", layer3.getInputs(), layer3.getOutputs());
     cout << "# Parameters: " << network.getParameters().size() << endl;
-    
+
     //layer1.normalizeKernels();
     //layer2.normalizeKernels();
-    
+
     // Create a trainer
     SSEFunction<NeuralNetwork> errorFunc(network);
     CategoricalErrorFunction<NeuralNetwork> misclassifications(network);
-    
+
     GradientDescent<NeuralNetwork> trainer(&errorFunc);
     trainer.setLearningRate(0.01);
-    
-    
+
+
     /*RMSProp<NeuralNetwork> trainer(&errorFunc);
     trainer.setLearningRate(0.001);
     trainer.setDecay(0.9);
     trainer.setMomentum(0.0001);*/
-    
+
     BatchIterator it(trainFeatures, trainLabels, 1);
     Dataset* batchFeatures;
     Dataset* batchLabels;
-    
-    printf("%5d: %0.2f\t%.0f\t%f\n", 
+
+    printf("%5d: %0.2f\t%.0f\t%f\n",
         0,
         0.0,
-        misclassifications.evaluate(testFeatures, testLabels), 
+        misclassifications.evaluate(testFeatures, testLabels),
         errorFunc.evaluate(testFeatures, testLabels));
     cout.flush();
-    
+
     Timer timer;
-    
+
     for (size_t i = 0; i < 10; ++i)
     {
-        
+
         while (it.hasNext())
         {
             it.lock(batchFeatures, batchLabels);
@@ -125,19 +114,19 @@ int main()
         }
         it.reset();
         //trainer.iterate(trainFeatures, trainLabels);
-        
+
         //printVector(network.getParameters(), 4);
         //layer1.normalizeKernels();
         //layer2.normalizeKernels();
         //printVector(network.getParameters(), 4);
-        
-        printf("%5zu: %0.2f\t%.0f\t%f\n", 
+
+        printf("%5zu: %0.2f\t%.0f\t%f\n",
             (i+1),
             timer.getElapsedTimeSeconds(),
-            misclassifications.evaluate(testFeatures, testLabels), 
+            misclassifications.evaluate(testFeatures, testLabels),
             errorFunc.evaluate(testFeatures, testLabels));
         cout.flush();
-        
+
         //trainer.setLearningRate(trainer.getLearningRate() * 0.9);
     }
 

@@ -10,12 +10,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
-#include "DataNormalizer.h"
-#include "DataLoader.h"
-#include "Layer.h"
-#include "NeuralNetwork.h"
-#include "SSEFunction.h"
-#include "PrettyPrinter.h"
+#include "opkit/opkit.h"
 using namespace std;
 
 int main()

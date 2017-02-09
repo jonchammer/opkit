@@ -10,15 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-
-#include "opkit/Layer.h"
-#include "opkit/NeuralNetwork.h"
-#include "opkit/SSEFunction.h"
-#include "opkit/CategoricalErrorFunction.h"
-#include "opkit/ActivationFunction.h"
-#include "opkit/PrettyPrinter.h"
-#include "opkit/Dataset.h"
-#include "opkit/Matrix.h"
+#include "opkit/opkit.h"
 
 using namespace opkit;
 using std::cout;
