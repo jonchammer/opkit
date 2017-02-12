@@ -45,7 +45,7 @@ public:
         // Estimate the complete gradient
         static vector<T> gradient(N);
         function->calculateGradientParameters(features, labels, gradient);
-
+        
         // Descend the gradient using accelerated vector operations
         vAdd(gradient.data(), params, N, -mLearningRate);
     }

@@ -10,13 +10,7 @@
  */
 
 #include <vector>
-#include "Function.h"
-#include "PrettyPrinter.h"
-#include "Dataset.h"
-#include "Matrix.h"
-#include "SSEFunction.h"
-#include "CrossEntropyFunction.h"
-#include "CommonFunctions.h"
+#include "opkit/opkit.h"
 
 using namespace opkit;
 using std::vector;

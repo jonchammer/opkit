@@ -10,10 +10,7 @@
  */
 
 #include <vector>
-#include "Function.h"
-#include "PrettyPrinter.h"
-#include "Dataset.h"
-#include "Matrix.h"
+#include "opkit/opkit.h"
 
 using namespace opkit;
 using std::vector;
