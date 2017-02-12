@@ -232,8 +232,12 @@ private:
     bool mOwnActivation;
 };
 
+// One of the SparseLayer implementations. This version applies a bitmask to the
+// weights, setting many of them to 0.0 before performing the same operations as
+// FullyConnectedLayer. This version will typically be more efficient for
+// smaller layers, since accelerated Matrix ops can be used.
 template <class T>
-class SparseLayerAlt : public Layer<T>
+class MaskedSparseLayer : public Layer<T>
 {
 public:
 
@@ -245,9 +249,11 @@ public:
     using Layer<T>::mDeltas;
     using Layer<T>::mActivation;
 
-    // Create a new FullyConnectedLayer. We need only specify the input and
-    // output dimensions.
-    SparseLayerAlt(const size_t inputs, const size_t outputs,
+    // Create a new MasekdSparseLayer. The user specifies how many inputs and
+    // outputs this layer has, as well as which percentage of the connections
+    // should be filled (between [0.0 and 1.0]). The given Rand object is used
+    // to determine which connections are made.
+    MaskedSparseLayer(const size_t inputs, const size_t outputs,
         const double fillPercentage, Rand& rand) :
         Layer<T>(inputs, outputs), mMask(inputs * outputs)
     {
@@ -264,7 +270,12 @@ public:
         //Cache these so we can avoid repeated pointer dereferencing
         T* yData  = mActivation.data();
 
-        // Apply the mask
+        // Apply the mask. This will zero out some portion of the weights so
+        // they do not affect the computation. Note that if the weights are
+        // zeroed here, we do not need to mask the weights again in
+        // calculateDeltas(). The mask could be applied to the gradient that
+        // is calculated in calcuateGradient(), but there's no need to do any
+        // additional work.
         mMask.apply(mParameters);
 
         // y = W * x + b
@@ -287,9 +298,6 @@ public:
     {
         const T* deltas = mDeltas.data();
 
-        // Apply the mask
-        // mMask.apply(mParameters);
-
         // Calculate destination = W^T * deltas
         mtvMultiply(mParameters, deltas, destination, mOutputs, mInputs);
     }
@@ -306,9 +314,6 @@ public:
         // gradient(biases)  = deltas
         outerProduct(deltas, input, gradient, mOutputs, mInputs);
         vAdd(deltas, gradient + (mInputs * mOutputs), mOutputs);
-
-        // Apply the mask
-        //mMask.apply(gradient);
     }
 
     size_t getNumParameters() const override
@@ -321,11 +326,11 @@ private:
     Bitmask<T> mMask;
 };
 
-// Fundamentally, SparseLayer is exceptionally similar to FullyConnectedLayer.
+// Fundamentally, CompressedSparseLayer is similar to FullyConnectedLayer.
 // The only difference is that this class uses sparse storage to reduce the
 // computational complexity of the evaluation and backprop steps.
 template <class T>
-class SparseLayer : public Layer<T>
+class CompressedSparseLayer : public Layer<T>
 {
 public:
 
@@ -337,48 +342,43 @@ public:
     using Layer<T>::mDeltas;
     using Layer<T>::mActivation;
 
-    SparseLayer(const size_t inputs, const size_t outputs,
+    // Create a new MasekdSparseLayer. The user specifies how many inputs and
+    // outputs this layer has, as well as which percentage of the connections
+    // should be filled (between [0.0 and 1.0]). The given Rand object is used
+    // to determine which connections are made.
+    CompressedSparseLayer(const size_t inputs, const size_t outputs,
         const double fillPercentage, Rand& rand) :
         Layer<T>(inputs, outputs),
-        mNumConnections(size_t(fillPercentage * inputs * outputs))
+        mNumConnections(size_t(fillPercentage * inputs * outputs)),
+        mWeights(nullptr, outputs, inputs)
     {
         // Assign rows and columns for each connection
         if (outputs * inputs == mNumConnections)
-            mWeights = new SparseMatrixWrapper<T>(outputs, inputs);
+            mWeights.setAll();
 
         // Fill the connections randomly
-        else
-        {
-            mWeights = new SparseMatrixWrapper<T>(outputs, inputs,
-                mNumConnections, rand);
-        }
-    }
-
-    ~SparseLayer()
-    {
-        delete mWeights;
-        mWeights = nullptr;
+        else mWeights.setRandom(rand, fillPercentage);
     }
 
     void eval(const vector<T>& x) override
     {
         // Calculate activation = W * x + b
         T* yData = mActivation.data();
-        mWeights->multiply(x.data(), yData);
+        mWeights.multiply(x.data(), yData);
         vAdd(mParameters + mNumConnections, yData, mOutputs);
     }
 
     void calculateDeltas(const vector<T>& /*x*/, T* destination) override
     {
         // Calculate destination = W^T * deltas
-        mWeights->multiplyTranspose(mDeltas.data(), destination);
+        mWeights.multiplyTranspose(mDeltas.data(), destination);
     }
 
     void calculateGradient(const vector<T>& x, T* gradient) override
     {
         // gradient += deltas * x^T
         const T* deltas = mDeltas.data();
-        mWeights->outerProduct(deltas, x.data(), gradient);
+        mWeights.outerProduct(deltas, x.data(), gradient);
         vAdd(deltas, gradient + mNumConnections, mOutputs);
     }
 
@@ -392,16 +392,16 @@ public:
         // As soon as this layer is assigned storage, we will need to sync the
         // parameters to the sparse weights matrix. (This might happen multiple
         // times as multiple layers are added to the network).
-        mWeights->setData(mParameters);
+        mWeights.setData(mParameters);
     }
 
     // Simple getters
     size_t getNumConnections()           const { return mNumConnections; }
-    SparseMatrixWrapper<T>* getWeights() const { return mWeights;        }
+    SparseMatrixWrapper<T>& getWeights() const { return mWeights;        }
 
 private:
     size_t mNumConnections;
-    SparseMatrixWrapper<T>* mWeights;
+    SparseMatrixWrapper<T> mWeights;
 };
 
 // Convolutional layers are often used for image processing. They take as input
