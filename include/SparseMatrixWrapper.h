@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <iostream>
 #include "Rand.h"
+#include "RandomIndexIterator.h"
 #include "Matrix.h"
 
 using std::cout;
@@ -80,31 +81,19 @@ public:
         mRowIndices.resize(numConnections);
         mColIndices.resize(numConnections);
 
-        // Used to keep track of which cells we have already filled
-        auto cellHash = [](const std::pair<size_t, size_t>& p)
-        {
-            return std::hash<size_t>()(p.first) ^ std::hash<size_t>()(p.second);
-        };
-        std::unordered_set<std::pair<size_t, size_t>, decltype(cellHash)>
-        indices(numConnections, cellHash);
+        // Use a RandomIndexIterator to keep track of the cells that have
+        // already been filled.
+        RandomIndexIterator it(mRows * mCols);
+        it.reset(rand);
 
-        size_t i = 0;
-        for (size_t j = 0; j < numConnections; ++j)
+        for (size_t i = 0; i < numConnections; ++i)
         {
-            // Pick a random row and column
-            size_t r, c;
-            do
-            {
-                r = rand.nextInteger<size_t>(0, mRows - 1);
-                c = rand.nextInteger<size_t>(0, mCols - 1);
-            }
-            while(indices.find({r, c}) != indices.end());
+            size_t index = it.next();
+            size_t r     = index / mCols;
+            size_t c     = index % mCols;
 
-            // Set this cell
-            indices.insert( {r, c} );
             mRowIndices[i] = r;
             mColIndices[i] = c;
-            i++;
         }
     }
 

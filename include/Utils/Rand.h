@@ -50,6 +50,31 @@ public:
         return distribution(mGenerator);
     }
 
+    // Choose an index weighted by the given vector of probabilities.
+    // NOTE: The elements of the vector must sum to 1.0.
+    template <class T>
+    size_t nextCategorical(const vector<T>& probabilities)
+    {
+        T val    = nextReal(T{0.0}, T{1.0});
+    	size_t i = 0;
+
+    	for (auto it = probabilities.begin(); it != probabilities.end(); ++it)
+    	{
+    		val -= *it;
+    		if(val < 0)
+    			return i;
+    		i++;
+    	}
+
+        // Shouldn't happen
+        return probabilities.size() - 1;
+    }
+
+    std::default_random_engine& getGenerator()
+    {
+        return mGenerator;
+    }
+    
 private:
     size_t mSeed;
     std::default_random_engine mGenerator;

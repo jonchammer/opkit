@@ -265,6 +265,13 @@ public:
         else mMask.setRandom(rand, fillPercentage);
     }
 
+    // Create a new MasekdSparseLayer. The user specifies how many inputs and
+    // outputs this layer has, but by default, none of the connections are
+    // enabled. Use getMask() to adjust which weights will be used.
+    MaskedSparseLayer(const size_t inputs, const size_t outputs) :
+        Layer<T>(inputs, outputs), mMask(inputs * outputs)
+    {}
+
     void eval(const vector<T>& x) override
     {
         //Cache these so we can avoid repeated pointer dereferencing
@@ -320,6 +327,11 @@ public:
     {
         // N * M for the weights matrix and M for the bias terms
         return mInputs * mOutputs + mOutputs;
+    }
+
+    Bitmask<T>& getMask()
+    {
+        return mMask;
     }
 
 private:

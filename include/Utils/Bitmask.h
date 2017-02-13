@@ -5,6 +5,7 @@
 #include <climits>
 #include <cstdint>
 #include "Rand.h"
+#include "RandomIndexIterator.h"
 
 namespace opkit
 {
@@ -97,39 +98,14 @@ public:
         const size_t length         = mMask.size() / mMultiplier;
         const size_t numConnections = (size_t)(length * fillPercentage);
 
-        // Create a mask from the bottom up
-        if (fillPercentage < 0.5)
+        RandomIndexIterator it(length);
+        it.reset(rand);
+
+        for (size_t i = 0; i < numConnections; ++i)
         {
-            for (size_t i = 0; i < numConnections; ++i)
-            {
-                // Pick random index
-                size_t index;
-                do
-                {
-                    index = mMultiplier * rand.nextInteger(0ul, length - 1);
-                } while(mMask[index] == ~(0));
-
-                for (size_t j = 0; j < mMultiplier; ++j)
-                    mMask[index + j] = ~(0);
-            }
-        }
-
-        // Create a mask from the top down
-        else
-        {
-            std::fill(mMask.begin(), mMask.end(), ~(0));
-            for (size_t i = 0; i < length - numConnections; ++i)
-            {
-                // Pick random index
-                size_t index;
-                do
-                {
-                    index = mMultiplier * rand.nextInteger(0ul, length - 1);
-                } while(mMask[index] == 0);
-
-                for (size_t j = 0; j < mMultiplier; ++j)
-                    mMask[index + j] = 0;
-            }
+            size_t index = it.next() * mMultiplier;
+            for (size_t j = 0; j < mMultiplier; ++j)
+                mMask[index + j] = ~(0);
         }
     }
 
