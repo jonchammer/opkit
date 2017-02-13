@@ -82,10 +82,13 @@ public:
     // will be kept when Bitmask::apply() is called.
     void set(const size_t index)
     {
-        for (size_t j = 0; j < mMultiplier; ++j)
-            mMask[mMultiplier * index + j] = ~(0);
+        if (mMask[mMultiplier * index] == 0)
+        {
+            for (size_t j = 0; j < mMultiplier; ++j)
+                mMask[mMultiplier * index + j] = ~(0);
 
-        mSetCells++;
+            mSetCells++;
+        }
     }
 
     // Set all elements of the bitmask. This effectively means the bitmask uses
