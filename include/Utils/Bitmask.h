@@ -67,13 +67,15 @@ public:
     // Create a new bitmask large enough to cover an array of the given size.
     Bitmask(size_t size) :
         mMultiplier(sizeof(T) / sizeof(BaseType)),
-        mMask(mMultiplier * size) {}
+        mMask(mMultiplier * size),
+        mSetCells(0) {}
 
     // Clear the bitmask. Every element will be masked out when Bitmask::apply
     // is called.
     void clear()
     {
         std::fill(mMask.begin(), mMask.end(), 0);
+        mSetCells = 0;
     }
 
     // Set an individual element of the bitmask. Those elements that are set
@@ -82,6 +84,8 @@ public:
     {
         for (size_t j = 0; j < mMultiplier; ++j)
             mMask[mMultiplier * index + j] = ~(0);
+
+        mSetCells++;
     }
 
     // Set all elements of the bitmask. This effectively means the bitmask uses
@@ -89,19 +93,20 @@ public:
     void setAll()
     {
         std::fill(mMask.begin(), mMask.end(), ~(0));
+        mSetCells = mMask.size() / mMultiplier;
     }
 
     // Randomly set a given percentage (between [0.0, 1.0]) of the elements of
     // this mask.
     void setRandom(Rand& rand, const double fillPercentage)
     {
-        const size_t length         = mMask.size() / mMultiplier;
-        const size_t numConnections = (size_t)(length * fillPercentage);
+        const size_t length = mMask.size() / mMultiplier;
+        mSetCells           = (size_t)(length * fillPercentage);
 
         RandomIndexIterator it(length);
         it.reset(rand);
 
-        for (size_t i = 0; i < numConnections; ++i)
+        for (size_t i = 0; i < mSetCells; ++i)
         {
             size_t index = it.next() * mMultiplier;
             for (size_t j = 0; j < mMultiplier; ++j)
@@ -122,6 +127,12 @@ public:
             ptr[i] &= mask[i];
     }
 
+    // Returns the number of cells that have been set so far.
+    size_t getNumSetCells() const
+    {
+        return mSetCells;
+    }
+
 private:
     // The mask is represented as an array of bytes in order to achieve maximum
     // generality. If it is possible to use a larger datatype, we will, since
@@ -129,6 +140,7 @@ private:
     // the ratio between the source type and the mask type.
     size_t mMultiplier;
     vector< BaseType > mMask;
+    size_t mSetCells;
 };
 }
 
