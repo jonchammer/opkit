@@ -107,7 +107,7 @@ public:
     // Returns true if the given index has been set.
     bool isSet(const size_t index)
     {
-        return mMask[mMultiplier * index == ~(0);
+        return mMask[mMultiplier * index] == ~(0);
     }
 
     // Set all elements of the bitmask. This effectively means the bitmask uses
