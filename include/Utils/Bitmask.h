@@ -77,6 +77,19 @@ public:
         std::fill(mMask.begin(), mMask.end(), 0);
         mSetCells = 0;
     }
+    
+    // Clear an individual element of the bitmask. Those elements that are cleared
+    // will be zeroed out when Bitmask::apply() is called.
+    void clear(const size_t index)
+    {
+        if (mMask[mMultiplier * index] == ~(0))
+        {
+            for (size_t j = 0; j < mMultiplier; ++j)
+                mMask[mMultiplier * index + j] = 0;
+            
+            mSetCells--; 
+        }
+    }
 
     // Set an individual element of the bitmask. Those elements that are set
     // will be kept when Bitmask::apply() is called.
@@ -89,6 +102,12 @@ public:
 
             mSetCells++;
         }
+    }
+    
+    // Returns true if the given index has been set.
+    bool isSet(const size_t index)
+    {
+        return mMask[mMultiplier * index == ~(0);
     }
 
     // Set all elements of the bitmask. This effectively means the bitmask uses
@@ -134,6 +153,12 @@ public:
     size_t getNumSetCells() const
     {
         return mSetCells;
+    }
+    
+    // Returns the total number of cells covered by this mask.
+    size_t getLength() const
+    {
+        return mMask.size() / mMultiplier;
     }
 
 private:
