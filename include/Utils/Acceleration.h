@@ -18,13 +18,25 @@ namespace opkit
     #ifdef OPENBLAS_CONFIG_H
         #define USE_ALL_CORES() openblas_set_num_threads(openblas_get_num_procs())
         #define USE_ONE_CORE()  openblas_set_num_threads(1)
-     #else
+    #else
         #define USE_ALL_CORES()
         #define USE_ONE_CORE()
-     #endif
+    #endif
 
     // For BLAS reference see:
     // https://software.intel.com/sites/default/files/managed/ff/c8/mkl-2017-developer-reference-c_0.pdf
+    //
+    // NOTE: Some BLAS libraries make the assumption that matrices are stored
+    // in column-major order. Since our data is actually in row-major order,
+    // some sort of conversion would normally have to be applied in order to use
+    // those libraries. Helpfully, it is usually possible to perform an
+    // alternate computation (e.g. by switching the dimensions and positions of
+    // operands) to trick the library into doing the same work, despite the
+    // differences in ordering. The accelerated routines that use matrices below
+    // make use of these tricks so the underlying BLAS library always believes
+    // it is working on data in column-major order. This makes it easier to
+    // switch between libraries, since some (e.g. OpenBLAS) do these conversions
+    // automatically, but some (e.g. NVBlas) do not.
 
     // Computes C = alpha * A * B + beta * C, where A is an M x K
     // matrix, B is a K x N matrix, C is an M x N matrix, alpha is
@@ -50,11 +62,18 @@ namespace opkit
         // 12. Beta
         // 13. C's data
         // 14. C's stride
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-            M, N, K,
-            alpha, A, K,
-            B, N,
+        cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+            N, M, K,
+            alpha, B, N,
+            A, K,
             beta, C, N);
+
+        // Equivalently,
+        // cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+        //     M, N, K,
+        //     alpha, A, K,
+        //     B, N,
+        //     beta, C, N);
     }
 
     // Computes C = alpha * A * B + beta * C, where A is an M x K
@@ -81,11 +100,18 @@ namespace opkit
         // 12. Beta
         // 13. C's data
         // 14. C's stride
-        cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-            M, N, K,
-            alpha, A, K,
-            B, N,
+        cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+            N, M, K,
+            alpha, B, N,
+            A, K,
             beta, C, N);
+
+        // Equivalently,
+        // cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+        //     M, N, K,
+        //     alpha, A, K,
+        //     B, N,
+        //     beta, C, N);
     }
 
     // Computes y = alpha * A * x + beta * y, where A is an M x N
@@ -113,11 +139,18 @@ namespace opkit
         // 10. Beta
         // 11. y's data
         // 12. y's incrment (1)
-        cblas_dgemv(CblasRowMajor, CblasNoTrans,
-        M, N,
+        cblas_dgemv(CblasColMajor, CblasTrans,
+        N, M,
         alpha, A, N,
         x, xInc,
         beta, y, yInc);
+
+        // Equivalently,
+        // cblas_dgemv(CblasRowMajor, CblasNoTrans,
+        // M, N,
+        // alpha, A, N,
+        // x, xInc,
+        // beta, y, yInc);
     }
 
     // Computes y = alpha * A * x + beta * y, where A is an M x N
@@ -145,11 +178,18 @@ namespace opkit
         // 10. Beta
         // 11. y's data
         // 12. y's incrment (1)
-        cblas_sgemv(CblasRowMajor, CblasNoTrans,
-        M, N,
+        cblas_sgemv(CblasColMajor, CblasTrans,
+        N, M,
         alpha, A, N,
         x, xInc,
         beta, y, yInc);
+
+        // Equivalently,
+        // cblas_sgemv(CblasRowMajor, CblasNoTrans,
+        // M, N,
+        // alpha, A, N,
+        // x, xInc,
+        // beta, y, yInc);
     }
 
     // Computes y = alpha * A * x + beta * y, where A is an N x N
@@ -175,7 +215,10 @@ namespace opkit
         // 9.  Beta
         // 10. y's data
         // 11. y's increment (1)
-        cblas_dsymv(CblasRowMajor, CblasUpper,
+        //
+        // NOTE: Either row-major order or column-major order can be used for
+        // symmetric matrices.
+        cblas_dsymv(CblasColMajor, CblasUpper,
         N, alpha,
         A, N,
         x, xInc,
@@ -205,7 +248,10 @@ namespace opkit
         // 9.  Beta
         // 10. y's data
         // 11. y's increment (1)
-        cblas_ssymv(CblasRowMajor, CblasUpper,
+        //
+        // NOTE: Either row-major order or column-major order can be used for
+        // symmetric matrices.
+        cblas_ssymv(CblasColMajor, CblasUpper,
         N, alpha,
         A, N,
         x, xInc,
@@ -237,11 +283,18 @@ namespace opkit
         // 10. Beta
         // 11. y's data
         // 12. y's incrment (1)
-        cblas_dgemv(CblasRowMajor, CblasTrans,
-        M, N,
+        cblas_dgemv(CblasColMajor, CblasNoTrans,
+        N, M,
         alpha, A, N,
         x, xInc,
         beta, y, yInc);
+
+        // Equivalently,
+        // cblas_dgemv(CblasRowMajor, CblasTrans,
+        // M, N,
+        // alpha, A, N,
+        // x, xInc,
+        // beta, y, yInc);
     }
 
     // Computes y = alpha * A^T * x + beta * y, where A is an M x N
@@ -269,11 +322,18 @@ namespace opkit
         // 10. Beta
         // 11. y's data
         // 12. y's incrment (1)
-        cblas_sgemv(CblasRowMajor, CblasTrans,
-        M, N,
+        cblas_sgemv(CblasColMajor, CblasNoTrans,
+        N, M,
         alpha, A, N,
         x, xInc,
         beta, y, yInc);
+
+        // Equivalently,
+        // cblas_sgemv(CblasRowMajor, CblasTrans,
+        // M, N,
+        // alpha, A, N,
+        // x, xInc,
+        // beta, y, yInc);
     }
 
     // Adds alpha * x * y^T to A, where x is a vector of size M,
@@ -300,10 +360,16 @@ namespace opkit
         // 8.  y's increment (1)
         // 9.  A's data
         // 10. A's leading dimension (N)
-        cblas_dger(CblasRowMajor, M, N,
-        alpha, x, xInc,
-        y, yInc,
+        cblas_dger(CblasColMajor, N, M,
+        alpha, y, yInc,
+        x, xInc,
         A, N);
+
+        // Equivalently,
+        // cblas_dger(CblasRowMajor, M, N,
+        // alpha, x, xInc,
+        // y, yInc,
+        // A, N);
     }
 
     // Adds alpha * x * y^T to A, where x is a vector of size M,
@@ -330,10 +396,16 @@ namespace opkit
         // 8.  y's increment (1)
         // 9.  A's data
         // 10. A's leading dimension (N)
-        cblas_sger(CblasRowMajor, M, N,
-        alpha, x, xInc,
-        y, yInc,
+        cblas_sger(CblasColMajor, N, M,
+        alpha, y, yInc,
+        x, xInc,
         A, N);
+
+        // Equivalently,
+        // cblas_sger(CblasRowMajor, M, N,
+        // alpha, x, xInc,
+        // y, yInc,
+        // A, N);
     }
 
     // Computes y += alpha * x, where x is a vector of size N,
