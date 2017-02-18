@@ -66,6 +66,11 @@ public:
     // Execute one forward pass through the network in order to produce an output.
     void evaluate(const vector<T>& input, vector<T>& output) override;
 
+    // Execute one forward pass through the network in order to produce an
+    // output. As opposed to the first variant of 'evaluate', a set of 'N'
+    // inputs are evaluated simultaneously.
+    void evaluateBatch(const Matrix<T>& input, Matrix<T>& output);
+
     // Passes the error from the last layer into each of the nodes preceeding
     // it. This function assumes that the delta values for the last layer have
     // already been calculated manually. (E.g. for SSE, it will be the differences
@@ -74,11 +79,13 @@ public:
 
     // Calculates the gradient of the network with respect to the parameters,
     // under the assumption that the deltas have already been calculated for
-    // every applicable node in the network. The calculated gradient is added
-    // to the value already in the appropriate cell in 'gradient', so make sure
-    // the vector is initialized to 0 ahead of time if a fresh calculation is
-    // desired.
+    // every applicable node in the network.
     void calculateGradientParameters(const vector<T>& input, T* gradient);
+
+    // Calculates the gradient of the network with respect to the parameters,
+    // under the assumption that the deltas have already been calculated for
+    // every applicable node in the network.
+    void calculateGradientParametersBatch(const Matrix<T>& input, T* gradient);
 
     // Calculates the Jacobian of the network with respect to the weights and
     // biases. This involves one forward pass and one backwards pass for each
@@ -93,22 +100,8 @@ public:
     // Initializes the weights and biases with random values
     void initializeParameters(Rand& rand);
 
-    // Neural networks do cache the last evaluation, so this function will
-    // always return true.
-    bool cachesLastEvaluation() const override
-    {
-        return true;
-    }
-
-    // Returns the most recent output of the network.
-    void getLastEvaluation(vector<T>& output) override
-    {
-        vector<T>& lastActivation = mLayers.back()->getActivation();
-        std::copy(lastActivation.begin(), lastActivation.end(), output.begin());
-    }
-
     // Getters / Setters
-    size_t getInputs()  const override
+    size_t getInputs() const override
     {
         return mLayers.front()->getInputs();
     }
@@ -197,7 +190,31 @@ void NeuralNetwork<T>::addLayer(Layer<T>* layer, bool ownLayer)
 template <class T>
 void NeuralNetwork<T>::evaluate(const vector<T>& input, vector<T>& output)
 {
-    const vector<T>* x = &input;
+    // Create a matrix that wraps the contents of 'input'.
+    static Matrix<T>& temp(1, input.size());
+    temp.swap((Matrix<T>&) input);
+
+    const Matrix<T>* x = &temp;
+
+    // Feed the output of the previous layer as input
+    // to the next layer.
+    for (int i = 0; i < mLayers.size() - 1; ++i)
+    {
+        mLayers[i]->eval(*x);
+        x = &mLayers[i]->getActivation();
+    }
+
+    // Feed the output of the last layer into 'output'
+    mLayers[mLayers.size() - 1]->eval(*x, output);
+
+    // Give 'input' its data back.
+    temp.swap((Matrix<T>&) input);
+}
+
+template <class T>
+void NeuralNetwork<T>::evaluateBatch(const Matrix<T>& input, Matrix<T>& output)
+{
+    const Matrix<T>* x = &input;
 
     // Feed the output of the previous layer as input
     // to the next layer.
@@ -226,8 +243,29 @@ void NeuralNetwork<T>::calculateDeltas()
 template <class T>
 void NeuralNetwork<T>::calculateGradientParameters(const vector<T>& input, T* gradient)
 {
-    const vector<T>* x = &input;
+    // Create a matrix that wraps the contents of 'input'.
+    static Matrix<T>& temp(1, input.size());
+    temp.swap((Matrix<T>&) input);
 
+    const vector<T>* x = &temp;
+
+    for (Layer<T>*& l : mLayers)
+    {
+        l->calculateGradient(*x, gradient);
+
+        // Get ready for the next iteration
+        x         = &l->getActivation();
+        gradient += l->getNumParameters();
+    }
+
+    // Give 'input' its data back.
+    temp.swap((Matrix<T>&) input);
+}
+
+template <class T>
+void NeuralNetwork<T>::calculateGradientParametersBatch(const Matrix<T>& input, T* gradient)
+{
+    const Matrix<T>* x = &input;
     for (Layer<T>*& l : mLayers)
     {
         l->calculateGradient(*x, gradient);

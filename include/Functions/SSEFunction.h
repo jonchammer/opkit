@@ -34,26 +34,20 @@ public:
         // Do nothing
     }
 
-    T evaluate(const Dataset<T>& features, const Dataset<T>& labels)
+    T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
         T sum{};
         static vector<T> prediction(labels.cols(), T{});
 
         // Calculate the SSE
-        for (size_t i = 0; i < features.rows(); ++i)
+        for (size_t i = 0; i < features.getRows(); ++i)
         {
-            mBaseFunction.evaluate(features[i], prediction);
+            mBaseFunction.evaluate(features(i), prediction);
 
-            const vector<T>& row = labels[i];
             for (size_t j = 0; j < labels.cols(); ++j)
             {
-                T d = row[j] - prediction[j];
-
-                // For categorical columns, use Hamming distance instead
-                //if (d != 0.0 && labels.valueCount(j) > 0)
-                //    d = 1.0;
-
+                T d = labels(i, j) - prediction[j];
                 sum += (d * d);
             }
         }
@@ -61,14 +55,14 @@ public:
         return sum;
     }
 
-    void calculateGradientInputs(const Dataset<T>& features, const Dataset<T>& labels,
+    void calculateGradientInputs(const Matrix<T>& features, const Matrix<T>& labels,
         vector<T>& gradient)
     {
         // When SSE is the error function, the gradient is simply the error vector
         // multiplied by the model's Jacobian.
         const size_t N    = mBaseFunction.getInputs();
         const size_t M    = mBaseFunction.getOutputs();
-        const size_t rows = features.rows();
+        const size_t rows = features.getRows();
 
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
@@ -85,15 +79,13 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the inputs
-            mBaseFunction.calculateJacobianInputs(features[i], baseJacobian);
+            mBaseFunction.calculateJacobianInputs(features(i), baseJacobian);
 
             // Calculate the error for this sample
-            if (mBaseFunction.cachesLastEvaluation())
-                mBaseFunction.getLastEvaluation(evaluation);
-            else mBaseFunction.evaluate(features[i], evaluation);
+            mBaseFunction.evaluate(features(i), evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = labels[i][j] - evaluation[j];
+                error(0, j) = labels(i, j) - evaluation[j];
 
             grad += T{-2.0} * error * baseJacobian;
         }
@@ -106,14 +98,14 @@ public:
             gradient[i] /= rows;
     }
 
-    void calculateGradientParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, vector<T>& gradient)
+    void calculateGradientParameters(const Matrix<T>& features,
+        const Matrix<T>& labels, vector<T>& gradient)
     {
         // When SSE is the error function, the gradient is simply the error vector
         // multiplied by the model's Jacobian.
         const size_t N    = mBaseFunction.getNumParameters();
         const size_t M    = mBaseFunction.getOutputs();
-        const size_t rows = features.rows();
+        const size_t rows = features.getRows();
 
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
@@ -130,15 +122,13 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            mBaseFunction.calculateJacobianParameters(features[i], baseJacobian);
+            mBaseFunction.calculateJacobianParameters(features(i), baseJacobian);
 
             // Calculate the error for this sample
-            if (mBaseFunction.cachesLastEvaluation())
-                mBaseFunction.getLastEvaluation(evaluation);
-            else mBaseFunction.evaluate(features[i], evaluation);
+            mBaseFunction.evaluate(features(i), evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = labels[i][j] - evaluation[j];
+                error(0, j) = labels(i, j) - evaluation[j];
 
             grad += T{-2.0} * error * baseJacobian;
         }
@@ -150,8 +140,8 @@ public:
             gradient[i] /= rows;
     }
 
-    void calculateHessianInputs(const Dataset<T>& features,
-        const Dataset<T>& labels, Matrix<T>& hessian)
+    void calculateHessianInputs(const Matrix<T>& features,
+        const Matrix<T>& labels, Matrix<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -178,15 +168,13 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            mBaseFunction.calculateJacobianInputs(features[i], jacobian);
+            mBaseFunction.calculateJacobianInputs(features(i), jacobian);
 
             // Calculate the error for this sample
-            if (mBaseFunction.cachesLastEvaluation())
-                mBaseFunction.getLastEvaluation(evaluation);
-            else mBaseFunction.evaluate(features[i], evaluation);
+            mBaseFunction.evaluate(features(i), evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = labels[i][j] - evaluation[j];
+                error(0, j) = labels(i, j) - evaluation[j];
 
             // Calculate the sum of the local Hessians
             sumOfLocalHessians.fill(T{});
@@ -194,7 +182,7 @@ public:
             {
                 // Calculate the local Hessian for output j and multiply by the
                 // error for this output
-                mBaseFunction.calculateHessianInputs(features[i], j, localHessian);
+                mBaseFunction.calculateHessianInputs(features(i), j, localHessian);
                 sumOfLocalHessians += error(0, j) * localHessian;
             }
 
@@ -203,8 +191,8 @@ public:
         }
     }
 
-    void calculateHessianParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, Matrix<T>& hessian)
+    void calculateHessianParameters(const Matrix<T>& features,
+        const Matrix<T>& labels, Matrix<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -227,19 +215,17 @@ public:
         hessian.resize(N, N);
         hessian.fill(T{});
 
-        for(size_t i = 0; i < features.rows(); ++i)
+        for(size_t i = 0; i < features.getRows(); ++i)
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            mBaseFunction.calculateJacobianParameters(features[i], jacobian);
+            mBaseFunction.calculateJacobianParameters(features(i), jacobian);
 
             // Calculate the error for this sample
-            if (mBaseFunction.cachesLastEvaluation())
-                mBaseFunction.getLastEvaluation(evaluation);
-            else mBaseFunction.evaluate(features[i], evaluation);
+            mBaseFunction.evaluate(features(i), evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = labels[i][j] - evaluation[j];
+                error(0, j) = labels(i, j) - evaluation[j];
 
             // Calculate the sum of the local Hessians
             sumOfLocalHessians.fill(T{});
@@ -247,7 +233,7 @@ public:
             {
                 // Calculate the local Hessian for output j and multiply by the
                 // error for this output
-                mBaseFunction.calculateHessianParameters(features[i], j, localHessian);
+                mBaseFunction.calculateHessianParameters(features(i), j, localHessian);
                 sumOfLocalHessians += error(0, j) * localHessian;
             }
 
@@ -271,11 +257,11 @@ public:
         // Do nothing
     }
 
-    T evaluate(const Dataset<T>& features, const Dataset<T>& labels)
+    T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
-        const size_t N = features.rows();
-        const size_t M = labels.cols();
+        const size_t N = features.getRows();
+        const size_t M = labels.getCols();
 
         T sum {};
         static vector<T> prediction(M, T{});
@@ -283,17 +269,10 @@ public:
         // Calculate the SSE
         for (size_t i = 0; i < N; ++i)
         {
-            mBaseFunction.evaluate(features[i], prediction);
-
-            const vector<T>& row = labels[i];
+            mBaseFunction.evaluate(features(i), prediction);
             for (size_t j = 0; j < M; ++j)
             {
-                T d = row[j] - prediction[j];
-
-                // For categorical columns, use Hamming distance instead
-                //if (d != 0.0 && labels.valueCount(j) > 0)
-                //    d = 1.0;
-
+                T d = labels(i, j) - prediction[j];
                 sum += (d * d);
             }
         }
@@ -301,94 +280,77 @@ public:
         return sum;
     }
 
-    void calculateGradientInputs(const Dataset<T>& features,
-        const Dataset<T>& labels, vector<T>& gradient)
+    void calculateGradientInputs(const Matrix<T>& features,
+        const Matrix<T>& labels, vector<T>& gradient)
     {
         NeuralNetwork<T>& nn = mBaseFunction;
         const size_t N       = nn.getInputs();
         const size_t M       = nn.getOutputs();
-        const size_t rows    = features.rows();
+        const size_t rows    = features.getRows();
 
-        std::fill(gradient.begin(), gradient.end(), T{});
+        // Forward prop the training data through the network
+        static Matrix<T> evaluation(rows, M);
+        nn.evaluateBatch(features, evaluation));
 
-        static vector<T> evaluation(M);
-        static vector<T> tempGradient(N);
-
-        // Calculate a partial gradient for each row in the training data
+        // Calculate the deltas for the last layer by subtracting the evaluation
+        // from the labels.
+        Matrix<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
         for (size_t i = 0; i < rows; ++i)
         {
-            const vector<T>& feature = features[i];
-            const vector<T>& label   = labels[i];
-
-            // Forward prop
-            nn.evaluate(feature, evaluation);
-
-            // Calculate the deltas for each node in the network
-            {
-                // Calculate the deltas on the last layer first
-                vector<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
-                for (size_t j = 0; j < outputDeltas.size(); ++j)
-                    outputDeltas[j] = label[j] - evaluation[j];
-
-                nn.calculateDeltas();
-            }
-
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
-            nn.getLayer(0)->calculateDeltas(feature, tempGradient.data());
-
-            // Technically, we need to multiply the final gradient by a factor
-            // of -2 to get the true gradient with respect to the SSE function.
-            vAdd(tempGradient.data(), gradient.data(), N, T{-2.0});
+            for (size_t j = 0; j < M; ++j)
+                outputDeltas(i, j) = labels(i, j) - evaluation(i, j);
         }
 
-        // Divide by the batch size to get the average gradient
-        vScale(gradient.data(), T{1.0}/rows, N);
+        // Propagate the deltas back through the network
+        nn.calculateDeltas();
+
+        // To get the gradient with respect to the inputs, we need to propagate
+        // the deltas in the first layer. This will give us a matrix of all the
+        // gradient values. We will need to flatten this to a vector by
+        // averaging the values across columns. We do so by multiplying the
+        // matrix transposed by [1/N, 1/N, 1/N, ...]. We also need to multiply
+        // the gradient by -2 to get the true gradient, so we include that in
+        // the masking matrix.
+        static Matrix<T> tempGradient(rows, nn.getLayer(0)->getOutputs());
+        static vector<T> mask(rows, T{-2.0} / rows);
+        nn.getLayer(0)->calculateDeltas(features, tempGradient.data());
+        mtvMultiply(tempGradient.data(), mask.data(), gradient,
+            tempGradient.getRows(), tempGradient.getCols());
     }
 
-    void calculateGradientParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, vector<T>& gradient)
+    void calculateGradientParameters(const Matrix<T>& features,
+        const Matrix<T>& labels, vector<T>& gradient)
     {
         NeuralNetwork<T>& nn = mBaseFunction;
         const size_t N       = nn.getNumParameters();
         const size_t M       = nn.getOutputs();
-        const size_t rows    = features.rows();
+        const size_t rows    = features.getRows();
 
-        std::fill(gradient.begin(), gradient.end(), T{});
-        static vector<T> evaluation(M);
+        // Forward prop the training data through the network
+        static Matrix<T> evaluation(rows, M);
+        nn.evaluateBatch(features, evaluation));
 
-        // Calculate a partial gradient for each row in the training data
+        // Calculate the deltas for the last layer by subtracting the evaluation
+        // from the labels.
+        Matrix<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
         for (size_t i = 0; i < rows; ++i)
         {
-            const vector<T>& feature = features[i];
-            const vector<T>& label   = labels[i];
-
-            // Forward prop
-            nn.evaluate(feature, evaluation);
-
-            // Calculate the deltas for each node in the network
-            {
-                // Calculate the deltas on the last layer first
-                vector<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
-                for (size_t j = 0; j < M; ++j)
-                    outputDeltas[j] = label[j] - evaluation[j];
-
-                nn.calculateDeltas();
-            }
-
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
-            nn.calculateGradientParameters(feature, gradient.data());
+            for (size_t j = 0; j < M; ++j)
+                outputDeltas(i, j) = labels(i, j) - evaluation(i, j);
         }
+
+        // Propagate the deltas back through the network, and use them to
+        // calculate the average gradient with respect to the parameters.
+        nn.calculateDeltas();
+        nn.calculateGradientParameters(feature, gradient.data());
 
         // Technically, we need to multiply the final gradient by a factor
         // of -2 to get the true gradient with respect to the SSE function.
-        // We also need to divide by the batch size to get an average gradient.
-        vScale(gradient.data(), T{-2.0}/rows, N);
+        vScale(gradient.data(), T{-2.0}, N);
     }
 
-    void calculateHessianInputs(const Dataset<T>& features,
-        const Dataset<T>& labels, Matrix<T>& hessian)
+    void calculateHessianInputs(const Matrix<T>& features,
+        const Matrix<T>& labels, Matrix<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -411,26 +373,24 @@ public:
         hessian.resize(N, N);
         hessian.fill(T{});
 
-        for(size_t i = 0; i < features.rows(); ++i)
+        for(size_t i = 0; i < features.getRows(); ++i)
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            mBaseFunction.calculateJacobianInputs(features[i], jacobian);
+            mBaseFunction.calculateJacobianInputs(features(i), jacobian);
 
             // Calculate the error for this sample
-            if (mBaseFunction.cachesLastEvaluation())
-                mBaseFunction.getLastEvaluation(evaluation);
-            else mBaseFunction.evaluate(features[i], evaluation);
+            mBaseFunction.evaluate(features(i), evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = labels[i][j] - evaluation[j];
+                error(0, j) = labels(i, j) - evaluation[j];
 
             // Calculate the sum of the local Hessians
             sumOfLocalHessians.fill(T{});
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
-                mBaseFunction.calculateHessianInputs(features[i], j, localHessian);
+                mBaseFunction.calculateHessianInputs(features(i), j, localHessian);
                 sumOfLocalHessians += error(0, j) * localHessian;
             }
 
@@ -439,8 +399,8 @@ public:
         }
     }
 
-    void calculateHessianParameters(const Dataset<T>& features,
-        const Dataset<T>& labels, Matrix<T>& hessian)
+    void calculateHessianParameters(const Matrix<T>& features,
+        const Matrix<T>& labels, Matrix<T>& hessian)
     {
         // When SSE is the error function, it is better to calculate the Hessian
         // directly using the following formula than to use finite differences.
@@ -464,26 +424,24 @@ public:
         hessian.resize(N, N);
         hessian.fill(T{});
 
-        for(size_t i = 0; i < features.rows(); ++i)
+        for(size_t i = 0; i < features.getRows(); ++i)
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            mBaseFunction.calculateJacobianParameters(features[i], jacobian);
+            mBaseFunction.calculateJacobianParameters(features(i), jacobian);
 
             // Calculate the error for this sample
-            if (mBaseFunction.cachesLastEvaluation())
-                mBaseFunction.getLastEvaluation(evaluation);
-            else mBaseFunction.evaluate(features[i], evaluation);
+            mBaseFunction.evaluate(features(i), evaluation);
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = labels[i][j] - evaluation[j];
+                error(0, j) = labels(i, j) - evaluation[j];
 
             // Calculate the sum of the local Hessians
             sumOfLocalHessians.fill(T{});
             for (size_t j = 0; j < M; ++j)
             {
                 // Calculate the local Hessian for output j
-                mBaseFunction.calculateHessianParameters(features[i], j, localHessian);
+                mBaseFunction.calculateHessianParameters(features(i), j, localHessian);
                 sumOfLocalHessians += error(0, j) * localHessian;
             }
 

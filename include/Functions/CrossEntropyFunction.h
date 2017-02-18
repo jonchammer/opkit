@@ -118,9 +118,7 @@ namespace
             baseFunction.calculateJacobianParameters(features[i], jacobian);
 
             // Evaluate this sample
-            if (baseFunction.cachesLastEvaluation())
-                baseFunction.getLastEvaluation(evaluation);
-            else baseFunction.evaluate(features[i], evaluation);
+            baseFunction.evaluate(features[i], evaluation);
 
             // Calculate the error vectors
             // e1 = -t1/y1, e2 = -t1/y1^2
@@ -218,9 +216,7 @@ public:
             mBaseFunction.calculateJacobianInputs(features[i], baseJacobian);
 
             // Calculate the error for this sample
-            if (mBaseFunction.cachesLastEvaluation())
-                mBaseFunction.getLastEvaluation(evaluation);
-            else mBaseFunction.evaluate(features[i], evaluation);
+            mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = -labels[i][j] / evaluation[j];
@@ -263,9 +259,7 @@ public:
             mBaseFunction.calculateJacobianParameters(features[i], baseJacobian);
 
             // Calculate the error for this sample
-            if (mBaseFunction.cachesLastEvaluation())
-                mBaseFunction.getLastEvaluation(evaluation);
-            else mBaseFunction.evaluate(features[i], evaluation);
+            mBaseFunction.evaluate(features[i], evaluation);
 
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = -labels[i][j] / evaluation[j];

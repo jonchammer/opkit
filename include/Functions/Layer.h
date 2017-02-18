@@ -35,7 +35,7 @@ class Layer
 public:
     Layer(const size_t inputs, const size_t outputs, const size_t batchSize) :
         mParameters(nullptr),
-        mInputs(inputs), mOutputs(outputs),
+        mInputs(inputs), mOutputs(outputs), mBatchSize(batchSize)
         mActivation(batchSize, outputs), mDeltas(batchSize, outputs) {}
 
     // When eval is called with two arguments, we evaluate like normal, but also
@@ -80,12 +80,14 @@ public:
     // General layer properties
     size_t getInputs() const    { return mInputs;     }
     size_t getOutputs() const   { return mOutputs;    }
+    size_t getBatchSize() const { return mBatchSize;  }
     Matrix<T>& getActivation()  { return mActivation; }
     Matrix<T>& getDeltas()      { return mDeltas;     }
 
 protected:
     T* mParameters;           // Storage used for the parameters for this layer
     size_t mInputs, mOutputs; // The dimensions of this layer (inputs -> outputs)
+    size_t mBatchSize;        // The batch size for this layer
     Matrix<T> mActivation;    // The output of this layer
     Matrix<T> mDeltas;        // The derivative of the network with respect to
                               // each output neuron.
@@ -125,9 +127,9 @@ public:
 
     void eval(const Matrix<T>& x) override
     {
-        //Cache these so we can avoid repeated pointer dereferencing
         const T* xData  = x.data();
         T* yData        = mActivation.data();
+        const size_t N  = x.getRows(); // Could be 1 or batch size
 
         // y = x * W^T + b
         // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
@@ -137,31 +139,30 @@ public:
         // [...  ...  ... ...]
         // [w1m, w2m, ... wnm]
         // [b1, b2,   ...  bm]
-        mmtMultiply(xData, mParameters, yData, mDeltas.getRows(), mOutputs, mInputs);
+        mmtMultiply(xData, mParameters, yData, N, mOutputs, mInputs);
         vAdd(mParameters + (mInputs * mOutputs), yData, mOutputs);
     }
 
-    void calculateDeltas(const Matrix<T>& /*x*/, T* destination) override
+    void calculateDeltas(const Matrix<T>& x, T* destination) override
     {
         const T* deltas = mDeltas.data();
+        const size_t N  = x.getRows(); // Could be 1 or batch size
 
         // Calculate destination = deltas * W
-        mmMultiply(deltas, mParameters, destination, mDeltas.getRows(), mInputs, mOutputs);
+        mmMultiply(deltas, mParameters, destination, N, mInputs, mOutputs);
     }
 
     void calculateGradient(const Matrix<T>& x, T* gradient) override
     {
-        // Cache the raw pointer so we can avoid calling vector::operator[]
         const T* input  = x.data();
         const T* deltas = mDeltas.data();
-        const size_t N  = mDeltas.rows();
+        const size_t N  = x.getRows(); // Could be 1 or batch size
 
         // Calculate the sum of the gradients for each sample in the batch using
         // a single matrix multiplication. We then need to divide every cell by
         // the batch size to get the average gradient. We use the formula:
         // gradient(weights) = (deltas^T * x) / N;
-        mtmMultiply(deltas, input, gradient, mOutputs, mInputs,
-            mDeltas.getRows(), T{1.0} / N);
+        mtmMultiply(deltas, input, gradient, mOutputs, mInputs, N, T{1.0} / N);
 
         // Generate the average bias gradient by taking the average of the deltas
         // across the columns (or equivalently, by taking the average across the

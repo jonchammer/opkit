@@ -202,22 +202,6 @@ public:
 
     virtual ~Function() {}
 
-    // This function should return true when the implementing function is
-    // capable of saving the result of the last evaluation. By default, this
-    // method returns false.
-    virtual bool cachesLastEvaluation() const
-    {
-        return false;
-    }
-
-    // For functions in which 'cachesLastEvaluation' returns true, this method
-    // is used to return the cached value. This is helpful for complicated
-    // functions (for which a single evaluation can be expensive).
-    virtual void getLastEvaluation(vector<T>& output)
-    {
-        throw Ex("Function::getLastEvaluation not implemented.");
-    }
-
     // Calculates the Jacobian of this function df(x)/dx with respect to the
     // function inputs. 'x' is the point at which the Jacobian should be
     // calculated, and the Jacobian itself is stored in 'Jacobian'.
