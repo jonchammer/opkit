@@ -1,6 +1,7 @@
 #ifndef RANDOM_INDEX_ITERATOR_H
 #define RANDOM_INDEX_ITERATOR_H
 
+#include <algorithm>
 #include "Rand.h"
 
 namespace opkit

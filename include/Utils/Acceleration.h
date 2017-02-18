@@ -114,6 +114,158 @@ namespace opkit
         //     beta, C, N);
     }
 
+    // Computes C = alpha * A * B^T + beta * C, where A is an M x K
+    // matrix, B is an N x K matrix, C is an M x N matrix, alpha is
+    // a scalar, and beta is a scalar.
+    inline void mmtMultiply(const double* A, const double* B, double* C,
+        const size_t M, const size_t N, const size_t K,
+        const double alpha = 1.0, const double beta = 0.0)
+    {
+        USE_ALL_CORES();
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  A transpose
+        // 3.  B transpose
+        // 4.  M
+        // 5.  N
+        // 6.  K
+        // 7.  Alpha
+        // 8.  A's data
+        // 9.  A's stride
+        // 10. B's data
+        // 11. B's stride
+        // 12. Beta
+        // 13. C's data
+        // 14. C's stride
+        cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans,
+            N, M, K,
+            alpha, B, K,
+            A, K,
+            beta, C, N);
+
+        // Equivalently,
+        // cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+        //     M, N, K,
+        //     alpha, A, K,
+        //     B, K,
+        //     beta, C, N);
+    }
+
+    // Computes C = alpha * A * B^T + beta * C, where A is an M x K
+    // matrix, B is an N x K matrix, C is an M x N matrix, alpha is
+    // a scalar, and beta is a scalar.
+    inline void mmtMultiply(const float* A, const float* B, float* C,
+        const size_t M, const size_t N, const size_t K,
+        const float alpha = 1.0f, const float beta = 0.0f)
+    {
+        USE_ALL_CORES();
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  A transpose
+        // 3.  B transpose
+        // 4.  M
+        // 5.  N
+        // 6.  K
+        // 7.  Alpha
+        // 8.  A's data
+        // 9.  A's stride
+        // 10. B's data
+        // 11. B's stride
+        // 12. Beta
+        // 13. C's data
+        // 14. C's stride
+        cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans,
+            N, M, K,
+            alpha, B, K,
+            A, K,
+            beta, C, N);
+
+        // Equivalently,
+        // cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+        //     M, N, K,
+        //     alpha, A, K,
+        //     B, K,
+        //     beta, C, N);
+    }
+
+    // Computes C = alpha * A^T * B + beta * C, where A is an K x M
+    // matrix, B is an K x N matrix, C is an M x N matrix, alpha is
+    // a scalar, and beta is a scalar.
+    inline void mtmMultiply(const double* A, const double* B, double* C,
+        const size_t M, const size_t N, const size_t K,
+        const double alpha = 1.0, const double beta = 0.0)
+    {
+        USE_ALL_CORES();
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  A transpose
+        // 3.  B transpose
+        // 4.  M
+        // 5.  N
+        // 6.  K
+        // 7.  Alpha
+        // 8.  A's data
+        // 9.  A's stride
+        // 10. B's data
+        // 11. B's stride
+        // 12. Beta
+        // 13. C's data
+        // 14. C's stride
+        cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+            N, M, K,
+            alpha, B, N,
+            A, M,
+            beta, C, N);
+
+        // Equivalently,
+        // cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+        //     M, N, K,
+        //     alpha, A, M,
+        //     B, N,
+        //     beta, C, N);
+    }
+
+    // Computes C = alpha * A^T * B + beta * C, where A is an K x M
+    // matrix, B is an K x N matrix, C is an M x N matrix, alpha is
+    // a scalar, and beta is a scalar.
+    inline void mtmMultiply(const float* A, const float* B, float* C,
+        const size_t M, const size_t N, const size_t K,
+        const float alpha = 1.0f, const float beta = 0.0f)
+    {
+        USE_ALL_CORES();
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  A transpose
+        // 3.  B transpose
+        // 4.  M
+        // 5.  N
+        // 6.  K
+        // 7.  Alpha
+        // 8.  A's data
+        // 9.  A's stride
+        // 10. B's data
+        // 11. B's stride
+        // 12. Beta
+        // 13. C's data
+        // 14. C's stride
+        cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+            N, M, K,
+            alpha, B, N,
+            A, M,
+            beta, C, N);
+
+        // Equivalently,
+        // cblas_sgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+        //     M, N, K,
+        //     alpha, A, M,
+        //     B, N,
+        //     beta, C, N);
+    }
+
     // Computes y = alpha * A * x + beta * y, where A is an M x N
     // matrix, x is a vector of size N, y is a vector of size M,
     // and alpha and beta are scalars.
@@ -192,72 +344,6 @@ namespace opkit
         // beta, y, yInc);
     }
 
-    // Computes y = alpha * A * x + beta * y, where A is an N x N
-    // symmetric matrix, x is a vector of size N, y is a vector of size N,
-    // and alpha and beta are scalars.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void symmetricMvMultiply(const double* A, const double* x, double* y,
-        const size_t N, const double alpha = 1.0, const double beta = 0.0,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  Upper or lower part of matrix is used
-        // 3.  N
-        // 4.  Alpha
-        // 5.  A's data
-        // 6.  A's stride
-        // 7.  x's data
-        // 8.  x's increment (1)
-        // 9.  Beta
-        // 10. y's data
-        // 11. y's increment (1)
-        //
-        // NOTE: Either row-major order or column-major order can be used for
-        // symmetric matrices.
-        cblas_dsymv(CblasColMajor, CblasUpper,
-        N, alpha,
-        A, N,
-        x, xInc,
-        beta, y, yInc);
-    }
-
-    // Computes y = alpha * A * x + beta * y, where A is an N x N
-    // symmetric matrix, x is a vector of size N, y is a vector of size N,
-    // and alpha and beta are scalars.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void symmetricMvMultiply(const float* A, const float* x, float* y,
-        const size_t N, const float alpha = 1.0f, const float beta = 0.0f,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  Upper or lower part of matrix is used
-        // 3.  N
-        // 4.  Alpha
-        // 5.  A's data
-        // 6.  A's stride
-        // 7.  x's data
-        // 8.  x's increment (1)
-        // 9.  Beta
-        // 10. y's data
-        // 11. y's increment (1)
-        //
-        // NOTE: Either row-major order or column-major order can be used for
-        // symmetric matrices.
-        cblas_ssymv(CblasColMajor, CblasUpper,
-        N, alpha,
-        A, N,
-        x, xInc,
-        beta, y, yInc);
-    }
-
     // Computes y = alpha * A^T * x + beta * y, where A is an M x N
     // matrix, x is a vector of size M, y is a vector of size N,
     // and alpha and beta are scalars.
@@ -334,6 +420,72 @@ namespace opkit
         // alpha, A, N,
         // x, xInc,
         // beta, y, yInc);
+    }
+
+    // Computes y = alpha * A * x + beta * y, where A is an N x N
+    // symmetric matrix, x is a vector of size N, y is a vector of size N,
+    // and alpha and beta are scalars.
+    // xInc and yInc can be adjusted if the vectors are stored
+    // in an interlaced format.
+    inline void symmetricMvMultiply(const double* A, const double* x, double* y,
+        const size_t N, const double alpha = 1.0, const double beta = 0.0,
+        const int xInc = 1, const int yInc = 1)
+    {
+        USE_ONE_CORE();
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  Upper or lower part of matrix is used
+        // 3.  N
+        // 4.  Alpha
+        // 5.  A's data
+        // 6.  A's stride
+        // 7.  x's data
+        // 8.  x's increment (1)
+        // 9.  Beta
+        // 10. y's data
+        // 11. y's increment (1)
+        //
+        // NOTE: Either row-major order or column-major order can be used for
+        // symmetric matrices.
+        cblas_dsymv(CblasColMajor, CblasUpper,
+        N, alpha,
+        A, N,
+        x, xInc,
+        beta, y, yInc);
+    }
+
+    // Computes y = alpha * A * x + beta * y, where A is an N x N
+    // symmetric matrix, x is a vector of size N, y is a vector of size N,
+    // and alpha and beta are scalars.
+    // xInc and yInc can be adjusted if the vectors are stored
+    // in an interlaced format.
+    inline void symmetricMvMultiply(const float* A, const float* x, float* y,
+        const size_t N, const float alpha = 1.0f, const float beta = 0.0f,
+        const int xInc = 1, const int yInc = 1)
+    {
+        USE_ONE_CORE();
+
+        // Parameters:
+        // 1.  Row-major or Col-major
+        // 2.  Upper or lower part of matrix is used
+        // 3.  N
+        // 4.  Alpha
+        // 5.  A's data
+        // 6.  A's stride
+        // 7.  x's data
+        // 8.  x's increment (1)
+        // 9.  Beta
+        // 10. y's data
+        // 11. y's increment (1)
+        //
+        // NOTE: Either row-major order or column-major order can be used for
+        // symmetric matrices.
+        cblas_ssymv(CblasColMajor, CblasUpper,
+        N, alpha,
+        A, N,
+        x, xInc,
+        beta, y, yInc);
     }
 
     // Adds alpha * x * y^T to A, where x is a vector of size M,
