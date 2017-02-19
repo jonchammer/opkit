@@ -64,7 +64,7 @@ public:
     void addLayer(Layer<T>* layer, bool ownLayer = true);
 
     // Execute one forward pass through the network in order to produce an output.
-    void evaluate(const vector<T>& input, vector<T>& output) override;
+    void evaluate(const T* input, T* output) override;
 
     // Execute one forward pass through the network in order to produce an
     // output. As opposed to the first variant of 'evaluate', a set of 'N'
@@ -80,7 +80,7 @@ public:
     // Calculates the gradient of the network with respect to the parameters,
     // under the assumption that the deltas have already been calculated for
     // every applicable node in the network.
-    void calculateGradientParameters(const vector<T>& input, T* gradient);
+    void calculateGradientParameters(const T* input, T* gradient);
 
     // Calculates the gradient of the network with respect to the parameters,
     // under the assumption that the deltas have already been calculated for
@@ -90,12 +90,12 @@ public:
     // Calculates the Jacobian of the network with respect to the weights and
     // biases. This involves one forward pass and one backwards pass for each
     // output of the network.
-    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian) override;
+    void calculateJacobianParameters(const T* x, Matrix<T>& jacobian) override;
 
     // Calculates the Jacobian of the network with respect to the inputs. This
     // involves one forward pass and one backwards pass for each output of the
     // network.
-    void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian) override;
+    void calculateJacobianInputs(const T* x, Matrix<T>& jacobian) override;
 
     // Initializes the weights and biases with random values
     void initializeParameters(Rand& rand);
@@ -188,11 +188,11 @@ void NeuralNetwork<T>::addLayer(Layer<T>* layer, bool ownLayer)
 }
 
 template <class T>
-void NeuralNetwork<T>::evaluate(const vector<T>& input, vector<T>& output)
+void NeuralNetwork<T>::evaluate(const T* input, T* output)
 {
     // Create a matrix that wraps the contents of 'input'.
-    static Matrix<T>& temp(1, input.size());
-    temp.swap((Matrix<T>&) input);
+    Matrix<T> temp((T*) input, 1, getInputs());
+    Matrix<T> out(output, 1, getOutputs());
 
     const Matrix<T>* x = &temp;
 
@@ -200,15 +200,12 @@ void NeuralNetwork<T>::evaluate(const vector<T>& input, vector<T>& output)
     // to the next layer.
     for (int i = 0; i < mLayers.size() - 1; ++i)
     {
-        mLayers[i]->eval(*x);
+        mLayers[i]->eval(*x, 1);
         x = &mLayers[i]->getActivation();
     }
 
     // Feed the output of the last layer into 'output'
-    mLayers[mLayers.size() - 1]->eval(*x, output);
-
-    // Give 'input' its data back.
-    temp.swap((Matrix<T>&) input);
+    mLayers[mLayers.size() - 1]->eval(*x, 1, out);
 }
 
 template <class T>
@@ -220,12 +217,12 @@ void NeuralNetwork<T>::evaluateBatch(const Matrix<T>& input, Matrix<T>& output)
     // to the next layer.
     for (int i = 0; i < mLayers.size() - 1; ++i)
     {
-        mLayers[i]->eval(*x);
+        mLayers[i]->eval(*x, input.getRows());
         x = &mLayers[i]->getActivation();
     }
 
     // Feed the output of the last layer into 'output'
-    mLayers[mLayers.size() - 1]->eval(*x, output);
+    mLayers[mLayers.size() - 1]->eval(*x, input.getRows(), output);
 }
 
 template <class T>
@@ -236,30 +233,29 @@ void NeuralNetwork<T>::calculateDeltas()
         Layer<T>*& current = mLayers[i];
         Layer<T>*& prev    = mLayers[i - 1];
 
-        current->calculateDeltas(prev->getActivation(), prev->getDeltas().data());
+        const size_t batchSize = current->getActivation().getRows();
+        current->calculateDeltas(prev->getActivation(), batchSize,
+            prev->getDeltas().data());
     }
 }
 
 template <class T>
-void NeuralNetwork<T>::calculateGradientParameters(const vector<T>& input, T* gradient)
+void NeuralNetwork<T>::calculateGradientParameters(const T* input, T* gradient)
 {
     // Create a matrix that wraps the contents of 'input'.
-    static Matrix<T>& temp(1, input.size());
-    temp.swap((Matrix<T>&) input);
+    static Matrix<T> temp((T*) input, 1, getInputs());
+    temp.setData((T*)input);
 
-    const vector<T>* x = &temp;
+    const Matrix<T>* x = &temp;
 
     for (Layer<T>*& l : mLayers)
     {
-        l->calculateGradient(*x, gradient);
+        l->calculateGradient(*x, 1, gradient);
 
         // Get ready for the next iteration
         x         = &l->getActivation();
         gradient += l->getNumParameters();
     }
-
-    // Give 'input' its data back.
-    temp.swap((Matrix<T>&) input);
 }
 
 template <class T>
@@ -268,7 +264,7 @@ void NeuralNetwork<T>::calculateGradientParametersBatch(const Matrix<T>& input, 
     const Matrix<T>* x = &input;
     for (Layer<T>*& l : mLayers)
     {
-        l->calculateGradient(*x, gradient);
+        l->calculateGradient(*x, input.getRows(), gradient);
 
         // Get ready for the next iteration
         x         = &l->getActivation();
@@ -277,7 +273,7 @@ void NeuralNetwork<T>::calculateGradientParametersBatch(const Matrix<T>& input, 
 }
 
 template <class T>
-void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
+void NeuralNetwork<T>::calculateJacobianParameters(const T* x, Matrix<T>& jacobian)
 {
     const size_t N = mParameters.size();
     const size_t M = getOutputs();
@@ -286,14 +282,14 @@ void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>
     jacobian.fill(T{});
 
     // 1. Forward propagation
-    evaluate(x, prediction);
+    evaluate(x, prediction.data());
 
     for (size_t i = 0; i < M; ++i)
     {
         // Calculate the deltas on the last layer first
-        vector<T>& outputDeltas = mLayers.back()->getDeltas();
-        std::fill(outputDeltas.begin(), outputDeltas.end(), T{});
-        outputDeltas[i] = 1.0;
+        Matrix<T>& outputDeltas = mLayers.back()->getDeltas();
+        outputDeltas.fill(T{});
+        outputDeltas(0, i) = 1.0;
 
         // 2. Calculate delta terms for all the other nodes in the network
         calculateDeltas();
@@ -304,23 +300,24 @@ void NeuralNetwork<T>::calculateJacobianParameters(const vector<T>& x, Matrix<T>
 }
 
 template <class T>
-void NeuralNetwork<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
+void NeuralNetwork<T>::calculateJacobianInputs(const T* x, Matrix<T>& jacobian)
 {
     const size_t N = getInputs();
     const size_t M = getOutputs();
     static vector<T> prediction(M);
+    Matrix<T> input((T*) x, 1, N);
     jacobian.resize(M, N);
     jacobian.fill(T{});
 
     // 1. Forward propagation
-    evaluate(x, prediction);
+    evaluate(x, prediction.data());
 
     for (size_t i = 0; i < M; ++i)
     {
         // Calculate the deltas on the last layer first
-        vector<T>& outputDeltas = mLayers.back()->getDeltas();
-        std::fill(outputDeltas.begin(), outputDeltas.end(), T{});
-        outputDeltas[i] = 1.0;
+        Matrix<T>& outputDeltas = mLayers.back()->getDeltas();
+        outputDeltas.fill(T{});
+        outputDeltas(0, i) = 1.0;
 
         // 2. Calculate delta terms for all the other nodes in the network
         calculateDeltas();
@@ -328,7 +325,7 @@ void NeuralNetwork<T>::calculateJacobianInputs(const vector<T>& x, Matrix<T>& ja
         // 3. Relate blame terms to the gradient. This operation is the
         // same as backpropagating the deltas in the first layer to the
         // inputs (x).
-        mLayers.front()->calculateDeltas(x, jacobian(i));
+        mLayers.front()->calculateDeltas(input, 1, jacobian(i));
     }
 }
 

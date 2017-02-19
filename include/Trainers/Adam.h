@@ -12,7 +12,7 @@
 #include <cmath>
 #include "Trainer.h"
 #include "ErrorFunction.h"
-#include "Dataset.h"
+#include "Matrix.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
 
@@ -47,7 +47,7 @@ public:
         mBeta2p(DEFAULT_BETA2),
         mEpsilon(DEFAULT_EPSILON) {}
 
-    void iterate(const Dataset<T>& features, const Dataset<T>& labels)
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         const size_t N = function->getNumParameters();
         static vector<T> gradient(N);

@@ -12,7 +12,7 @@
 #include <cmath>
 #include "Trainer.h"
 #include "ErrorFunction.h"
-#include "Dataset.h"
+#include "Matrix.h"
 #include "PrettyPrinter.h"
 using std::vector;
 
@@ -27,17 +27,17 @@ class HessianFreeOptimizer : public Trainer<T, Model>
 public:
     HessianFreeOptimizer(ErrorFunction<T, Model>* function) : Trainer<T, Model>(function) {}
 
-    void iterate(const Dataset<T>& features, const Dataset<T>& labels);
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels);
 
 private:
 
     void multiplyHessian(vector<T>& x, const vector<T>& v,
-        const Dataset<T>& features, const Dataset<T>& labels, vector<T>& result);
+        const Matrix<T>& features, const Matrix<T>& labels, vector<T>& result);
     void conjugateGradient();
 };
 
 template <class T, class Model>
-void HessianFreeOptimizer<T, Model>::iterate(const Dataset<T>& features, const Dataset<T>& labels)
+void HessianFreeOptimizer<T, Model>::iterate(const Matrix<T>& features, const Matrix<T>& labels)
 {
     // The step size that will be used if the calculated value is unreasonable
     // (e.g. negative)
@@ -126,7 +126,7 @@ void HessianFreeOptimizer<T, Model>::iterate(const Dataset<T>& features, const D
 
 template <class T, class Model>
 void HessianFreeOptimizer<T, Model>::multiplyHessian(vector<T>& x, const vector<T>& v,
-    const Dataset<T>& features, const Dataset<T>& labels, vector<T>& result)
+    const Matrix<T>& features, const Matrix<T>& labels, vector<T>& result)
 {
     const T EPSILON = 1.0E-10;
     const size_t N       = Trainer<T, Model>::function->getNumParameters();

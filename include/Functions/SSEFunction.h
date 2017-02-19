@@ -269,7 +269,7 @@ public:
         // Calculate the SSE
         for (size_t i = 0; i < N; ++i)
         {
-            mBaseFunction.evaluate(features(i), prediction);
+            mBaseFunction.evaluate(features(i), prediction.data());
             for (size_t j = 0; j < M; ++j)
             {
                 T d = labels(i, j) - prediction[j];
@@ -290,7 +290,7 @@ public:
 
         // Forward prop the training data through the network
         static Matrix<T> evaluation(rows, M);
-        nn.evaluateBatch(features, evaluation));
+        nn.evaluateBatch(features, evaluation);
 
         // Calculate the deltas for the last layer by subtracting the evaluation
         // from the labels.
@@ -313,8 +313,8 @@ public:
         // the masking matrix.
         static Matrix<T> tempGradient(rows, nn.getLayer(0)->getOutputs());
         static vector<T> mask(rows, T{-2.0} / rows);
-        nn.getLayer(0)->calculateDeltas(features, tempGradient.data());
-        mtvMultiply(tempGradient.data(), mask.data(), gradient,
+        nn.getLayer(0)->calculateDeltas(features, rows, tempGradient.data());
+        mtvMultiply(tempGradient.data(), mask.data(), gradient.data(),
             tempGradient.getRows(), tempGradient.getCols());
     }
 
@@ -328,7 +328,7 @@ public:
 
         // Forward prop the training data through the network
         static Matrix<T> evaluation(rows, M);
-        nn.evaluateBatch(features, evaluation));
+        nn.evaluateBatch(features, evaluation);
 
         // Calculate the deltas for the last layer by subtracting the evaluation
         // from the labels.
@@ -342,7 +342,7 @@ public:
         // Propagate the deltas back through the network, and use them to
         // calculate the average gradient with respect to the parameters.
         nn.calculateDeltas();
-        nn.calculateGradientParameters(feature, gradient.data());
+        nn.calculateGradientParametersBatch(features, gradient.data());
 
         // Technically, we need to multiply the final gradient by a factor
         // of -2 to get the true gradient with respect to the SSE function.
@@ -380,7 +380,7 @@ public:
             mBaseFunction.calculateJacobianInputs(features(i), jacobian);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation);
+            mBaseFunction.evaluate(features(i), evaluation.data());
 
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels(i, j) - evaluation[j];
@@ -431,7 +431,7 @@ public:
             mBaseFunction.calculateJacobianParameters(features(i), jacobian);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation);
+            mBaseFunction.evaluate(features(i), evaluation.data());
 
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels(i, j) - evaluation[j];

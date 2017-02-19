@@ -11,6 +11,7 @@
 #include <vector>
 #include <cmath>
 #include "Dataset.h"
+#include "Matrix.h"
 using std::vector;
 
 namespace opkit
@@ -32,9 +33,34 @@ void scaleColumn(Dataset<T>& dataset, size_t column, T min, T max,
         dataset[row][column] = dataset[row][column] * multiplier + bias;
 }
 
+// Scale an individual column from the range [min, max] to the new
+// range [desiredMin, desiredMax].
+template <class T>
+void scaleColumn(Matrix<T>& dataset, size_t column, T min, T max,
+    T desiredMin, T desiredMax)
+{
+    T denom = max - min;
+    if (denom < 1E-6) denom = 1.0;
+
+    T multiplier = (desiredMax - desiredMin) / denom;
+    T bias       = (max * desiredMin - min * desiredMax) / denom;
+
+    for (size_t row = 0; row < dataset.getRows(); ++row)
+        dataset(row, column) = dataset(row, column) * multiplier + bias;
+}
+
 // Scale an individual column to the new range [desiredMin, desiredMax].
 template <class T>
 void scaleColumn(Dataset<T>& dataset, size_t column, T desiredMin, T desiredMax)
+{
+    scaleColumn(dataset, column,
+        dataset.columnMin(column), dataset.columnMax(column),
+        desiredMin, desiredMax);
+}
+
+// Scale an individual column to the new range [desiredMin, desiredMax].
+template <class T>
+void scaleColumn(Matrix<T>& dataset, size_t column, T desiredMin, T desiredMax)
 {
     scaleColumn(dataset, column,
         dataset.columnMin(column), dataset.columnMax(column),
@@ -50,11 +76,31 @@ void scaleAllColumns(Dataset<T>& dataset, T min, T max, T desiredMin, T desiredM
         scaleColumn(dataset, i, min, max, desiredMin, desiredMax);
 }
 
+// Scale all columns in the given Dataset from the range [min, max] to the new
+// range [desiredMin, desiredMax].
+template <class T>
+void scaleAllColumns(Matrix<T>& dataset, T min, T max, T desiredMin, T desiredMax)
+{
+    for (size_t i = 0; i < dataset.getCols(); ++i)
+        scaleColumn(dataset, i, min, max, desiredMin, desiredMax);
+}
+
 // Scale all columns in the given Dataset to the range [desiredMin, desiredMax].
 template <class T>
 void scaleAllColumns(Dataset<T>& dataset, T desiredMin, T desiredMax)
 {
     for (size_t i = 0; i < dataset.cols(); ++i)
+    {
+        scaleColumn(dataset, i, dataset.columnMin(i),
+            dataset.columnMax(i), desiredMin, desiredMax);
+    }
+}
+
+// Scale all columns in the given Dataset to the range [desiredMin, desiredMax].
+template <class T>
+void scaleAllColumns(Matrix<T>& dataset, T desiredMin, T desiredMax)
+{
+    for (size_t i = 0; i < dataset.getCols(); ++i)
     {
         scaleColumn(dataset, i, dataset.columnMin(i),
             dataset.columnMax(i), desiredMin, desiredMax);

@@ -10,7 +10,9 @@
 
 #include <vector>
 #include "Dataset.h"
+#include "Matrix.h"
 #include "Rand.h"
+#include "RandomIndexIterator.h"
 using std::vector;
 
 namespace opkit
@@ -20,42 +22,32 @@ template <class T>
 class BatchIterator
 {
 public:
-    BatchIterator(Dataset<T>& features, Dataset<T>& labels, size_t batchSize, Rand& rand) :
-        mFeatures(features),
-        mLabels(labels),
+    BatchIterator(Matrix<T>& features, Matrix<T>& labels, size_t batchSize, Rand& rand) :
+        mFeatures(features), mLabels(labels),
+        mBatchFeatures(batchSize, features.getCols()),
+        mBatchLabels(batchSize, labels.getCols()),
         mBatchSize(batchSize),
-        mRand(rand),
-        mOrder(features.rows()),
-        mOrderIndex(0)
+        mIt(features.getRows()),
+        mRand(rand)
     {
-        // Make sure the order vector starts out [0, 1, 2, ...]
-        for (size_t i = 0; i < features.rows(); ++i)
-            mOrder[i] = i;
-
-        // Make sure the temporary matrices are set up correctly
-        mBatchFeatures.setSize(batchSize, features.cols());
-        mBatchLabels.setSize(batchSize, labels.cols());
-
         reset();
     }
 
     bool hasNext()
     {
-        return mOrderIndex < mOrder.size();
+        return mIt.hasNext();
     }
 
-    void lock(Dataset<T>*& features, Dataset<T>*& labels)
+    void lock(Matrix<T>*& features, Matrix<T>*& labels)
     {
-        // Swap data in
-        for (size_t i = mOrderIndex; (i < mOrderIndex + mBatchSize) && (i < mOrder.size()); ++i)
-        {
-            // Prepare this batch sample
-            vector<T>& origFeature = mFeatures[mOrder[i]];
-            vector<T>& origLabel   = mLabels[mOrder[i]];
+        const size_t M = mFeatures.getCols();
+        const size_t N = mLabels.getCols();
 
-            // Swap the current feature/label pair into the working matrices
-            mBatchFeatures[i - mOrderIndex].swap(origFeature);
-            mBatchLabels[i - mOrderIndex].swap(origLabel);
+        for (size_t row = 0; row < mBatchSize && mIt.hasNext(); ++row)
+        {
+            size_t index = mIt.next();
+            mBatchFeatures.copy(mFeatures, index, 0, 1, M, row, 0);
+            mBatchLabels.copy(mLabels, index, 0, 1, N, row, 0);
         }
 
         features = &mBatchFeatures;
@@ -64,39 +56,21 @@ public:
 
     void unlock()
     {
-        // Swap data back out
-        for (size_t i = mOrderIndex; (i < mOrderIndex + mBatchSize) && (i < mOrder.size()); ++i)
-        {
-            // Prepare this batch sample
-            vector<T>& origFeature = mFeatures[mOrder[i]];
-            vector<T>& origLabel   = mLabels[mOrder[i]];
-
-            // Swap the current feature/label pair into the working matrices
-            mBatchFeatures[i - mOrderIndex].swap(origFeature);
-            mBatchLabels[i - mOrderIndex].swap(origLabel);
-        }
-
-        // Increment indices
-        mOrderIndex += mBatchSize;
+        // Do nothing
     }
 
     void reset()
     {
-        mOrderIndex = 0;
-
-        // Shuffle the order
-        for (int i = mOrder.size() - 1; i > 0; --i)
-            std::swap(mOrder[i], mOrder[mRand.nextInteger(0, i)]);
+        mIt.reset(mRand);
     }
 
 private:
-    Dataset<T>& mFeatures, mLabels;
-    Dataset<T> mBatchFeatures, mBatchLabels;
+    Matrix<T>& mFeatures, mLabels;
+    Matrix<T> mBatchFeatures, mBatchLabels;
     size_t mBatchSize;
-    Rand& mRand;
 
-    vector<size_t> mOrder;
-    size_t mOrderIndex;
+    RandomIndexIterator mIt;
+    Rand& mRand;
 };
 
 };

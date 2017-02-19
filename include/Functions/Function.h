@@ -40,8 +40,8 @@ namespace
     // and evaluate(). The Function class defined below will work, but it's not
     // required.
     template <class T, template <class U> class Fn>
-    void calculateJacobian(Fn<T>& function, const vector<T>& x,
-        vector<T>& params, opkit::Matrix<T>& jacobian)
+    void calculateJacobian(Fn<T>& function, const T* x,
+        T* params, const size_t numParams, opkit::Matrix<T>& jacobian)
     {
         // Constants used in the finite differences approximation
         // Epsilon needs to be a reasonably small number, but the size depends on
@@ -49,7 +49,7 @@ namespace
         // machine epsilon as a good starting point.
         const static T EPSILON   = std::sqrt(std::numeric_limits<T>::epsilon());
         const static T INV_DENOM = T{0.5} / EPSILON;
-        const size_t N           = params.size();
+        const size_t N           = numParams;
         const size_t M           = function.getOutputs();
 
         // Ensure the Jacobian matrix is large enough
@@ -59,26 +59,23 @@ namespace
         static vector<T> derivativePrediction1(M, T{});
         static vector<T> derivativePrediction2(M, T{});
 
-        // Eliminate the vector class [] overhead (very minor optimization).
-        T* data = params.data();
-
         // The Jacobian is calculated one column at a time by changing one
         // parameter and measuring the effect on all M outputs.
         for (size_t p = 0; p < N; ++p)
         {
             // Save the original value of this parameter
-            T orig = data[p];
+            T orig = params[p];
 
             // Calculate the derivative of the function (y) with respect to
             // the current parameter, p, by slightly evaluating the function
             // at two points, one ahead and one behind p. This should yield
             // a better approximation of the derivative than only using one
             // point.
-            data[p] += EPSILON;
-            function.evaluate(x, derivativePrediction1);
+            params[p] += EPSILON;
+            function.evaluate(x, derivativePrediction1.data());
 
-            data[p] = orig - EPSILON;
-            function.evaluate(x, derivativePrediction2);
+            params[p] = orig - EPSILON;
+            function.evaluate(x, derivativePrediction2.data());
 
             for (size_t r = 0; r < M; ++r)
             {
@@ -87,7 +84,7 @@ namespace
             }
 
             // Change the parameter back to its original value
-            data[p] = orig;
+            params[p] = orig;
         }
     }
 
@@ -107,8 +104,8 @@ namespace
     // and evaluate(). The Function class defined below will work, but it's not
     // required.
     template <class T, template <class U = T> class Fn>
-    void calculateHessian(Fn<T>& function, const vector<T>& x,
-        vector<T>& params, const size_t outputIndex, opkit::Matrix<T>& hessian)
+    void calculateHessian(Fn<T>& function, const T* x, T* params,
+        const size_t numParams, const size_t outputIndex, opkit::Matrix<T>& hessian)
     {
         // Epsilon has to be set to a larger value than that used in calculating
         // the gradient because it will be squared in the calculations below. If it
@@ -116,11 +113,10 @@ namespace
         const static T EPSILON = std::pow(std::numeric_limits<T>::epsilon(), T{0.25});
         const static T DENOM   = T{4.0} * EPSILON * EPSILON;
 
-        const size_t N = params.size();
+        const size_t N = numParams;
         const size_t M = function.getOutputs();
 
         hessian.resize(N, N);
-        T* data = params.data();
 
         // Create the temporary vectors we'll need
         static vector<T> plusplus(M, T{});
@@ -135,32 +131,32 @@ namespace
         {
             for (size_t j = 0; j < N; ++j)
             {
-                T origI = data[i];
-                T origJ = data[j];
+                T origI = params[i];
+                T origJ = params[j];
 
-                data[i] += EPSILON;
-                data[j] += EPSILON;
-                function.evaluate(x, plusplus);
-                data[i] = origI;
-                data[j] = origJ;
+                params[i] += EPSILON;
+                params[j] += EPSILON;
+                function.evaluate(x, plusplus.data());
+                params[i] = origI;
+                params[j] = origJ;
 
-                data[i] += EPSILON;
-                data[j] -= EPSILON;
-                function.evaluate(x, plusminus);
-                data[i] = origI;
-                data[j] = origJ;
+                params[i] += EPSILON;
+                params[j] -= EPSILON;
+                function.evaluate(x, plusminus.data());
+                params[i] = origI;
+                params[j] = origJ;
 
-                data[i] -= EPSILON;
-                data[j] += EPSILON;
-                function.evaluate(x, minusplus);
-                data[i] = origI;
-                data[j] = origJ;
+                params[i] -= EPSILON;
+                params[j] += EPSILON;
+                function.evaluate(x, minusplus.data());
+                params[i] = origI;
+                params[j] = origJ;
 
-                data[i] -= EPSILON;
-                data[j] -= EPSILON;
-                function.evaluate(x, minusminus);
-                data[i] = origI;
-                data[j] = origJ;
+                params[i] -= EPSILON;
+                params[j] -= EPSILON;
+                function.evaluate(x, minusminus.data());
+                params[i] = origI;
+                params[j] = origJ;
 
                 // Calculate the value of the Hessian at this index
                 hessian(i, j) = (plusplus[outputIndex] - plusminus[outputIndex] -
@@ -180,7 +176,7 @@ public:
 
     // Apply this function to the given input in order to produce an output.
     // That output will be stored in 'output'.
-    virtual void evaluate(const vector<T>& input, vector<T>& output) = 0;
+    virtual void evaluate(const T* input, T* output) = 0;
 
     // Returns the number of inputs to the function and the number of outputs,
     // respectively.
@@ -205,19 +201,20 @@ public:
     // Calculates the Jacobian of this function df(x)/dx with respect to the
     // function inputs. 'x' is the point at which the Jacobian should be
     // calculated, and the Jacobian itself is stored in 'Jacobian'.
-    virtual void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
+    virtual void calculateJacobianInputs(const T* x, Matrix<T>& jacobian)
     {
         cout << "Function::calculateJacobianInputs()" << endl;
-        ::calculateJacobian<T>(*this, x, (vector<T>&) x, jacobian);
+        ::calculateJacobian<T>(*this, x, (T*) x, getInputs(), jacobian);
     }
 
     // Calculates the Jacobian of this function df(x)/dx with respect to the
     // function parameters. 'x' is the point at which the Jacobian should be
     // calculated, and the Jacobian itself is stored in 'Jacobian'.
-    virtual void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
+    virtual void calculateJacobianParameters(const T* x, Matrix<T>& jacobian)
     {
         cout << "Function::calculateJacobianParameters()" << endl;
-        ::calculateJacobian<T>(*this, x, getParameters(), jacobian);
+        ::calculateJacobian<T>(*this, x, getParameters().data(),
+            getNumParameters(), jacobian);
     }
 
     // Calculates the Hessian matrix of this function with respect to the
@@ -227,11 +224,11 @@ public:
     // derivative is technically a 3rd order tensor (3D matrix). This function
     // will only calculate the Hessian with respect to a single output, indexed
     // by 'outputIndex'. For scalar functions, 'outputIndex' should be 0.
-    virtual void calculateHessianInputs(const vector<T>& x,
+    virtual void calculateHessianInputs(const T* x,
         const size_t outputIndex, Matrix<T>& hessian)
     {
         cout << "Function::calculateHessianInputs()" << endl;
-        ::calculateHessian<T>(*this, x, (vector<T>&) x, outputIndex, hessian);
+        ::calculateHessian<T>(*this, x, (T*) x, getInputs(), outputIndex, hessian);
     }
 
     // Calculates the Hessian matrix of this function with respect to the
@@ -241,11 +238,12 @@ public:
     // derivative is technically a 3rd order tensor (3D matrix). This function
     // will only calculate the Hessian with respect to a single output, indexed
     // by 'outputIndex'. For scalar functions, 'outputIndex' should be 0.
-    virtual void calculateHessianParameters(const vector<T>& x,
+    virtual void calculateHessianParameters(const T* x,
         const size_t outputIndex, Matrix<T>& hessian)
     {
         cout << "Function::calculateHessianParameters()" << endl;
-        ::calculateHessian<T>(*this, x, getParameters(), outputIndex, hessian);
+        ::calculateHessian<T>(*this, x, getParameters().data(), getNumParameters(),
+            outputIndex, hessian);
     }
 };
 

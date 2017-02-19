@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   HillClimber.h
  * Author: Jon C. Hammer
  *
@@ -12,15 +12,15 @@
 #include <limits>
 #include "Trainer.h"
 #include "ErrorFunction.h"
-#include "Dataset.h"
+#include "Matrix.h"
 
 namespace opkit
 {
 
 // This class implements a hill climber. It doesn't rely on gradient information
-// in order to improve the function. Instead, it tries 4 variations in each 
-// dimension and chooses the one that produces the best results. This method 
-// converges extremely quickly for convex functions, but is more susceptible to 
+// in order to improve the function. Instead, it tries 4 variations in each
+// dimension and chooses the one that produces the best results. This method
+// converges extremely quickly for convex functions, but is more susceptible to
 // getting stuck in local minima than some other approaches.
 template <class T, class Model>
 class HillClimber : public Trainer<T, Model>
@@ -31,11 +31,11 @@ public:
         mStepSize.resize(function->getNumParameters());
         std::fill(mStepSize.begin(), mStepSize.end(), 0.1);
     }
-    
-    void iterate(const Dataset<T>& features, const Dataset<T>& labels)
+
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         const static T CHANGES [4] = {-1.25, -0.8, 0.8, 1.25};
-        
+
         // Try 4 change values and pick the one that does the best
         // for each parameter
         vector<T>& params = Trainer<T, Model>::function->getParameters();
@@ -58,7 +58,7 @@ public:
                     minError = error;
                 }
             }
-            
+
             // One of the options was better than what we already
             // had. Adjust the parameters and step size appropriately
             if (minIndex != -1)
@@ -72,7 +72,7 @@ public:
             else mStepSize[i] *= 0.8;
         }
     }
-    
+
 private:
     vector<T> mStepSize; // The step size in each dimension
 };
@@ -80,4 +80,3 @@ private:
 };
 
 #endif /* HILLCLIMBER_H */
-

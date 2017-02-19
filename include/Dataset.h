@@ -10,6 +10,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include "Matrix.h"
 #include "Error.h"
 
 using std::string;
@@ -143,6 +144,9 @@ public:
 	/// Throws an exception if that has a different number of columns than
 	/// this, or if one of its columns has a different number of values.
 	void checkCompatibility(const Dataset& that) const;
+
+    // Convert this dataset to an equivalent matrix
+    void toMatrix(Matrix<T>& dest) const;
 };
 
 template <class T>
@@ -559,6 +563,18 @@ void Dataset<T>::checkCompatibility(const Dataset<T>& that) const
 			throw Ex("Column ", std::to_string(i), " has mis-matching number of values");
 	}
 }
+
+template <class T>
+void Dataset<T>::toMatrix(Matrix<T>& dest) const
+{
+    dest.resize(rows(), cols());
+    for (size_t i = 0; i < rows(); ++i)
+    {
+        for (size_t j = 0; j < cols(); ++j)
+            dest(i, j) = m_data[i][j];
+    }
+}
+
 };
 
 #endif // Dataset_H

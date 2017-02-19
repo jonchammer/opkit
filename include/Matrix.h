@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <vector>
 #include <initializer_list>
+#include <limits>
 #include "Acceleration.h"
 using std::vector;
 
@@ -23,26 +24,42 @@ class Matrix : public Operable
 public:
 
     // Default Constructor - Creates an empty matrix.
-    Matrix() : mRows(0), mCols(0) {}
+    Matrix() :
+        mData(new T[0]()), mRows(0), mCols(0), mOwnsData(true) {}
 
     // Non-default Constructors - The first creates an empty matrix of the given
     // size. The second allows the matrix to be initialized with the given values
     // (specified in row-major order).
     Matrix(const size_t rows, const size_t cols) :
-        mData(rows * cols), mRows(rows), mCols(cols) {}
+        mData(new T[rows * cols]()), mRows(rows), mCols(cols), mOwnsData(true) {}
     Matrix(const size_t rows, const size_t cols, std::initializer_list<T> list) :
-        mData(list), mRows(rows), mCols(cols) {}
+        mData(new T[rows * cols]()), mRows(rows), mCols(cols)
+    {
+        std::copy(list.begin(), list.end(), mData);
+    }
+
+    Matrix(T* data, const size_t rows, const size_t cols) :
+        mData(data), mRows(rows), mCols(cols), mOwnsData(false) {}
 
     // Vector constructors - The first version copies the contents of 'data'
     // into this matrix. The second moves the contents, which is much cheaper.
-    Matrix(const vector<T>& data)  : mData(data), mRows(1), mCols(data.size()) {}
-    Matrix(vector<T>&& data) : mData(data), mRows(1), mCols(data.size()) {}
+    // Matrix(const vector<T>& data)  : mData(data), mRows(1), mCols(data.size()) {}
+    // Matrix(vector<T>&& data) : mData(data), mRows(1), mCols(data.size()) {}
 
     // Matrix constructors - Used for copying and moving, respectively.
     Matrix(const Matrix& other) :
-        mData(other.mData), mRows(other.mRows), mCols(other.mCols) {}
+        mData(new T[other.mRows * other.mCols]),
+        mRows(other.mRows), mCols(other.mCols), mOwnsData(true)
+    {
+        vCopy(other.mData, mData, mRows * mCols);
+    }
+
     Matrix(Matrix&& other) :
-        mData(other.mData), mRows(other.mRows), mCols(other.mCols) {}
+        mData(other.mData), mRows(other.mRows), mCols(other.mCols), mOwnsData(true)
+    {
+        other.mOwnsData = false;
+        other.mData     = nullptr;
+    }
 
     // Expression constructor - Allows syntax like:
     // Matrix y(transpose(x) * x);
@@ -54,18 +71,39 @@ public:
         exp.apply(*this);
     }
 
+    // Destructor
+    ~Matrix()
+    {
+        if (mOwnsData && mData != nullptr)
+        {
+            delete[] mData;
+            mData = nullptr;
+        }
+    }
+
     // Returns a contiguous array that is used internally to store
     // the contents of the matrix.
     T* data()
     {
-        return mData.data();
+        return mData;
     }
 
     // Returns a contiguous array that is used internally to store
     // the contents of the matrix.
     const T* data() const
     {
-        return mData.data();
+        return mData;
+    }
+
+    // Allows another array to be used internally for storage. If this Matrix
+    // already owns an array, the original will be destroyed first.
+    void setData(T* data)
+    {
+        if (mOwnsData && mData != nullptr)
+            delete[] mData;
+
+        mData     = data;
+        mOwnsData = false;
     }
 
     // Allows the user to access a given cell of the matrix
@@ -83,29 +121,44 @@ public:
     // Returns a pointer to the beginning of the given row.
     T* operator() (const size_t row)
     {
-        return mData.data() + (row * mCols);
+        return mData + (row * mCols);
     }
 
     // Returns a pointer to the beginning of the given row.
     const T* operator() (const size_t row) const
     {
-        return mData.data() + (row * mCols);
+        return mData + (row * mCols);
     }
 
-    // Updates the size of the matrix. No guarantees are made about
-    // the contents of the matrix after this operation.
+    // Updates the size of the matrix. If the desired dimensions match the
+    // current ones, nothing will be done. Otherwise, a reallocation occurs,
+    // and the content of the matrix will be lost. Callers should always assume
+    // this call is destructive (e.g. that nothing will be left in the matrix
+    // once this call completes).
     void resize(const size_t rows, const size_t cols)
     {
-        mData.resize(rows * cols);
-        mRows = rows;
-        mCols = cols;
+        if (rows != mRows && cols != mCols)
+        {
+            // Allocate new space for this matrix.
+            T* ptr = mData;
+            mData  = new T[rows * cols]();
+
+            // We don't care about preservation of the old data, but if we
+            // wanted to do so, that code would be place here.
+
+            // Update the state
+            if (mOwnsData) delete[] ptr;
+            mRows     = rows;
+            mCols     = cols;
+            mOwnsData = true;
+        }
     }
 
     // Sets every cell in the matrix to the given value. The default
     // value is 0 (for whatever type is being used).
     void fill(const T value = T{})
     {
-        std::fill(mData.begin(), mData.end(), value);
+        std::fill(mData, mData + (mRows * mCols), value);
     }
 
     // Copy a given subsection of 'other' into this matrix. 'rowBegin',
@@ -134,9 +187,10 @@ public:
     // Swap the contents of this matrix with 'other'
     void swap(Matrix<T>& other)
     {
-        mData.swap(other.mData);
-        swap(mRows, other.mRows);
-        swap(mCols, other.mCols);
+        std::swap(mData,     other.mData);
+        std::swap(mRows,     other.mRows);
+        std::swap(mCols,     other.mCols);
+        std::swap(mOwnsData, other.mOwnsData);
     }
 
     // Swaps the data in this matrix with the contents of the given buffer.
@@ -144,9 +198,27 @@ public:
     // an efficient mechanism for temporarily 'wrapping' a vector. If a
     // permanent wrapping is desired, consider using the vector move constructor
     // instead.
-    void swap(vector<T>& other)
+    // void swap(vector<T>& other)
+    // {
+    //     mData.swap(other);
+    // }
+
+    // Returns the smallest element in the given column.
+    T columnMin(const size_t column) const
     {
-        mData.swap(other);
+        T min = std::numeric_limits<T>::max();
+        for (size_t i = 0; i < mRows; ++i)
+            min = std::min(min, mData[i * mCols + column]);
+        return min;
+    }
+
+    // Returns the largest element in the given column.
+    T columnMax(const size_t column) const
+    {
+        T max = std::numeric_limits<T>::min();
+        for (size_t i = 0; i < mRows; ++i)
+            max = std::max(max, mData[i * mCols + column]);
+        return max;
     }
 
     // Returns the number of rows in the matrix
@@ -169,7 +241,7 @@ public:
         <std::is_base_of<Operable, Exp>::value>::type>
     Matrix& operator=(const Exp& exp)
     {
-        mData.clear();
+        fill();
         exp.apply(*this);
         return *this;
     }
@@ -181,9 +253,12 @@ public:
             return *this;
 
         // Copy the data as appropriate
-        mRows = other.mRows;
-        mCols = other.mCols;
-        mData = other.mData;
+        mRows     = other.mRows;
+        mCols     = other.mCols;
+        mData     = new T[mRows * mCols];
+        mOwnsData = true;
+        vCopy(other.mData, mData, mRows * mCols);
+
         return *this;
     }
 
@@ -202,12 +277,14 @@ public:
     Matrix& operator+=(const Matrix& other)
     {
         resize(other.mRows, other.mCols);
-        vAdd(other.mData.data(), mData.data(), mRows * mCols);
+        vAdd(other.mData, mData, mRows * mCols);
     }
 
 private:
-    vector<T> mData;     // Stores the actual matrix data
+    T* mData;            // Stores the actual matrix data
     size_t mRows, mCols; // Stores the matrix dimensions
+    bool mOwnsData;      // True when this matrix is responsible for the memory
+                         // stored in 'mData'
 };
 
 //----------------------------------------------------------------------------//

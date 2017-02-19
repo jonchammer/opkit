@@ -11,7 +11,7 @@
 #include <vector>
 #include "Trainer.h"
 #include "ErrorFunction.h"
-#include "Dataset.h"
+#include "Matrix.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
 
@@ -37,7 +37,7 @@ public:
         Trainer<T, Model>(function),
         mLearningRate(DEFAULT_LEARNING_RATE) {}
 
-    void iterate(const Dataset<T>& features, const Dataset<T>& labels)
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         T* params      = function->getParameters().data();
         const size_t N = function->getNumParameters();
@@ -45,7 +45,7 @@ public:
         // Estimate the complete gradient
         static vector<T> gradient(N);
         function->calculateGradientParameters(features, labels, gradient);
-        
+
         // Descend the gradient using accelerated vector operations
         vAdd(gradient.data(), params, N, -mLearningRate);
     }
@@ -83,7 +83,7 @@ public:
         mLearningRate(DEFAULT_LEARNING_RATE),
         mMomentum(DEFAULT_MOMENTUM) {}
 
-    void iterate(const Dataset<T>& features, const Dataset<T>& labels)
+    void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         T* params      = function->getParameters().data();
         T* velocity    = mVelocity.data();

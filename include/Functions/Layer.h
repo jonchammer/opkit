@@ -35,28 +35,29 @@ class Layer
 public:
     Layer(const size_t inputs, const size_t outputs, const size_t batchSize) :
         mParameters(nullptr),
-        mInputs(inputs), mOutputs(outputs), mBatchSize(batchSize)
+        mInputs(inputs), mOutputs(outputs), mBatchSize(batchSize),
         mActivation(batchSize, outputs), mDeltas(batchSize, outputs) {}
 
     // When eval is called with two arguments, we evaluate like normal, but also
     // copy the result into y
-    void eval(const Matrix<T>& x, Matrix<T>& y)
+    void eval(const Matrix<T>& x, const size_t batchSize, Matrix<T>& y)
     {
-        eval(x);
-        vCopy(mActivation.data(), y.data(),
-            mActivation.getRows() * mActivation.getCols());
+        eval(x, batchSize);
+        vCopy(mActivation.data(), y.data(), batchSize * mActivation.getCols());
     }
 
     // 1. Feedforward step
     // When eval is called with just one argument, it is assumed that the
     // result will be placed in mActivation.
-    virtual void eval(const Matrix<T>& x) = 0;
+    virtual void eval(const Matrix<T>& x, const size_t batchSize) = 0;
 
     // 2. Calculate blame terms for each node in the previous layer
-    virtual void calculateDeltas(const Matrix<T>& x, T* destination) = 0;
+    virtual void calculateDeltas(const Matrix<T>& x, const size_t batchSize,
+        T* destination) = 0;
 
     // 3. Calculate the gradient with respect to the parameters
-    virtual void calculateGradient(const Matrix<T>& x, T* gradient) = 0;
+    virtual void calculateGradient(const Matrix<T>& x, const size_t batchSize,
+        T* gradient) = 0;
 
     // Returns the number of optimizable parameters this layer uses. Some layers
     // only transform their inputs and so have 0 parameters.
@@ -125,11 +126,11 @@ public:
         mAverageMask = nullptr;
     }
 
-    void eval(const Matrix<T>& x) override
+    void eval(const Matrix<T>& x, const size_t batchSize) override
     {
         const T* xData  = x.data();
         T* yData        = mActivation.data();
-        const size_t N  = x.getRows(); // Could be 1 or batch size
+        const size_t N  = batchSize;
 
         // y = x * W^T + b
         // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
@@ -143,20 +144,22 @@ public:
         vAdd(mParameters + (mInputs * mOutputs), yData, mOutputs);
     }
 
-    void calculateDeltas(const Matrix<T>& x, T* destination) override
+    void calculateDeltas(const Matrix<T>& x, const size_t batchSize,
+        T* destination) override
     {
         const T* deltas = mDeltas.data();
-        const size_t N  = x.getRows(); // Could be 1 or batch size
+        const size_t N  = batchSize;
 
         // Calculate destination = deltas * W
         mmMultiply(deltas, mParameters, destination, N, mInputs, mOutputs);
     }
 
-    void calculateGradient(const Matrix<T>& x, T* gradient) override
+    void calculateGradient(const Matrix<T>& x, const size_t batchSize,
+        T* gradient) override
     {
         const T* input  = x.data();
         const T* deltas = mDeltas.data();
-        const size_t N  = x.getRows(); // Could be 1 or batch size
+        const size_t N  = batchSize;
 
         // Calculate the sum of the gradients for each sample in the batch using
         // a single matrix multiplication. We then need to divide every cell by
