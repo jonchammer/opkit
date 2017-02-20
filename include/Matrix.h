@@ -221,15 +221,11 @@ public:
     {
         for (size_t row = 0; row < rowCount; ++row)
         {
-            for (size_t col = 0; col < colCount; ++col)
-            {
-                size_t destRow = destRowBegin + row;
-                size_t destCol = destColBegin + col;
-                size_t srcRow  = rowBegin + row;
-                size_t srcCol  = colBegin + col;
+            // Figure out where the data starts and where we need to copy it
+            const T* src = source(rowBegin + row) + colBegin;
+            T* dest      = (*this)(destRowBegin + row) + destColBegin;
 
-                mData[destRow * mCols + destCol] = source(srcRow, srcCol);
-            }
+            vCopy(src, dest, colCount);
         }
     }
 

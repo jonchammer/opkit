@@ -78,7 +78,7 @@ public:
 
         Matrix<T> batchFeatures((T*) features.data(), batchSize, M);
         Matrix<T> batchLabels((T*) labels.data(), batchSize, N);
-        Matrix<T> predictions(batchSize, N);
+        static Matrix<T> predictions(batchSize, N);
 
         int misclassifications = 0;
 
@@ -86,8 +86,7 @@ public:
         size_t rows = features.getRows();
         while (rows >= batchSize)
         {
-            misclassifications += evalBatch(mBaseFunction, batchFeatures,
-                batchLabels, predictions);
+            misclassifications += evalBatch(batchFeatures, batchLabels, predictions);
 
             // Move to the next batch
             T* featureData = batchFeatures.data();
@@ -105,8 +104,7 @@ public:
             batchLabels.reshape(rows, N);
             predictions.reshape(rows, N);
 
-            misclassifications += evalBatch(mBaseFunction, batchFeatures,
-                batchLabels, predictions);
+            misclassifications += evalBatch(batchFeatures, batchLabels, predictions);
         }
 
         return misclassifications;

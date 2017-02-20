@@ -259,19 +259,62 @@ public:
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
-        const size_t N = features.getRows();
-        const size_t M = labels.getCols();
+        const size_t batchSize = mBaseFunction.getLayer(0)->getDeltas().getRows();
+        const size_t M         = features.getCols();
+        const size_t N         = labels.getCols();
 
-        T sum {};
-        static vector<T> prediction(M, T{});
+        Matrix<T> batchFeatures((T*) features.data(), batchSize, M);
+        Matrix<T> batchLabels((T*) labels.data(), batchSize, N);
+        static Matrix<T> predictions(batchSize, N);
+
+        T sum{};
 
         // Calculate the SSE
-        for (size_t i = 0; i < N; ++i)
+        size_t rows = features.getRows();
+        while (rows >= batchSize)
         {
-            mBaseFunction.evaluate(features(i), prediction.data());
-            for (size_t j = 0; j < M; ++j)
+            sum += evalBatch(batchFeatures, batchLabels, predictions);
+
+            // Move to the next batch
+            T* featureData = batchFeatures.data();
+            T* labelData   = batchLabels.data();
+            batchFeatures.setData(featureData + batchSize * M);
+            batchLabels.setData(labelData + batchSize * N);
+
+            rows -= batchSize;
+        }
+
+        // Deal with the leftover elements
+        if (rows > 0)
+        {
+            batchFeatures.reshape(rows, M);
+            batchLabels.reshape(rows, N);
+            predictions.reshape(rows, N);
+
+            sum += evalBatch(batchFeatures, batchLabels, predictions);
+        }
+
+        return sum;
+    }
+
+private:
+
+    // Measures the SSE for a single batch
+    T evalBatch(Matrix<T>& batchFeatures, Matrix<T>& batchLabels,
+        Matrix<T>& predictions)
+    {
+        const size_t batchSize = batchFeatures.getRows();
+        const size_t N         = batchLabels.getCols();
+
+        // Evaluate this minibatch
+        mBaseFunction.evaluateBatch(batchFeatures, predictions);
+
+        T sum {};
+        for (size_t i = 0; i < batchSize; ++i)
+        {
+            for (size_t j = 0; j < N; ++j)
             {
-                T d = labels(i, j) - prediction[j];
+                T d = batchLabels(i, j) - predictions(i, j);
                 sum += (d * d);
             }
         }
@@ -279,6 +322,7 @@ public:
         return sum;
     }
 
+public:
     void calculateGradientInputs(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient)
     {

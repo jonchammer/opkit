@@ -133,7 +133,7 @@ public:
         mAverageMask = nullptr;
     }
 
-    void eval(const Matrix<T>& x) override
+    virtual void eval(const Matrix<T>& x) override
     {
         const T* xData  = x.data();
         T* yData        = mActivation.data();
@@ -201,179 +201,162 @@ private:
 // This layer performs a simple element-wise transformation to the inputs.
 // Therefore the input and output sizes are the same, and this layer has no
 // optimizable parameters.
-// template <class T>
-// class ActivationLayer : public Layer<T>
-// {
-// public:
-//
-//     // Allows us to use the members in the base class without specifying
-//     // their complete names
-//     using Layer<T>::mOutputs;
-//     using Layer<T>::mActivation;
-//     using Layer<T>::mDeltas;
-//
-//     // Create a new layer with the given size and transformation function.
-//     ActivationLayer(const size_t size, Activation<T>* activation, bool ownActivation = true) :
-//         Layer<T>(size, size),
-//         mActivationFunction(activation),
-//         mOwnActivation(ownActivation)
-//     {}
-//
-//     ~ActivationLayer()
-//     {
-//         // If we own the pointer, we need to take charge of disposing of it.
-//         if (mOwnActivation)
-//         {
-//             delete mActivationFunction;
-//             mActivationFunction = nullptr;
-//         }
-//     }
-//
-//     // Performs the element-wise transformation according to the given
-//     // transformation function.
-//     void eval(const vector<T>& x) override
-//     {
-//         const T* xData = x.data();
-//         T* yData       = mActivation.data();
-//
-//         for (size_t i = 0; i < mOutputs; ++i)
-//             yData[i] = mActivationFunction->eval(xData[i]);
-//     }
-//
-//     // The deltas for the downstream (left) layer are simply the deltas from
-//     // this layer multiplied by the derivative of the transformation function.
-//     void calculateDeltas(const vector<T>& x, T* destination) override
-//     {
-//         const T* input      = x.data();
-//         const T* deltas     = mDeltas.data();
-//         const T* activation = mActivation.data();
-//
-//         for (size_t i = 0; i < mOutputs; ++i)
-//             destination[i] = deltas[i] * mActivationFunction->deriv(input[i], activation[i]);
-//     }
-//
-//     void calculateGradient(const vector<T>& x, T* gradient) override
-//     {
-//         // We have no parameters, so there is no gradient to calculate
-//         // for this layer.
-//     }
-//
-//     size_t getNumParameters() const override
-//     {
-//         return 0;
-//     }
-//
-// private:
-//     Activation<T>* mActivationFunction;
-//     bool mOwnActivation;
-// };
-//
-// // One of the SparseLayer implementations. This version applies a bitmask to the
-// // weights, setting many of them to 0.0 before performing the same operations as
-// // FullyConnectedLayer. This version will typically be more efficient for
-// // smaller layers, since accelerated Matrix ops can be used.
-// template <class T>
-// class MaskedSparseLayer : public Layer<T>
-// {
-// public:
-//
-//     // Allows us to use the members in the base class without specifying
-//     // their complete names
-//     using Layer<T>::mParameters;
-//     using Layer<T>::mInputs;
-//     using Layer<T>::mOutputs;
-//     using Layer<T>::mDeltas;
-//     using Layer<T>::mActivation;
-//
-//     // Create a new MasekdSparseLayer. The user specifies how many inputs and
-//     // outputs this layer has, as well as which percentage of the connections
-//     // should be filled (between [0.0 and 1.0]). The given Rand object is used
-//     // to determine which connections are made.
-//     MaskedSparseLayer(const size_t inputs, const size_t outputs,
-//         const double fillPercentage, Rand& rand) :
-//         Layer<T>(inputs, outputs), mMask(inputs * outputs)
-//     {
-//         // Effectively no mask when all cells are filled
-//         if (fillPercentage >= 1.0)
-//             mMask.setAll();
-//
-//         // Mask a certain percentage of the connections
-//         else mMask.setRandom(rand, fillPercentage);
-//     }
-//
-//     // Create a new MasekdSparseLayer. The user specifies how many inputs and
-//     // outputs this layer has, but by default, none of the connections are
-//     // enabled. Use getMask() to adjust which weights will be used.
-//     MaskedSparseLayer(const size_t inputs, const size_t outputs) :
-//         Layer<T>(inputs, outputs), mMask(inputs * outputs)
-//     {}
-//
-//     void eval(const vector<T>& x) override
-//     {
-//         //Cache these so we can avoid repeated pointer dereferencing
-//         T* yData  = mActivation.data();
-//
-//         // Apply the mask. This will zero out some portion of the weights so
-//         // they do not affect the computation. Note that if the weights are
-//         // zeroed here, we do not need to mask the weights again in
-//         // calculateDeltas(). The mask could be applied to the gradient that
-//         // is calculated in calcuateGradient(), but there's no need to do any
-//         // additional work.
-//         mMask.apply(mParameters);
-//
-//         // y = W * x + b
-//         // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
-//         // ordering, followed directly by the biases. E.g.:
-//         // [w11, w21, ... wn1]
-//         // [w12, w22, ... wn2]
-//         // [...  ...  ... ...]
-//         // [w1m, w2m, ... wnm]
-//         // [b1, b2,   ...  bm]
-//         //
-//         // This could be done with one BLAS call, but it would override the bias,
-//         // which means a copy would have to be made ahead of time. It's easier
-//         // to just use two calls.
-//         mvMultiply(mParameters, x.data(), yData, mOutputs, mInputs);
-//         vAdd(mParameters + (mInputs * mOutputs), yData, mOutputs);
-//     }
-//
-//     void calculateDeltas(const vector<T>& /*x*/, T* destination) override
-//     {
-//         const T* deltas = mDeltas.data();
-//
-//         // Calculate destination = W^T * deltas
-//         mtvMultiply(mParameters, deltas, destination, mOutputs, mInputs);
-//     }
-//
-//     void calculateGradient(const vector<T>& x, T* gradient) override
-//     {
-//         // Cache the raw pointer so we can avoid calling vector::operator[]
-//         const T* input  = x.data();
-//         const T* deltas = mDeltas.data();
-//
-//         // Calculate gradient for the weights and for the biases.
-//         // The gradients are added to the values already present.
-//         // gradient(weights) = outerProduct(x, deltas);
-//         // gradient(biases)  = deltas
-//         outerProduct(deltas, input, gradient, mOutputs, mInputs);
-//         vAdd(deltas, gradient + (mInputs * mOutputs), mOutputs);
-//     }
-//
-//     size_t getNumParameters() const override
-//     {
-//         // N * M for the weights matrix and M for the bias terms
-//         return mInputs * mOutputs + mOutputs;
-//     }
-//
-//     Bitmask<T>& getMask()
-//     {
-//         return mMask;
-//     }
-//
-// private:
-//     Bitmask<T> mMask;
-// };
-//
+template <class T>
+class ActivationLayer : public Layer<T>
+{
+public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mOutputs;
+    using Layer<T>::mActivation;
+    using Layer<T>::mDeltas;
+    using Layer<T>::mBatchSize;
+
+    // Create a new layer with the given size and transformation function.
+    ActivationLayer(const size_t size, const size_t batchSize,
+        Activation<T>* activation, bool ownActivation = true) :
+        Layer<T>(size, size, batchSize),
+        mActivationFunction(activation),
+        mOwnActivation(ownActivation)
+    {}
+
+    ~ActivationLayer()
+    {
+        // If we own the pointer, we need to take charge of disposing of it.
+        if (mOwnActivation)
+        {
+            delete mActivationFunction;
+            mActivationFunction = nullptr;
+        }
+    }
+
+    // Performs the element-wise transformation according to the given
+    // transformation function.
+    void eval(const Matrix<T>& x) override
+    {
+        const T* xData = x.data();
+        T* yData       = mActivation.data();
+
+        const size_t N = mBatchSize * mOutputs;
+        for (size_t i = 0; i < N; ++i)
+            yData[i] = mActivationFunction->eval(xData[i]);
+    }
+
+    // The deltas for the downstream (left) layer are simply the deltas from
+    // this layer multiplied by the derivative of the transformation function.
+    void calculateDeltas(const Matrix<T>& x, T* destination) override
+    {
+        const T* input      = x.data();
+        const T* deltas     = mDeltas.data();
+        const T* activation = mActivation.data();
+
+        const size_t N = mBatchSize * mOutputs;
+        for (size_t i = 0; i < N; ++i)
+            destination[i] = deltas[i] * mActivationFunction->deriv(input[i], activation[i]);
+    }
+
+    void calculateGradient(const Matrix<T>& x, T* gradient) override
+    {
+        // We have no parameters, so there is no gradient to calculate
+        // for this layer.
+    }
+
+    size_t getNumParameters() const override
+    {
+        return 0;
+    }
+
+private:
+    Activation<T>* mActivationFunction;
+    bool mOwnActivation;
+};
+
+// One of the SparseLayer implementations. This version applies a bitmask to the
+// weights, setting many of them to 0.0 before performing the same operations as
+// FullyConnectedLayer. This version will typically be more efficient for
+// smaller layers, since accelerated Matrix ops can be used.
+template <class T>
+class MaskedSparseLayer : public FullyConnectedLayer<T>
+{
+public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mParameters;
+    using Layer<T>::mInputs;
+    using Layer<T>::mOutputs;
+    using Layer<T>::mDeltas;
+    using Layer<T>::mActivation;
+    using Layer<T>::mBatchSize;
+
+    // Create a new MasekdSparseLayer. The user specifies how many inputs and
+    // outputs this layer has, as well as which percentage of the connections
+    // should be filled (between [0.0 and 1.0]). The given Rand object is used
+    // to determine which connections are made.
+    MaskedSparseLayer(const size_t inputs, const size_t outputs,
+        const size_t batchSize, const double fillPercentage, Rand& rand) :
+        FullyConnectedLayer<T>(inputs, outputs, batchSize), mMask(inputs * outputs)
+    {
+        // Effectively no mask when all cells are filled
+        if (fillPercentage >= 1.0)
+            mMask.setAll();
+
+        // Mask a certain percentage of the connections
+        else mMask.setRandom(rand, fillPercentage);
+    }
+
+    // Create a new MasekdSparseLayer. The user specifies how many inputs and
+    // outputs this layer has, but by default, none of the connections are
+    // enabled. Use getMask() to adjust which weights will be used.
+    MaskedSparseLayer(const size_t inputs, const size_t outputs,
+        const size_t batchSize) :
+        FullyConnectedLayer<T>(inputs, outputs, batchSize), mMask(inputs * outputs)
+    {}
+
+    void eval(const Matrix<T>& x) override
+    {
+        const T* xData  = x.data();
+        T* yData        = mActivation.data();
+        const size_t N  = mBatchSize;
+
+        // Apply the mask. This will zero out some portion of the weights so
+        // they do not affect the computation. Note that if the weights are
+        // zeroed here, we do not need to mask the weights again in
+        // calculateDeltas(). The mask could be applied to the gradient that
+        // is calculated in calcuateGradient(), but there's no need to do any
+        // additional work.
+        mMask.apply(mParameters);
+
+        // y = x * W^T + b
+        mmtMultiply(xData, mParameters, yData, N, mOutputs, mInputs);
+
+        // We could also multiply [1, 1, ...]^T * biases to get a full matrix
+        // that could directly be added to y, but that would involve more
+        // memory overhead.
+        const T* biases = mParameters + (mInputs * mOutputs);
+        for (size_t i = 0; i < N; ++i)
+        {
+            vAdd(biases, yData, mOutputs);
+            yData += mOutputs;
+        }
+    }
+
+    size_t getNumParameters() const override
+    {
+        // N * M for the weights matrix and M for the bias terms
+        return mInputs * mOutputs + mOutputs;
+    }
+
+    Bitmask<T>& getMask()
+    {
+        return mMask;
+    }
+
+private:
+    Bitmask<T> mMask;
+};
+
 // // Fundamentally, CompressedSparseLayer is similar to FullyConnectedLayer.
 // // The only difference is that this class uses sparse storage to reduce the
 // // computational complexity of the evaluation and backprop steps.
