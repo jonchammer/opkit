@@ -145,7 +145,7 @@ void normalizeVarianceAllColumns(Dataset<T>& dataset)
 template <class T>
 Dataset<T> convertColumnToOneHot(const Dataset<T>& source, size_t column)
 {
-    int valueCount = source.valueCount(column);
+    size_t valueCount = source.valueCount(column);
     if (valueCount == 0) return source;
 
     Dataset<T> dest;

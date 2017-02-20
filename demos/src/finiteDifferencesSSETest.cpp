@@ -25,14 +25,13 @@ public:
     TestFunction() : StandardFunction<T>(2, 2, 6) {}
     using StandardFunction<T>::mParameters;
 
-    void evaluate(const vector<T>& input, vector<T>& output)
+    void evaluate(const T* input, T* output)
     {
-        output.resize(2);
         output[0] = mParameters[0] * mParameters[0] * input[0] * input[0] + mParameters[1] * input[0] + mParameters[2];
         output[1] = mParameters[3] * mParameters[3] * input[1] * input[1] + mParameters[4] * input[1] + mParameters[5];
     }
 
-    void calculateJacobianInputs(const vector<T>& x, Matrix<T>& jacobian)
+    void calculateJacobianInputs(const T* x, Matrix<T>& jacobian)
     {
         jacobian.resize(2, 2);
         jacobian(0, 0) = T(2.0) * x[0] * mParameters[0] * mParameters[0] + mParameters[1];
@@ -41,7 +40,7 @@ public:
         jacobian(1, 1) = T(2.0) * x[1] * mParameters[3] * mParameters[3] + mParameters[4];
     }
 
-    void calculateJacobianParameters(const vector<T>& x, Matrix<T>& jacobian)
+    void calculateJacobianParameters(const T* x, Matrix<T>& jacobian)
     {
         jacobian.resize(2, 6);
         jacobian.fill(T{});
@@ -53,7 +52,7 @@ public:
         jacobian(1, 5) = T(1.0);
     }
 
-    void calculateHessianInputs(const vector<T>& /*x*/,
+    void calculateHessianInputs(const T* /*x*/,
         const size_t outputIndex, Matrix<T>& hessian)
     {
         hessian.resize(2, 2);
@@ -65,7 +64,7 @@ public:
             hessian(1, 1) = T(2.0) * mParameters[3] * mParameters[3];
     }
 
-    void calculateHessianParameters(const vector<T>& x,
+    void calculateHessianParameters(const T* x,
         const size_t outputIndex, Matrix<T>& hessian)
     {
         hessian.resize(6, 6);
@@ -86,14 +85,23 @@ int main()
     randomizeParameters(func.getParameters(), 0.0, 0.1);
 
     // Create a synthetic dataset
-    Dataset<Type> features, labels;
-    features.setSize(5, 2);
-    labels.setSize(5, 3);
-    features.row(0) = {1.0, 2.0};   labels.row(0) = {3.0, 2.0, 4.0};
-    features.row(1) = {0.5, 3.0};   labels.row(1) = {3.5, 1.5, 3.0};
-    features.row(2) = {1.0, 3.0};   labels.row(2) = {4.0, 3.0, 6.0};
-    features.row(3) = {-0.5, 1.0};  labels.row(3) = {0.5, -0.5, -1.0};
-    features.row(4) = {-2.0, -1.0}; labels.row(4) = {-3.0, 2.0, 4.0};
+    Matrix<Type> features(5, 2,
+    {
+         1.0,  2.0,
+         0.5,  3.0,
+         1.0,  3.0,
+        -0.5,  1.0,
+        -2.0, -1.0
+    });
+
+    Matrix<Type> labels(5, 3,
+    {
+         3.0,  2.0,  4.0,
+         3.5,  1.5,  3.0,
+         4.0,  3.0,  6.0,
+         0.5, -0.5, -1.0,
+        -3.0,  2.0,  4.0
+    });
 
     SSEFunction<Type, TestFunction<Type>> errorFunction(func);
 
@@ -170,6 +178,5 @@ int main()
         }
     }
     cout << "Hessian Inputs - PASS" << endl;
-
     return 0;
 }

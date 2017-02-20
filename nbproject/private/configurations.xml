@@ -4,7 +4,7 @@
     <df root="." name="0">
       <df name="build">
         <df name="CMakeFiles">
-          <df name="3.5.1">
+          <df name="3.7.1">
             <df name="CompilerIdC">
               <in>CMakeCCompilerId.c</in>
             </df>
@@ -12,25 +12,7 @@
               <in>CMakeCXXCompilerId.cpp</in>
             </df>
           </df>
-          <df name="athena.dir">
-            <df name="src">
-              <df name="Functions">
-              </df>
-              <df name="Utils">
-              </df>
-            </df>
-          </df>
           <df name="CMakeTmp">
-          </df>
-          <df name="opkit.dir">
-            <df name="src">
-              <df name="Functions">
-              </df>
-              <df name="Utils">
-              </df>
-            </df>
-          </df>
-          <df name="Progress">
           </df>
           <in>feature_tests.c</in>
           <in>feature_tests.cxx</in>
@@ -41,7 +23,7 @@
       <df name="demos">
         <df name="build">
           <df name="CMakeFiles">
-            <df name="3.5.1">
+            <df name="3.7.1">
               <df name="CompilerIdC">
                 <in>CMakeCCompilerId.c</in>
               </df>
@@ -59,8 +41,27 @@
             <in>feature_tests.cxx</in>
           </df>
         </df>
+        <df name="CMakeFiles">
+          <df name="3.7.1">
+            <df name="CompilerIdC">
+              <in>CMakeCCompilerId.c</in>
+            </df>
+            <df name="CompilerIdCXX">
+              <in>CMakeCXXCompilerId.cpp</in>
+            </df>
+          </df>
+          <df name="CMakeTmp">
+          </df>
+          <df name="demo.dir">
+            <df name="src">
+            </df>
+          </df>
+          <in>feature_tests.c</in>
+          <in>feature_tests.cxx</in>
+        </df>
         <df name="src">
           <in>activationTest.cpp</in>
+          <in>finiteDifferencesSSETest.cpp</in>
           <in>finiteDifferencesTest.cpp</in>
           <in>fullyConnectedBackpropTest.cpp</in>
           <in>heterogeneousLayerBackpropTest.cpp</in>
@@ -79,6 +80,7 @@
           <in>ActivationFunction.h</in>
           <in>CategoricalErrorFunction.h</in>
           <in>CommonFunctions.h</in>
+          <in>CrossEntropyFunction.h</in>
           <in>ErrorFunction.h</in>
           <in>Function.h</in>
           <in>Layer.h</in>
@@ -86,6 +88,7 @@
           <in>SSEFunction.h</in>
         </df>
         <df name="Trainers">
+          <in>Adam.h</in>
           <in>EvolutionaryOptimizer.h</in>
           <in>GradientDescent.h</in>
           <in>HessianFreeOptimizer.h</in>
@@ -95,30 +98,25 @@
           <in>Trainer.h</in>
         </df>
         <df name="Utils">
+          <in>Acceleration.h</in>
           <in>BatchIterator.h</in>
+          <in>Bitmask.h</in>
           <in>DataLoader.h</in>
           <in>DataNormalizer.h</in>
           <in>ModelPersistence.h</in>
           <in>PrettyPrinter.h</in>
+          <in>Rand.h</in>
+          <in>RandomIndexIterator.h</in>
           <in>Timer.h</in>
         </df>
-        <in>Error.h</in>
         <in>Dataset.h</in>
+        <in>Error.h</in>
+        <in>Matrix.h</in>
+        <in>SparseMatrixWrapper.h</in>
         <in>Tensor3D.h</in>
+        <in>VectorOps.h</in>
       </df>
-      <df name="src">
-        <df name="Functions">
-          <in>ActivationFunction.cpp</in>
-          <in>Function.cpp</in>
-          <in>Layer.cpp</in>
-          <in>NeuralNetwork.cpp</in>
-        </df>
-        <df name="Utils">
-          <in>PrettyPrinter.cpp</in>
-        </df>
-        <in>Dataset.cpp</in>
-        <in>Tensor3D.cpp</in>
-      </df>
+      <in>opkit.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>build/Makefile</projectmakefile>
@@ -171,7 +169,7 @@
     <conf name="Release" type="0">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
-        <platform>3</platform>
+        <platform>2</platform>
       </toolsSet>
       <compile>
         <compiledirpicklist>

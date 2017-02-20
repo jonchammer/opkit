@@ -45,7 +45,8 @@ namespace opkit
         const size_t M, const size_t N, const size_t K,
         const double alpha = 1.0, const double beta = 0.0)
     {
-        USE_ALL_CORES();
+        USE_ONE_CORE();
+        //USE_ALL_CORES();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -83,7 +84,8 @@ namespace opkit
         const size_t M, const size_t N, const size_t K,
         const float alpha = 1.0f, const float beta = 0.0f)
     {
-        USE_ALL_CORES();
+        USE_ONE_CORE();
+        //USE_ALL_CORES();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -121,7 +123,8 @@ namespace opkit
         const size_t M, const size_t N, const size_t K,
         const double alpha = 1.0, const double beta = 0.0)
     {
-        USE_ALL_CORES();
+        USE_ONE_CORE();
+        //USE_ALL_CORES();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -159,7 +162,8 @@ namespace opkit
         const size_t M, const size_t N, const size_t K,
         const float alpha = 1.0f, const float beta = 0.0f)
     {
-        USE_ALL_CORES();
+        USE_ONE_CORE();
+        //USE_ALL_CORES();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -197,7 +201,8 @@ namespace opkit
         const size_t M, const size_t N, const size_t K,
         const double alpha = 1.0, const double beta = 0.0)
     {
-        USE_ALL_CORES();
+        USE_ONE_CORE();
+        //USE_ALL_CORES();
 
         // Parameters:
         // 1.  Row-major or Col-major
@@ -235,7 +240,8 @@ namespace opkit
         const size_t M, const size_t N, const size_t K,
         const float alpha = 1.0f, const float beta = 0.0f)
     {
-        USE_ALL_CORES();
+        USE_ONE_CORE();
+        //USE_ALL_CORES();
 
         // Parameters:
         // 1.  Row-major or Col-major

@@ -34,6 +34,20 @@ void printVector(const std::vector<T>& vec, size_t decimalPlaces = 2)
 }
 
 template <class T>
+void printVector(const T* vec, const size_t N, size_t decimalPlaces = 2)
+{
+    std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);
+    std::cout << "[";
+    for (size_t i = 0; i < N - 1; ++i)
+        std::cout << vec[i] << ", ";
+
+    if (N >= 1)
+        std::cout << vec[N - 1];
+
+    std::cout << "]" << std::endl;
+}
+
+template <class T>
 void printDataset(const Dataset<T>& mat, size_t decimalPlaces = 2, size_t width = 6)
 {
     std::cout << std::fixed << std::showpoint << std::setprecision(decimalPlaces);

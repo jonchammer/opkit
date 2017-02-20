@@ -200,42 +200,48 @@ void NeuralNetwork<T>::evaluate(const T* input, T* output)
     // to the next layer.
     for (int i = 0; i < mLayers.size() - 1; ++i)
     {
-        mLayers[i]->eval(*x, 1);
+        mLayers[i]->setEffectiveBatchSize(1);
+        mLayers[i]->eval(*x);
         x = &mLayers[i]->getActivation();
     }
 
     // Feed the output of the last layer into 'output'
-    mLayers[mLayers.size() - 1]->eval(*x, 1, out);
+    mLayers.back()->setEffectiveBatchSize(1);
+    mLayers.back()->eval(*x, out);
 }
 
 template <class T>
 void NeuralNetwork<T>::evaluateBatch(const Matrix<T>& input, Matrix<T>& output)
 {
+    const size_t N     = input.getRows();
     const Matrix<T>* x = &input;
 
     // Feed the output of the previous layer as input
     // to the next layer.
     for (int i = 0; i < mLayers.size() - 1; ++i)
     {
-        mLayers[i]->eval(*x, input.getRows());
+        mLayers[i]->setEffectiveBatchSize(N);
+        mLayers[i]->eval(*x);
         x = &mLayers[i]->getActivation();
     }
 
     // Feed the output of the last layer into 'output'
-    mLayers[mLayers.size() - 1]->eval(*x, input.getRows(), output);
+    mLayers.back()->setEffectiveBatchSize(N);
+    mLayers.back()->eval(*x, output);
 }
 
 template <class T>
 void NeuralNetwork<T>::calculateDeltas()
 {
+    const size_t N = mLayers.front()->getActivation().getRows();
+
     for (size_t i = mLayers.size() - 1; i >= 1; --i)
     {
         Layer<T>*& current = mLayers[i];
         Layer<T>*& prev    = mLayers[i - 1];
 
-        const size_t batchSize = current->getActivation().getRows();
-        current->calculateDeltas(prev->getActivation(), batchSize,
-            prev->getDeltas().data());
+        current->setEffectiveBatchSize(N);
+        current->calculateDeltas(prev->getActivation(), prev->getDeltas().data());
     }
 }
 
@@ -243,14 +249,13 @@ template <class T>
 void NeuralNetwork<T>::calculateGradientParameters(const T* input, T* gradient)
 {
     // Create a matrix that wraps the contents of 'input'.
-    static Matrix<T> temp((T*) input, 1, getInputs());
-    temp.setData((T*)input);
-
+    Matrix<T> temp((T*) input, 1, getInputs());
     const Matrix<T>* x = &temp;
 
     for (Layer<T>*& l : mLayers)
     {
-        l->calculateGradient(*x, 1, gradient);
+        l->setEffectiveBatchSize(1);
+        l->calculateGradient(*x, gradient);
 
         // Get ready for the next iteration
         x         = &l->getActivation();
@@ -261,10 +266,13 @@ void NeuralNetwork<T>::calculateGradientParameters(const T* input, T* gradient)
 template <class T>
 void NeuralNetwork<T>::calculateGradientParametersBatch(const Matrix<T>& input, T* gradient)
 {
+    const size_t N     = input.getRows();
     const Matrix<T>* x = &input;
+
     for (Layer<T>*& l : mLayers)
     {
-        l->calculateGradient(*x, input.getRows(), gradient);
+        l->setEffectiveBatchSize(N);
+        l->calculateGradient(*x, gradient);
 
         // Get ready for the next iteration
         x         = &l->getActivation();
@@ -325,7 +333,8 @@ void NeuralNetwork<T>::calculateJacobianInputs(const T* x, Matrix<T>& jacobian)
         // 3. Relate blame terms to the gradient. This operation is the
         // same as backpropagating the deltas in the first layer to the
         // inputs (x).
-        mLayers.front()->calculateDeltas(input, 1, jacobian(i));
+        mLayers.front()->setEffectiveBatchSize(1);
+        mLayers.front()->calculateDeltas(input, jacobian(i));
     }
 }
 

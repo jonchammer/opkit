@@ -25,14 +25,14 @@ bool testBackpropParameters(NeuralNetwork<Type>& network, vector<Type>& input)
 {
     cout << "Testing Backprop." << endl;
     Matrix<Type> jacobian, jacobian2;
-    network.calculateJacobianParameters(input, jacobian);
-    network.Function<Type>::calculateJacobianParameters(input, jacobian2);
+    network.calculateJacobianParameters(input.data(), jacobian);
+    network.Function<Type>::calculateJacobianParameters(input.data(), jacobian2);
 
-    cout << "Exact:" << endl;
-    printMatrix(jacobian, 8, 11);
-   //
-    cout << "Finite Differences:" << endl;
-    printMatrix(jacobian2, 8, 11);
+   //  cout << "Exact:" << endl;
+   //  printMatrix(jacobian, 8, 11);
+   // //
+   //  cout << "Finite Differences:" << endl;
+   //  printMatrix(jacobian2, 8, 11);
 
     for (size_t j = 0; j < jacobian.getRows(); ++j)
     {
@@ -57,8 +57,8 @@ bool testBackpropInputs(NeuralNetwork<Type>& network, vector<Type>& input)
 {
     cout << "Testing Backprop." << endl;
     Matrix<Type> jacobian, jacobian2;
-    network.calculateJacobianInputs(input, jacobian);
-    network.Function<Type>::calculateJacobianInputs(input, jacobian2);
+    network.calculateJacobianInputs(input.data(), jacobian);
+    network.Function<Type>::calculateJacobianInputs(input.data(), jacobian2);
 
 //    cout << "Exact:" << endl;
 //    printMatrix(jacobian, 8, 11);
@@ -88,14 +88,16 @@ int main()
     // Create a test network
     NeuralNetwork<Type> network;
 
-    network.addLayer(new FullyConnectedLayer<Type>(3, 100));
-    network.addLayer(new ActivationLayer<Type>(100, new tanhActivation<Type>()));
-    network.addLayer(new FullyConnectedLayer<Type>(100, 50));
-    network.addLayer(new ActivationLayer<Type>(50, new tanhActivation<Type>()));
-    network.addLayer(new FullyConnectedLayer<Type>(50, 2));
+    network.addLayer(new FullyConnectedLayer<Type>(3, 100, 1));
+    //network.addLayer(new ActivationLayer<Type>(100, new tanhActivation<Type>()));
+    network.addLayer(new FullyConnectedLayer<Type>(100, 50, 1));
+    //network.addLayer(new ActivationLayer<Type>(50, new tanhActivation<Type>()));
+    network.addLayer(new FullyConnectedLayer<Type>(50, 2, 1));
     //network.addLayer(new ActivationLayer<Type>(2, new tanhActivation<Type>()));
-    network.addLayer(new SoftmaxLayer<Type>(2));
-    network.initializeParameters();
+    //network.addLayer(new SoftmaxLayer<Type>(2));
+
+    Rand rand(42);
+    network.initializeParameters(rand);
 
     // Test case
     vector<Type> input =

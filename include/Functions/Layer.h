@@ -40,24 +40,22 @@ public:
 
     // When eval is called with two arguments, we evaluate like normal, but also
     // copy the result into y
-    void eval(const Matrix<T>& x, const size_t batchSize, Matrix<T>& y)
+    void eval(const Matrix<T>& x, Matrix<T>& y)
     {
-        eval(x, batchSize);
-        vCopy(mActivation.data(), y.data(), batchSize * mActivation.getCols());
+        eval(x);
+        vCopy(mActivation.data(), y.data(), mBatchSize * mOutputs);
     }
 
     // 1. Feedforward step
     // When eval is called with just one argument, it is assumed that the
     // result will be placed in mActivation.
-    virtual void eval(const Matrix<T>& x, const size_t batchSize) = 0;
+    virtual void eval(const Matrix<T>& x) = 0;
 
     // 2. Calculate blame terms for each node in the previous layer
-    virtual void calculateDeltas(const Matrix<T>& x, const size_t batchSize,
-        T* destination) = 0;
+    virtual void calculateDeltas(const Matrix<T>& x, T* destination) = 0;
 
     // 3. Calculate the gradient with respect to the parameters
-    virtual void calculateGradient(const Matrix<T>& x, const size_t batchSize,
-        T* gradient) = 0;
+    virtual void calculateGradient(const Matrix<T>& x, T* gradient) = 0;
 
     // Returns the number of optimizable parameters this layer uses. Some layers
     // only transform their inputs and so have 0 parameters.
@@ -77,6 +75,14 @@ public:
     // if they need to know when the Layer has been assigned to a network (and
     // thus given storage parameters to use).
     virtual void onStorageAssigned() {}
+
+    // The batch size provided in the constructor determines the maximum number
+    // of rows that can be examined. By calling this function, a smaller upper
+    // bound can be used (e.g. to temporarily work one sample at a time).
+    void setEffectiveBatchSize(const size_t batchSize)
+    {
+        mBatchSize = std::min(batchSize, mDeltas.getRows());
+    }
 
     // General layer properties
     size_t getInputs() const    { return mInputs;     }
@@ -109,9 +115,10 @@ public:
     using Layer<T>::mOutputs;
     using Layer<T>::mDeltas;
     using Layer<T>::mActivation;
+    using Layer<T>::mBatchSize;
 
-    // Create a new FullyConnectedLayer. We need only specify the input and
-    // output dimensions.
+    // Create a new FullyConnectedLayer. We need to specify the input and
+    // output dimensions, as well as the maximum batch size.
     FullyConnectedLayer(const size_t inputs, const size_t outputs,
         const size_t batchSize) :
         Layer<T>(inputs, outputs, batchSize),
@@ -126,11 +133,11 @@ public:
         mAverageMask = nullptr;
     }
 
-    void eval(const Matrix<T>& x, const size_t batchSize) override
+    void eval(const Matrix<T>& x) override
     {
         const T* xData  = x.data();
         T* yData        = mActivation.data();
-        const size_t N  = batchSize;
+        const size_t N  = mBatchSize;
 
         // y = x * W^T + b
         // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
@@ -141,25 +148,32 @@ public:
         // [w1m, w2m, ... wnm]
         // [b1, b2,   ...  bm]
         mmtMultiply(xData, mParameters, yData, N, mOutputs, mInputs);
-        vAdd(mParameters + (mInputs * mOutputs), yData, mOutputs);
+
+        // We could also multiply [1, 1, ...]^T * biases to get a full matrix
+        // that could directly be added to y, but that would involve more
+        // memory overhead.
+        const T* biases = mParameters + (mInputs * mOutputs);
+        for (size_t i = 0; i < N; ++i)
+        {
+            vAdd(biases, yData, mOutputs);
+            yData += mOutputs;
+        }
     }
 
-    void calculateDeltas(const Matrix<T>& x, const size_t batchSize,
-        T* destination) override
+    void calculateDeltas(const Matrix<T>& x, T* destination) override
     {
         const T* deltas = mDeltas.data();
-        const size_t N  = batchSize;
+        const size_t N  = mBatchSize;
 
         // Calculate destination = deltas * W
         mmMultiply(deltas, mParameters, destination, N, mInputs, mOutputs);
     }
 
-    void calculateGradient(const Matrix<T>& x, const size_t batchSize,
-        T* gradient) override
+    void calculateGradient(const Matrix<T>& x, T* gradient) override
     {
         const T* input  = x.data();
         const T* deltas = mDeltas.data();
-        const size_t N  = batchSize;
+        const size_t N  = mBatchSize;
 
         // Calculate the sum of the gradients for each sample in the batch using
         // a single matrix multiplication. We then need to divide every cell by

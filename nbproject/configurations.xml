@@ -3,6 +3,10 @@
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="0">
       <df name="demos">
+        <df name="src">
+          <in>fullyConnectedBackpropTest.cpp</in>
+          <in>sseNeuralNetworkTest.cpp</in>
+        </df>
         <in>heterogeneousLayerBackpropTest.cpp</in>
         <in>mnistConvolutionExample.cpp</in>
         <in>sseNeuralNetworkTest.cpp</in>
@@ -14,19 +18,6 @@
         <df name="Trainers">
           <in>RMSProp.h</in>
         </df>
-      </df>
-      <df name="src">
-        <df name="Functions">
-          <in>ActivationFunction.cpp</in>
-          <in>Function.cpp</in>
-          <in>Layer.cpp</in>
-          <in>NeuralNetwork.cpp</in>
-        </df>
-        <df name="Utils">
-          <in>PrettyPrinter.cpp</in>
-        </df>
-        <in>Dataset.cpp</in>
-        <in>Tensor3D.cpp</in>
       </df>
     </df>
     <logicalFolder name="ExternalFiles"
@@ -95,37 +86,6 @@
       </item>
       <item path="include/Trainers/RMSProp.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="src/Functions/ActivationFunction.cpp"
-            ex="false"
-            tool="1"
-            flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Functions/Function.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Functions/Layer.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Functions/NeuralNetwork.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Dataset.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Tensor3D.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Utils/PrettyPrinter.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
     </conf>
     <conf name="Release" type="0">
       <toolsSet>
@@ -134,7 +94,11 @@
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <flagsDictionary>
-        <element flagsID="0" commonFlags="-std=c++11"/>
+        <element flagsID="0"
+                 commonFlags="-mtune=generic -march=x86-64 -O3 -std=c++11 -fstack-protector-strong"/>
+        <element flagsID="1"
+                 commonFlags="-mtune=generic -march=x86-64 -std=c++11 -fstack-protector-strong"/>
+        <element flagsID="2" commonFlags="-std=c++11"/>
       </flagsDictionary>
       <codeAssistance>
       </codeAssistance>
@@ -146,13 +110,6 @@
           <executablePath>build\optimization_toolkit.exe</executablePath>
           <ccTool>
             <standard>8</standard>
-            <incDir>
-              <pElem>include</pElem>
-              <pElem>include/Functions</pElem>
-              <pElem>include/Trainers</pElem>
-              <pElem>include/Utils</pElem>
-              <pElem>build</pElem>
-            </incDir>
           </ccTool>
         </makeTool>
         <preBuild>
@@ -165,51 +122,92 @@
             ex="false"
             tool="1"
             flavor2="8">
-        <ccTool flags="0">
+        <ccTool flags="2">
+          <incDir>
+            <pElem>include</pElem>
+            <pElem>include/Functions</pElem>
+            <pElem>include/Trainers</pElem>
+            <pElem>include/Utils</pElem>
+            <pElem>build</pElem>
+          </incDir>
         </ccTool>
       </item>
-      <item path="demos/mnistConvolutionExample.cpp" ex="false" tool="1" flavor2="0">
+      <item path="demos/mnistConvolutionExample.cpp" ex="false" tool="1" flavor2="8">
+        <ccTool flags="2">
+          <incDir>
+            <pElem>include</pElem>
+            <pElem>include/Functions</pElem>
+            <pElem>include/Trainers</pElem>
+            <pElem>include/Utils</pElem>
+            <pElem>build</pElem>
+          </incDir>
+        </ccTool>
       </item>
-      <item path="demos/sseNeuralNetworkTest.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="include/Functions/CategoricalErrorFunction.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="include/Trainers/RMSProp.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="src/Functions/ActivationFunction.cpp"
+      <item path="demos/src/fullyConnectedBackpropTest.cpp"
             ex="false"
             tool="1"
             flavor2="8">
         <ccTool flags="0">
+          <incDir>
+            <pElem>demos/build</pElem>
+          </incDir>
         </ccTool>
       </item>
-      <item path="src/Functions/Function.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
+      <item path="demos/src/sseNeuralNetworkTest.cpp" ex="false" tool="1" flavor2="8">
+        <ccTool flags="1">
+          <incDir>
+            <pElem>/usr/include/openblas</pElem>
+            <pElem>demos</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>__GNUC_STDC_INLINE__=1</Elem>
+            <Elem>__GXX_EXPERIMENTAL_CXX0X__=1</Elem>
+            <Elem>__REGISTER_PREFIX__=</Elem>
+            <Elem>__STDC_UTF_16__=1</Elem>
+            <Elem>__STDC_UTF_32__=1</Elem>
+            <Elem>__STRICT_ANSI__=1</Elem>
+            <Elem>__USER_LABEL_PREFIX__=</Elem>
+            <Elem>__cplusplus=201103L</Elem>
+            <Elem>__cpp_alias_templates=200704</Elem>
+            <Elem>__cpp_attributes=200809</Elem>
+            <Elem>__cpp_constexpr=200704</Elem>
+            <Elem>__cpp_decltype=200707</Elem>
+            <Elem>__cpp_delegating_constructors=200604</Elem>
+            <Elem>__cpp_inheriting_constructors=200802</Elem>
+            <Elem>__cpp_initializer_lists=200806</Elem>
+            <Elem>__cpp_lambdas=200907</Elem>
+            <Elem>__cpp_nsdmi=200809</Elem>
+            <Elem>__cpp_range_based_for=200907</Elem>
+            <Elem>__cpp_raw_strings=200710</Elem>
+            <Elem>__cpp_ref_qualifiers=200710</Elem>
+            <Elem>__cpp_rvalue_reference=200610</Elem>
+            <Elem>__cpp_static_assert=200410</Elem>
+            <Elem>__cpp_unicode_characters=200704</Elem>
+            <Elem>__cpp_unicode_literals=200710</Elem>
+            <Elem>__cpp_user_defined_literals=200809</Elem>
+            <Elem>__cpp_variadic_templates=200704</Elem>
+          </preprocessorList>
         </ccTool>
       </item>
-      <item path="src/Functions/Layer.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
+      <item path="demos/sseNeuralNetworkTest.cpp" ex="false" tool="1" flavor2="8">
+        <ccTool flags="2">
+          <incDir>
+            <pElem>include</pElem>
+            <pElem>include/Functions</pElem>
+            <pElem>include/Trainers</pElem>
+            <pElem>include/Utils</pElem>
+            <pElem>build</pElem>
+          </incDir>
         </ccTool>
       </item>
-      <item path="src/Functions/NeuralNetwork.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
+      <folder path="0/demos/src">
+        <ccTool>
+          <incDir>
+            <pElem>/usr/local/include/opkit</pElem>
+            <pElem>demos/src</pElem>
+          </incDir>
         </ccTool>
-      </item>
-      <item path="src/Dataset.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Tensor3D.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
-      <item path="src/Utils/PrettyPrinter.cpp" ex="false" tool="1" flavor2="8">
-        <ccTool flags="0">
-        </ccTool>
-      </item>
+      </folder>
     </conf>
   </confs>
 </configurationDescriptor>

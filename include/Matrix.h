@@ -8,6 +8,11 @@
 #include "Acceleration.h"
 using std::vector;
 
+#include <iostream>
+using std::cout;
+using std::cin;
+using std::endl;
+
 namespace opkit
 {
 
@@ -25,21 +30,35 @@ public:
 
     // Default Constructor - Creates an empty matrix.
     Matrix() :
-        mData(new T[0]()), mRows(0), mCols(0), mOwnsData(true) {}
+        mData(new T[0]()), mRows(0), mCols(0), mOwnsData(true)
+    {
+        // cout << "DEFAULT CONSTRUCTOR: " << this << endl;
+        // cin.get();
+    }
 
     // Non-default Constructors - The first creates an empty matrix of the given
     // size. The second allows the matrix to be initialized with the given values
     // (specified in row-major order).
     Matrix(const size_t rows, const size_t cols) :
-        mData(new T[rows * cols]()), mRows(rows), mCols(cols), mOwnsData(true) {}
+        mData(new T[rows * cols]()), mRows(rows), mCols(cols), mOwnsData(true)
+    {
+        // cout << "NEW MATRIX: " << rows << " x " << cols << " " << this << endl;
+        // cin.get();
+    }
     Matrix(const size_t rows, const size_t cols, std::initializer_list<T> list) :
         mData(new T[rows * cols]()), mRows(rows), mCols(cols)
     {
         std::copy(list.begin(), list.end(), mData);
+        // cout << "NEW MATRIX INITIALIZED: " << rows << " x " << cols << endl;
+        // cin.get();
     }
 
     Matrix(T* data, const size_t rows, const size_t cols) :
-        mData(data), mRows(rows), mCols(cols), mOwnsData(false) {}
+        mData(data), mRows(rows), mCols(cols), mOwnsData(false)
+    {
+        // cout << "MATRIX WRAPPER: " << rows << " x " << cols << endl;
+        // cin.get();
+    }
 
     // Vector constructors - The first version copies the contents of 'data'
     // into this matrix. The second moves the contents, which is much cheaper.
@@ -52,6 +71,8 @@ public:
         mRows(other.mRows), mCols(other.mCols), mOwnsData(true)
     {
         vCopy(other.mData, mData, mRows * mCols);
+        // cout << "MATRIX COPY: " << mRows << " x " << mCols << endl;
+        // cin.get();
     }
 
     Matrix(Matrix&& other) :
@@ -59,23 +80,31 @@ public:
     {
         other.mOwnsData = false;
         other.mData     = nullptr;
+        // cout << "MATRIX MOVE: " << mRows << " x " << mCols << endl;
+        // cin.get();
     }
 
     // Expression constructor - Allows syntax like:
     // Matrix y(transpose(x) * x);
-    template <class Exp,
-        class = typename std::enable_if
-        <std::is_base_of<Operable, Exp>::value>::type>
-    Matrix(const Exp& exp)
-    {
-        exp.apply(*this);
-    }
+    // template <class Exp,
+    //     class = typename std::enable_if
+    //     <std::is_base_of<Operable, Exp>::value>::type>
+    // Matrix(const Exp& exp)
+    // {
+    //     exp.apply(*this);
+    //     cout << "MATRIX EXPRESSION: " << this << endl;
+    //     cin.get();
+    // }
 
     // Destructor
     ~Matrix()
     {
+        // cout << "DESTRUCTOR: " << this << endl;
+        // cin.get();
         if (mOwnsData && mData != nullptr)
         {
+            // cout << "DESTROYING DATA" << endl;
+            // cout.flush();
             delete[] mData;
             mData = nullptr;
         }
@@ -100,7 +129,12 @@ public:
     void setData(T* data)
     {
         if (mOwnsData && mData != nullptr)
+        {
+            // cout << "setData() - DESTORYING DATA" << endl;
+            // cin.get();
             delete[] mData;
+            mData = nullptr;
+        }
 
         mData     = data;
         mOwnsData = false;
@@ -137,8 +171,11 @@ public:
     // once this call completes).
     void resize(const size_t rows, const size_t cols)
     {
-        if (rows != mRows && cols != mCols)
+        if (rows != mRows || cols != mCols)
         {
+            // cout << "RESIZING TO: " << rows << " x " << cols << " " << this << endl;
+            // cin.get();
+
             // Allocate new space for this matrix.
             T* ptr = mData;
             mData  = new T[rows * cols]();
@@ -147,11 +184,23 @@ public:
             // wanted to do so, that code would be place here.
 
             // Update the state
-            if (mOwnsData) delete[] ptr;
+            if (mOwnsData && ptr != nullptr)
+            {
+                // cout << "resize() - DESTROYING DATA" << endl;
+                delete[] ptr;
+                ptr = nullptr;
+            }
             mRows     = rows;
             mCols     = cols;
             mOwnsData = true;
         }
+    }
+
+    // Updates the dimensions of this matrix, but does not modify the data.
+    void reshape(const size_t rows, const size_t cols)
+    {
+        mRows = rows;
+        mCols = cols;
     }
 
     // Sets every cell in the matrix to the given value. The default
@@ -192,16 +241,6 @@ public:
         std::swap(mCols,     other.mCols);
         std::swap(mOwnsData, other.mOwnsData);
     }
-
-    // Swaps the data in this matrix with the contents of the given buffer.
-    // This operation DOES NOT change the size of the matrix. It merely provides
-    // an efficient mechanism for temporarily 'wrapping' a vector. If a
-    // permanent wrapping is desired, consider using the vector move constructor
-    // instead.
-    // void swap(vector<T>& other)
-    // {
-    //     mData.swap(other);
-    // }
 
     // Returns the smallest element in the given column.
     T columnMin(const size_t column) const
@@ -263,12 +302,12 @@ public:
     }
 
     template <class Exp>
-    Matrix& operator+=(
-        typename std::enable_if
+    Matrix<T>& operator+=(const Exp& exp)
+        /*typename std::enable_if
         <
             std::is_base_of<Operable, Exp>::value,
             const Exp&
-        >::type exp)
+        >::type exp)*/
     {
         exp.apply(*this);
         return *this;

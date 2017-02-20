@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <cstring>
+#include <cassert>
 #include "ErrorFunction.h"
 #include "Dataset.h"
 #include "Matrix.h"
@@ -38,14 +39,14 @@ public:
     {
         // Initialize variables
         T sum{};
-        static vector<T> prediction(labels.cols(), T{});
+        static vector<T> prediction(labels.getCols(), T{});
 
         // Calculate the SSE
         for (size_t i = 0; i < features.getRows(); ++i)
         {
-            mBaseFunction.evaluate(features(i), prediction);
+            mBaseFunction.evaluate(features(i), prediction.data());
 
-            for (size_t j = 0; j < labels.cols(); ++j)
+            for (size_t j = 0; j < labels.getCols(); ++j)
             {
                 T d = labels(i, j) - prediction[j];
                 sum += (d * d);
@@ -64,6 +65,9 @@ public:
         const size_t M    = mBaseFunction.getOutputs();
         const size_t rows = features.getRows();
 
+        // Make sure gradient has enough space
+        assert(gradient.size() >= N);
+
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
@@ -72,8 +76,7 @@ public:
         static Matrix<T> error(1, M);
 
         // The matrix 'grad' temporarily holds the contents of the gradient
-        static Matrix<T> grad(1, N);
-        grad.swap(gradient);
+        Matrix<T> grad(gradient.data(), 1, N);
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -82,16 +85,13 @@ public:
             mBaseFunction.calculateJacobianInputs(features(i), baseJacobian);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation);
+            mBaseFunction.evaluate(features(i), evaluation.data());
 
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels(i, j) - evaluation[j];
 
             grad += T{-2.0} * error * baseJacobian;
         }
-
-        // Swap back so 'gradient' contains the correct information
-        grad.swap(gradient);
 
         // Divide by the batch size to get the average gradient
         for (size_t i = 0; i < N; ++i)
@@ -107,6 +107,9 @@ public:
         const size_t M    = mBaseFunction.getOutputs();
         const size_t rows = features.getRows();
 
+        // Make sure gradient has enough space
+        assert(gradient.size() >= N);
+
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
@@ -115,8 +118,7 @@ public:
         static Matrix<T> error(1, M);
 
         // The matrix 'grad' temporarily holds the contents of the gradient
-        static Matrix<T> grad(1, N);
-        grad.swap(gradient);
+        Matrix<T> grad(gradient.data(), 1, N);
 
         for (size_t i = 0; i < rows; ++i)
         {
@@ -125,16 +127,13 @@ public:
             mBaseFunction.calculateJacobianParameters(features(i), baseJacobian);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation);
+            mBaseFunction.evaluate(features(i), evaluation.data());
 
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels(i, j) - evaluation[j];
 
             grad += T{-2.0} * error * baseJacobian;
         }
-
-        // Swap back so 'gradient' contains the correct information
-        grad.swap(gradient);
 
         for (size_t i = 0; i < N; ++i)
             gradient[i] /= rows;
@@ -164,14 +163,14 @@ public:
         hessian.resize(N, N);
         hessian.fill(T{});
 
-        for(size_t i = 0; i < features.rows(); ++i)
+        for(size_t i = 0; i < features.getRows(); ++i)
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
             mBaseFunction.calculateJacobianInputs(features(i), jacobian);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation);
+            mBaseFunction.evaluate(features(i), evaluation.data());
 
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels(i, j) - evaluation[j];
@@ -222,7 +221,7 @@ public:
             mBaseFunction.calculateJacobianParameters(features(i), jacobian);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation);
+            mBaseFunction.evaluate(features(i), evaluation.data());
 
             for (size_t j = 0; j < M; ++j)
                 error(0, j) = labels(i, j) - evaluation[j];
@@ -288,6 +287,9 @@ public:
         const size_t M       = nn.getOutputs();
         const size_t rows    = features.getRows();
 
+        // Make sure gradient has enough space
+        assert(gradient.size() >= N);
+
         // Forward prop the training data through the network
         static Matrix<T> evaluation(rows, M);
         nn.evaluateBatch(features, evaluation);
@@ -311,9 +313,13 @@ public:
         // matrix transposed by [1/N, 1/N, 1/N, ...]. We also need to multiply
         // the gradient by -2 to get the true gradient, so we include that in
         // the masking matrix.
-        static Matrix<T> tempGradient(rows, nn.getLayer(0)->getOutputs());
+        Layer<T>* front = nn.getLayer(0);
+
+        static Matrix<T> tempGradient(rows, front->getOutputs());
         static vector<T> mask(rows, T{-2.0} / rows);
-        nn.getLayer(0)->calculateDeltas(features, rows, tempGradient.data());
+
+        front->setEffectiveBatchSize(rows);
+        front->calculateDeltas(features, tempGradient.data());
         mtvMultiply(tempGradient.data(), mask.data(), gradient.data(),
             tempGradient.getRows(), tempGradient.getCols());
     }
@@ -325,6 +331,9 @@ public:
         const size_t N       = nn.getNumParameters();
         const size_t M       = nn.getOutputs();
         const size_t rows    = features.getRows();
+
+        // Make sure gradient has enough space
+        assert(gradient.size() >= N);
 
         // Forward prop the training data through the network
         static Matrix<T> evaluation(rows, M);

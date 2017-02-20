@@ -1,8 +1,8 @@
 /*
- * File:   sseNeuralNetworkTest.cpp
- * Author: Jon C. Hammer
- * Purpose: This is a test to make sure that the template specialization of
- *          SSEFunction for NeuralNetworks is accurate.
+ * File:     neuralNetworkBatchTest.cpp
+ * Author:   Jon C. Hammer
+ * Purpose:  This is a test to make sure that the template specialization of
+  *          SSEFunction for NeuralNetworks is accurate.
  *
  * Created on September 17, 2016, 10:14 AM
  */
@@ -11,39 +11,50 @@
 #include <iostream>
 #include <vector>
 #include "opkit/opkit.h"
-using namespace std;
+using namespace opkit;
 
 int main()
 {
     // Load the data
     cout << "Loading data..." << endl;
-    Dataset<double> trainFeatures, trainLabels;
-    loadArff("../data/iris.arff", trainFeatures, trainLabels, 1);
+    Dataset<double> features, labels;
+    Matrix<double> trainFeatures, trainLabels;
+    if (!loadArff("/home/jhammer/data/iris.arff", features, labels, 1))
+    {
+        cout << "Unable to open file." << endl;
+        return 1;
+    }
     cout << "Data loaded!" << endl;
 
     // Process the data
     cout << "Preprocessing the data..." << endl;
-    scaleAllColumns(trainFeatures, -1.0, 1.0);
-    trainLabels = convertColumnToOneHot(trainLabels, 0);
+    scaleAllColumns(features, -1.0, 1.0);
+    labels = convertColumnToOneHot(labels, 0);
+    features.toMatrix(trainFeatures);
+    labels.toMatrix(trainLabels);
     cout << "Data ready!" << endl;
 
     // Create a testing network
-    FeedforwardLayer layer1(trainFeatures.cols(), 10);
-    FeedforwardLayer layer2(10, trainLabels.cols());
+    const size_t batchSize = trainFeatures.getRows();
 
-    NeuralNetwork network;
-    network.addLayer(&layer1);
-    network.addLayer(&layer2);
-    randomizeParameters(network.getParameters(), 0.0, 0.001);
+    FullyConnectedLayer<double> layer1(trainFeatures.getCols(), 10, batchSize);
+    FullyConnectedLayer<double> layer2(10, trainLabels.getCols(), batchSize);
+
+    NeuralNetwork<double> network;
+    network.addLayer(&layer1, false);
+    network.addLayer(&layer2, false);
+
+    Rand rand(42);
+    network.initializeParameters(rand);
 
     // Create a trainer
-    SSEFunction<NeuralNetwork> errorFunc(network);
+    SSEFunction<double, NeuralNetwork<double>> errorFunc(network);
 
     // Calculate the gradient with respect to the parameters using the template
     // specialization and using the finite differences approach.
-    vector<double> gradient, gradient2;
+    vector<double> gradient(network.getNumParameters()), gradient2(network.getNumParameters());
     errorFunc.calculateGradientParameters(trainFeatures, trainLabels, gradient);
-    errorFunc.ErrorFunction<NeuralNetwork>::calculateGradientParameters(trainFeatures, trainLabels, gradient2);
+    errorFunc.ErrorFunction<double, NeuralNetwork<double>>::calculateGradientParameters(trainFeatures, trainLabels, gradient2);
 
     for (size_t i = 0; i < gradient.size(); ++i)
     {
@@ -62,7 +73,7 @@ int main()
     cout << "Gradient parameters: Pass!" << endl;
 
     errorFunc.calculateGradientInputs(trainFeatures, trainLabels, gradient);
-    errorFunc.ErrorFunction<NeuralNetwork>::calculateGradientInputs(trainFeatures, trainLabels, gradient2);
+    errorFunc.ErrorFunction<double, NeuralNetwork<double>>::calculateGradientInputs(trainFeatures, trainLabels, gradient2);
 
     for (size_t i = 0; i < gradient.size(); ++i)
     {
