@@ -31,39 +31,24 @@ public:
     // Default Constructor - Creates an empty matrix.
     Matrix() :
         mData(new T[0]()), mRows(0), mCols(0), mOwnsData(true)
-    {
-        // cout << "DEFAULT CONSTRUCTOR: " << this << endl;
-        // cin.get();
-    }
+    {}
 
     // Non-default Constructors - The first creates an empty matrix of the given
     // size. The second allows the matrix to be initialized with the given values
     // (specified in row-major order).
     Matrix(const size_t rows, const size_t cols) :
         mData(new T[rows * cols]()), mRows(rows), mCols(cols), mOwnsData(true)
-    {
-        // cout << "NEW MATRIX: " << rows << " x " << cols << " " << this << endl;
-        // cin.get();
-    }
+    {}
+
     Matrix(const size_t rows, const size_t cols, std::initializer_list<T> list) :
         mData(new T[rows * cols]()), mRows(rows), mCols(cols)
     {
         std::copy(list.begin(), list.end(), mData);
-        // cout << "NEW MATRIX INITIALIZED: " << rows << " x " << cols << endl;
-        // cin.get();
     }
 
     Matrix(T* data, const size_t rows, const size_t cols) :
         mData(data), mRows(rows), mCols(cols), mOwnsData(false)
-    {
-        // cout << "MATRIX WRAPPER: " << rows << " x " << cols << endl;
-        // cin.get();
-    }
-
-    // Vector constructors - The first version copies the contents of 'data'
-    // into this matrix. The second moves the contents, which is much cheaper.
-    // Matrix(const vector<T>& data)  : mData(data), mRows(1), mCols(data.size()) {}
-    // Matrix(vector<T>&& data) : mData(data), mRows(1), mCols(data.size()) {}
+    {}
 
     // Matrix constructors - Used for copying and moving, respectively.
     Matrix(const Matrix& other) :
@@ -71,8 +56,6 @@ public:
         mRows(other.mRows), mCols(other.mCols), mOwnsData(true)
     {
         vCopy(other.mData, mData, mRows * mCols);
-        // cout << "MATRIX COPY: " << mRows << " x " << mCols << endl;
-        // cin.get();
     }
 
     Matrix(Matrix&& other) :
@@ -80,8 +63,6 @@ public:
     {
         other.mOwnsData = false;
         other.mData     = nullptr;
-        // cout << "MATRIX MOVE: " << mRows << " x " << mCols << endl;
-        // cin.get();
     }
 
     // Expression constructor - Allows syntax like:
@@ -130,8 +111,6 @@ public:
     {
         if (mOwnsData && mData != nullptr)
         {
-            // cout << "setData() - DESTORYING DATA" << endl;
-            // cin.get();
             delete[] mData;
             mData = nullptr;
         }
@@ -173,9 +152,6 @@ public:
     {
         if (rows != mRows || cols != mCols)
         {
-            // cout << "RESIZING TO: " << rows << " x " << cols << " " << this << endl;
-            // cin.get();
-
             // Allocate new space for this matrix.
             T* ptr = mData;
             mData  = new T[rows * cols]();

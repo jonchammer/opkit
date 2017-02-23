@@ -41,24 +41,6 @@
             <in>feature_tests.cxx</in>
           </df>
         </df>
-        <df name="CMakeFiles">
-          <df name="3.7.1">
-            <df name="CompilerIdC">
-              <in>CMakeCCompilerId.c</in>
-            </df>
-            <df name="CompilerIdCXX">
-              <in>CMakeCXXCompilerId.cpp</in>
-            </df>
-          </df>
-          <df name="CMakeTmp">
-          </df>
-          <df name="demo.dir">
-            <df name="src">
-            </df>
-          </df>
-          <in>feature_tests.c</in>
-          <in>feature_tests.cxx</in>
-        </df>
         <df name="src">
           <in>activationTest.cpp</in>
           <in>finiteDifferencesSSETest.cpp</in>
@@ -68,6 +50,7 @@
           <in>irisExample.cpp</in>
           <in>mnistConvolutionExample.cpp</in>
           <in>multiLayerConvolutionBackpropTest.cpp</in>
+          <in>neuralNetworkBatchTest.cpp</in>
           <in>singleLayerConvolutionTest.cpp</in>
           <in>sseNeuralNetworkTest.cpp</in>
         </df>
