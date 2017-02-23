@@ -94,8 +94,7 @@ public:
         }
 
         // Divide by the batch size to get the average gradient
-        for (size_t i = 0; i < N; ++i)
-            gradient[i] /= rows;
+        vScale(gradient.data(), 1.0/rows, N);
     }
 
     void calculateGradientParameters(const Matrix<T>& features,
@@ -135,8 +134,7 @@ public:
             grad += T{-2.0} * error * baseJacobian;
         }
 
-        for (size_t i = 0; i < N; ++i)
-            gradient[i] /= rows;
+        vScale(gradient.data(), 1.0/rows, N);
     }
 
     void calculateHessianInputs(const Matrix<T>& features,
