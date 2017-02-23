@@ -28,27 +28,6 @@ namespace
     using opkit::Matrix;
 
     template <class T>
-    T evaluate(Function<T>& baseFunction,
-        const Matrix<T>& features, const Matrix<T>& labels)
-    {
-        // A very small number is added to the input to prevent log(0) becoming NaN.
-        const T EPSILON = std::numeric_limits<T>::epsilon();
-        const size_t N  = features.getRows();
-        const size_t M  = labels.getCols();
-        static vector<T> prediction(M);
-
-        T sum{};
-        for (size_t i = 0; i < N; ++i)
-        {
-            baseFunction.evaluate(features(i), prediction.data());
-            for (size_t j = 0; j < M; ++j)
-                sum += labels(i, j) * std::log(prediction[j] + EPSILON);
-        }
-
-        return -sum;
-    }
-
-    template <class T>
     void calculateHessianInputs(Function<T>& baseFunction,
         const Matrix<T>& features, const Matrix<T>& labels,
         const Matrix<T>& hessian)
@@ -181,7 +160,21 @@ public:
 
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
-        return ::evaluate(mBaseFunction, features, labels);
+        // A very small number is added to the input to prevent log(0) becoming NaN.
+        const T EPSILON = std::numeric_limits<T>::epsilon();
+        const size_t N  = features.getRows();
+        const size_t M  = labels.getCols();
+        static vector<T> prediction(M);
+
+        T sum{};
+        for (size_t i = 0; i < N; ++i)
+        {
+            mBaseFunction.evaluate(features(i), prediction.data());
+            for (size_t j = 0; j < M; ++j)
+                sum += labels(i, j) * std::log(prediction[j] + EPSILON);
+        }
+
+        return -sum;
     }
 
     void calculateGradientInputs(const Matrix<T>& features,
@@ -270,7 +263,7 @@ public:
     void calculateHessianInputs(const Matrix<T>& features,
         const Matrix<T>& labels, Matrix<T>& hessian)
     {
-        return ::calculateHessianInputs(mBaseFunction,
+        ::calculateHessianInputs(mBaseFunction,
             features, labels, hessian);
     }
 
@@ -315,8 +308,69 @@ public:
 
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
-        return ::evaluate(mBaseFunction, features, labels);
+        // Initialize variables
+        const size_t batchSize = mBaseFunction.getLayer(0)->getDeltas().getRows();
+        const size_t M         = features.getCols();
+        const size_t N         = labels.getCols();
+
+        Matrix<T> batchFeatures((T*) features.data(), batchSize, M);
+        Matrix<T> batchLabels((T*) labels.data(), batchSize, N);
+        static Matrix<T> predictions(batchSize, N);
+
+        T sum{};
+
+        // Calculate the error for most of the batches
+        size_t rows = features.getRows();
+        while (rows >= batchSize)
+        {
+            sum += evalBatch(batchFeatures, batchLabels, predictions);
+
+            // Move to the next batch
+            T* featureData = batchFeatures.data();
+            T* labelData   = batchLabels.data();
+            batchFeatures.setData(featureData + batchSize * M);
+            batchLabels.setData(labelData + batchSize * N);
+
+            rows -= batchSize;
+        }
+
+        // Deal with the leftover elements
+        if (rows > 0)
+        {
+            batchFeatures.reshape(rows, M);
+            batchLabels.reshape(rows, N);
+            predictions.reshape(rows, N);
+
+            sum += evalBatch(batchFeatures, batchLabels, predictions);
+        }
+
+        return sum;
     }
+
+private:
+
+    // Measures the Cross-entropy error for a single batch
+    T evalBatch(Matrix<T>& batchFeatures, Matrix<T>& batchLabels,
+        Matrix<T>& predictions)
+    {
+        const T EPSILON        = std::numeric_limits<T>::epsilon();
+        const size_t batchSize = batchFeatures.getRows();
+        const size_t N         = batchLabels.getCols();
+
+        // Evaluate this minibatch
+        mBaseFunction.evaluateBatch(batchFeatures, predictions);
+
+        T sum {};
+        for (size_t i = 0; i < batchSize; ++i)
+        {
+            for (size_t j = 0; j < N; ++j)
+                 sum += batchLabels(i, j) * std::log(predictions(i, j) + EPSILON);
+        }
+
+        return -sum;
+    }
+    
+public:
 
     void calculateGradientInputs(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient)
