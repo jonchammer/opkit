@@ -9,7 +9,7 @@
 
 ## Installation Instructions
 
-### Dependencies
+#### Dependencies
 * OpenBlas - opkit requires linking with a BLAS library in order to accelerate
 certain computations (anything that uses "Acceleration.h"). OpenBLAS is
 recommended for Linux-based platforms.
@@ -20,9 +20,9 @@ instructions onto a local GPU to (ideally) improve performance. See the GPU
 Acceleration section below for more information.
 
 * Cmake - CMake is not strictly required since the library is header-only. It
-is used to generate the master header, ```opkit.h``` automatically and then copy
-all the library headers into the default installation directory. If would prefer
-to take over that process, CMake is not necessary.
+is used to automatically generate the master header, ```opkit.h```, and copy
+all the library headers into the default installation directory. If you would
+prefer to take over that process, CMake is not necessary.
 
 On Linux-based platforms, OpenBlas and Cmake can be installed by using apt-get:
 
@@ -30,10 +30,10 @@ On Linux-based platforms, OpenBlas and Cmake can be installed by using apt-get:
 sudo apt-get install openblas cmake
 ```
 
-See NVidia's documentation for installing the Cuda Development Kit, which
-includes NVBlas.
+Installing NVBlas is more complicated. See NVidia's documentation for installing
+the Cuda Development Kit, which includes NVBlas.
 
-### Installation
+#### Installation
 The following commands can be used to download and install the latest version
 of opkit:
 
@@ -44,7 +44,7 @@ cmake ..
 sudo make install
 ```
 
-### Default Install Directory
+#### Default Install Directory
 On Ubuntu 16, the headers will be copied to:
 /usr/local/include/opkit
 
@@ -58,11 +58,11 @@ This is an example compilation command (using g++):
 g++ -std=c++11 -O3 test.cpp -o test -lopenblas
 ```
 
-NOTE: This assumes that the header files that comprise the library are in a
+*NOTE:* This assumes that the header files that comprise the library are in a
 directory accessible by the path. If that is not the case, you will have to
 compile with the -I flag.
 
-NOTE 2: It may also be necessary to tell the compiler where to find the BLAS
+*NOTE 2:* It may also be necessary to tell the compiler where to find the BLAS
 headers (again using the -I) flag.
 
 ## GPU Acceleration
@@ -75,10 +75,10 @@ follows:
 g++ -O3 -std=c++11 -DOPKIT_NVBLAS test.cpp -o test -lnvblas -lopenblas
 ```
 
-The variable OPKIT_NVBLAS is used to tell opkit to make use of NVBlas
+The variable ```OPKIT_NVBLAS``` is used to tell opkit to make use of NVBlas
 acceleration. It needs to be set either in the compilation command or via an
 explicit ```#define OPKIT_NVBLAS``` in the user's application.
 
-NOTE: In order for NVBlas to operate correctly, a file named 'nvblas.conf' must
+*NOTE:* In order for NVBlas to operate correctly, a file named 'nvblas.conf' must
 reside in the executable directory. An example file can be found in the /docs
 folder.
