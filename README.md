@@ -10,7 +10,7 @@ Important Features
 
 Installation Instructions
 -------------------------
-```
+```bash
 git clone https://gitlab.com/jhammer/OptimizationToolkit.git
 cd ./build
 cmake ..
@@ -31,7 +31,7 @@ library for parallelism, so it's probably a good idea to link to that too.
 
 Example compilation command*
 ----------------------------
-```
+```bash
 g++ -std=c++11 -O3 test.cpp -o test -lopenblas -lpthread
 ```
 
@@ -45,7 +45,7 @@ opkit can take advantage of a local GPU to accelerate certain operations by
 using NVBlas. Doing so is not guaranteed to speed up training, however. Assuming
 NVBlas is already installed, an application can be compiled as follows:
 
-```
+```bash
 g++ -O3 -std=c++11 -DOPKIT_NVBLAS test.cpp -o test -lnvblas -lopenblas
 ```
 
