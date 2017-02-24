@@ -12,16 +12,130 @@
 
 namespace opkit
 {
-    // If using OpenBLAS, we only want to use as many threads as possible for
-    // expensive computations, but for cheaper ones, we really only need one.
-    // These macros allow us to decide which is used at runtime.
-    #ifdef OPENBLAS_CONFIG_H
-        #define USE_ALL_CORES() openblas_set_num_threads(openblas_get_num_procs())
-        #define USE_ONE_CORE()  openblas_set_num_threads(1)
-    #else
-        #define USE_ALL_CORES()
-        #define USE_ONE_CORE()
-    #endif
+
+// OpenBlas translation macros. These allow us to convert from one BLAS library's
+// syntax to another.
+#ifdef OPENBLAS_CONFIG_H
+
+    #define OPKIT_DGEMM(transposeA, transposeB,                                \
+        M, N, K,                                                               \
+        alpha, A, ldA,                                                         \
+        B, ldB, beta,                                                          \
+        C, ldC)                                                                \
+        cblas_dgemm(CblasColMajor, transposeA, transposeB, M, N, K, alpha, A,  \
+            ldA, B, ldB, beta, C, ldC);                                        \
+
+    #define OPKIT_SGEMM(transposeA, transposeB,                                \
+        M, N, K,                                                               \
+        alpha, A, ldA,                                                         \
+        B, ldB, beta,                                                          \
+        C, ldC)                                                                \
+        cblas_sgemm(CblasColMajor, transposeA, transposeB, M, N, K, alpha, A,  \
+            ldA, B, ldB, beta, C, ldC);                                        \
+
+    #define OPKIT_DGEMV(transposeA,                                            \
+        M, N,                                                                  \
+        alpha, A, ldA,                                                         \
+        x, incX, beta,                                                         \
+        y, incY)                                                               \
+        cblas_dgemv(CblasColMajor, transposeA, M, N, alpha, A, ldA, x, incX,   \
+            beta, y, incY);                                                    \
+
+    #define OPKIT_SGEMV(transposeA,                                            \
+        M, N,                                                                  \
+        alpha, A, ldA,                                                         \
+        x, incX, beta,                                                         \
+        y, incY)                                                               \
+        cblas_sgemv(CblasColMajor, transposeA, M, N, alpha, A, ldA, x, incX,   \
+            beta, y, incY);                                                    \
+
+    #define OPKIT_DSYMV(upper, N, alpha, A, ldA, x, incX, beta, y, incY)       \
+        cblas_dsymv(CblasColMajor, upper, N, alpha, A, ldA,                    \
+            x, incX, beta, y, incY);                                           \
+
+    #define OPKIT_SSYMV(upper, N, alpha, A, ldA, x, incX, beta, y, incY)       \
+        cblas_ssymv(CblasColMajor, upper, N, alpha, A, ldA,                    \
+            x, incX, beta, y, incY);                                           \
+
+    #define OPKIT_DGER(M, N, alpha, x, incX, y, incY, A, ldA)                  \
+        cblas_dger(CblasColMajor, M, N, alpha, x, incX, y, incY, A, ldA);      \
+
+    #define OPKIT_SGER(M, N, alpha, x, incX, y, incY, A, ldA)                  \
+        cblas_sger(CblasColMajor, M, N, alpha, x, incX, y, incY, A, ldA);      \
+
+    #define OPKIT_DAXPY(N, alpha, x, incX, y, incY)                            \
+        cblas_daxpy(N, alpha, x, incX, y, incY);                               \
+
+    #define OPKIT_SAXPY(N, alpha, x, incX, y, incY)                            \
+        cblas_saxpy(N, alpha, x, incX, y, incY);                               \
+
+    #define OPKIT_DSCAL(N, alpha, X, incX) cblas_dscal(N, alpha, X, incX);
+    #define OPKIT_SSCAL(N, alpha, X, incX) cblas_sscal(N, alpha, X, incX);
+
+    #define OPKIT_IDAMAX(N, x, incX) cblas_idamax(N, x, incX);
+    #define OPKIT_ISAMAX(N, x, incX) cblas_isamax(N, x, incX);
+
+    #define OPKIT_DCOPY(N, x, incX, y, incY) cblas_dcopy(N, x, incX, y, incY);
+    #define OPKIT_SCOPY(N, x, incX, y, incY) cblas_scopy(N, x, incX, y, incY);
+
+    // BLAS parameter macros
+    #define OPKIT_L3_TRANSPOSE CblasTrans
+    #define OPKIT_L3_NO_TRANSPOSE CblasNoTrans
+    #define OPKIT_L2_TRANSPOSE CblasTrans
+    #define OPKIT_L2_NO_TRANSPOSE CblasNoTrans
+    #define OPKIT_UPPER CblasUpper
+
+    #define USE_ALL_CORES() openblas_set_num_threads(openblas_get_num_procs())
+    #define USE_ONE_CORE()  openblas_set_num_threads(1)
+#endif
+
+// NVBlas translation macros
+// This symbol will be set by the user to indicate that they desire to use a
+// GPU to accelerate the L3 BLAS operations. The lower level operations will
+// have to come from another CPU BLAS library.
+#ifdef OPKIT_NVBLAS
+    #include <nvblas.h>
+
+    #undef OPKIT_DGEMM
+    #undef OPKIT_SGEMM
+    #undef OPKIT_L3_TRANSPOSE
+    #undef OPKIT_L3_NO_TRANSPOSE
+
+    #define OPKIT_DGEMM(transposeA, transposeB,                                \
+        M, N, K,                                                               \
+        alpha, A, ldA,                                                         \
+        B, ldB, beta,                                                          \
+        C, ldC)                                                                \
+    {                                                                          \
+        int m   = (int) M;                                                     \
+        int n   = (int) N;                                                     \
+        int k   = (int) K;                                                     \
+        int lda = (int) ldA;                                                   \
+        int ldb = (int) ldB;                                                   \
+        int ldc = (int) ldC;                                                   \
+        dgemm(transposeA, transposeB, &m, &n, &k, &alpha, A,                   \
+            &lda, B, &ldb, &beta, C, &ldc);                                    \
+    }                                                                          \
+
+    #define OPKIT_SGEMM(transposeA, transposeB,                                \
+        M, N, K,                                                               \
+        alpha, A, ldA,                                                         \
+        B, ldB, beta,                                                          \
+        C, ldC)                                                                \
+    {                                                                          \
+        int m   = (int) M;                                                     \
+        int n   = (int) N;                                                     \
+        int k   = (int) K;                                                     \
+        int lda = (int) ldA;                                                   \
+        int ldb = (int) ldB;                                                   \
+        int ldc = (int) ldC;                                                   \
+        sgemm(transposeA, transposeB, &m, &n, &k, &alpha, A,                   \
+            &lda, B, &ldb, &beta, C, &ldc);                                    \
+    }                                                                          \
+
+    #define OPKIT_L3_TRANSPOSE "T"
+    #define OPKIT_L3_NO_TRANSPOSE "N"
+#endif
 
     // For BLAS reference see:
     // https://software.intel.com/sites/default/files/managed/ff/c8/mkl-2017-developer-reference-c_0.pdf
@@ -48,22 +162,7 @@ namespace opkit
         USE_ONE_CORE();
         //USE_ALL_CORES();
 
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  B transpose
-        // 4.  M
-        // 5.  N
-        // 6.  K
-        // 7.  Alpha
-        // 8.  A's data
-        // 9.  A's stride
-        // 10. B's data
-        // 11. B's stride
-        // 12. Beta
-        // 13. C's data
-        // 14. C's stride
-        cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+        OPKIT_DGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
             N, M, K,
             alpha, B, N,
             A, K,
@@ -87,22 +186,7 @@ namespace opkit
         USE_ONE_CORE();
         //USE_ALL_CORES();
 
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  B transpose
-        // 4.  M
-        // 5.  N
-        // 6.  K
-        // 7.  Alpha
-        // 8.  A's data
-        // 9.  A's stride
-        // 10. B's data
-        // 11. B's stride
-        // 12. Beta
-        // 13. C's data
-        // 14. C's stride
-        cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+        OPKIT_SGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
             N, M, K,
             alpha, B, N,
             A, K,
@@ -126,22 +210,7 @@ namespace opkit
         USE_ONE_CORE();
         //USE_ALL_CORES();
 
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  B transpose
-        // 4.  M
-        // 5.  N
-        // 6.  K
-        // 7.  Alpha
-        // 8.  A's data
-        // 9.  A's stride
-        // 10. B's data
-        // 11. B's stride
-        // 12. Beta
-        // 13. C's data
-        // 14. C's stride
-        cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans,
+        OPKIT_DGEMM(OPKIT_L3_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
             N, M, K,
             alpha, B, K,
             A, K,
@@ -165,22 +234,7 @@ namespace opkit
         USE_ONE_CORE();
         //USE_ALL_CORES();
 
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  B transpose
-        // 4.  M
-        // 5.  N
-        // 6.  K
-        // 7.  Alpha
-        // 8.  A's data
-        // 9.  A's stride
-        // 10. B's data
-        // 11. B's stride
-        // 12. Beta
-        // 13. C's data
-        // 14. C's stride
-        cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans,
+        OPKIT_SGEMM(OPKIT_L3_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
             N, M, K,
             alpha, B, K,
             A, K,
@@ -204,22 +258,7 @@ namespace opkit
         USE_ONE_CORE();
         //USE_ALL_CORES();
 
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  B transpose
-        // 4.  M
-        // 5.  N
-        // 6.  K
-        // 7.  Alpha
-        // 8.  A's data
-        // 9.  A's stride
-        // 10. B's data
-        // 11. B's stride
-        // 12. Beta
-        // 13. C's data
-        // 14. C's stride
-        cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+        OPKIT_DGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_TRANSPOSE,
             N, M, K,
             alpha, B, N,
             A, M,
@@ -243,22 +282,7 @@ namespace opkit
         USE_ONE_CORE();
         //USE_ALL_CORES();
 
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  B transpose
-        // 4.  M
-        // 5.  N
-        // 6.  K
-        // 7.  Alpha
-        // 8.  A's data
-        // 9.  A's stride
-        // 10. B's data
-        // 11. B's stride
-        // 12. Beta
-        // 13. C's data
-        // 14. C's stride
-        cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+        OPKIT_SGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_TRANSPOSE,
             N, M, K,
             alpha, B, N,
             A, M,
@@ -283,25 +307,11 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  M
-        // 4.  N
-        // 5.  Alpha
-        // 6.  A's data
-        // 7.  A's stride
-        // 8.  x's data
-        // 9.  x's increment (1)
-        // 10. Beta
-        // 11. y's data
-        // 12. y's incrment (1)
-        cblas_dgemv(CblasColMajor, CblasTrans,
-        N, M,
-        alpha, A, N,
-        x, xInc,
-        beta, y, yInc);
+        OPKIT_DGEMV(OPKIT_L2_TRANSPOSE,
+            N, M,
+            alpha, A, N,
+            x, xInc,
+            beta, y, yInc);
 
         // Equivalently,
         // cblas_dgemv(CblasRowMajor, CblasNoTrans,
@@ -322,25 +332,11 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  M
-        // 4.  N
-        // 5.  Alpha
-        // 6.  A's data
-        // 7.  A's stride
-        // 8.  x's data
-        // 9.  x's increment (1)
-        // 10. Beta
-        // 11. y's data
-        // 12. y's incrment (1)
-        cblas_sgemv(CblasColMajor, CblasTrans,
-        N, M,
-        alpha, A, N,
-        x, xInc,
-        beta, y, yInc);
+        OPKIT_SGEMV(OPKIT_L2_TRANSPOSE,
+            N, M,
+            alpha, A, N,
+            x, xInc,
+            beta, y, yInc);
 
         // Equivalently,
         // cblas_sgemv(CblasRowMajor, CblasNoTrans,
@@ -361,25 +357,11 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  M
-        // 4.  N
-        // 5.  Alpha
-        // 6.  A's data
-        // 7.  A's stride
-        // 8.  x's data
-        // 9.  x's increment (1)
-        // 10. Beta
-        // 11. y's data
-        // 12. y's incrment (1)
-        cblas_dgemv(CblasColMajor, CblasNoTrans,
-        N, M,
-        alpha, A, N,
-        x, xInc,
-        beta, y, yInc);
+        OPKIT_DGEMV(OPKIT_L2_NO_TRANSPOSE,
+            N, M,
+            alpha, A, N,
+            x, xInc,
+            beta, y, yInc);
 
         // Equivalently,
         // cblas_dgemv(CblasRowMajor, CblasTrans,
@@ -400,25 +382,11 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  A transpose
-        // 3.  M
-        // 4.  N
-        // 5.  Alpha
-        // 6.  A's data
-        // 7.  A's stride
-        // 8.  x's data
-        // 9.  x's increment (1)
-        // 10. Beta
-        // 11. y's data
-        // 12. y's incrment (1)
-        cblas_sgemv(CblasColMajor, CblasNoTrans,
-        N, M,
-        alpha, A, N,
-        x, xInc,
-        beta, y, yInc);
+        OPKIT_SGEMV(OPKIT_L2_NO_TRANSPOSE,
+            N, M,
+            alpha, A, N,
+            x, xInc,
+            beta, y, yInc);
 
         // Equivalently,
         // cblas_sgemv(CblasRowMajor, CblasTrans,
@@ -439,26 +407,13 @@ namespace opkit
     {
         USE_ONE_CORE();
 
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  Upper or lower part of matrix is used
-        // 3.  N
-        // 4.  Alpha
-        // 5.  A's data
-        // 6.  A's stride
-        // 7.  x's data
-        // 8.  x's increment (1)
-        // 9.  Beta
-        // 10. y's data
-        // 11. y's increment (1)
-        //
         // NOTE: Either row-major order or column-major order can be used for
         // symmetric matrices.
-        cblas_dsymv(CblasColMajor, CblasUpper,
-        N, alpha,
-        A, N,
-        x, xInc,
-        beta, y, yInc);
+        OPKIT_DSYMV(OPKIT_UPPER,
+            N, alpha,
+            A, N,
+            x, xInc,
+            beta, y, yInc);
     }
 
     // Computes y = alpha * A * x + beta * y, where A is an N x N
@@ -472,26 +427,13 @@ namespace opkit
     {
         USE_ONE_CORE();
 
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  Upper or lower part of matrix is used
-        // 3.  N
-        // 4.  Alpha
-        // 5.  A's data
-        // 6.  A's stride
-        // 7.  x's data
-        // 8.  x's increment (1)
-        // 9.  Beta
-        // 10. y's data
-        // 11. y's increment (1)
-        //
         // NOTE: Either row-major order or column-major order can be used for
         // symmetric matrices.
-        cblas_ssymv(CblasColMajor, CblasUpper,
-        N, alpha,
-        A, N,
-        x, xInc,
-        beta, y, yInc);
+        OPKIT_SSYMV(OPKIT_UPPER,
+            N, alpha,
+            A, N,
+            x, xInc,
+            beta, y, yInc);
     }
 
     // Adds alpha * x * y^T to A, where x is a vector of size M,
@@ -506,22 +448,10 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  M
-        // 3.  N
-        // 4.  Alpha
-        // 5.  x's data
-        // 6.  x's increment (1)
-        // 7.  y's data
-        // 8.  y's increment (1)
-        // 9.  A's data
-        // 10. A's leading dimension (N)
-        cblas_dger(CblasColMajor, N, M,
-        alpha, y, yInc,
-        x, xInc,
-        A, N);
+        OPKIT_DGER(N, M,
+            alpha, y, yInc,
+            x, xInc,
+            A, N);
 
         // Equivalently,
         // cblas_dger(CblasRowMajor, M, N,
@@ -542,22 +472,10 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters:
-        // 1.  Row-major or Col-major
-        // 2.  M
-        // 3.  N
-        // 4.  Alpha
-        // 5.  x's data
-        // 6.  x's increment (1)
-        // 7.  y's data
-        // 8.  y's increment (1)
-        // 9.  A's data
-        // 10. A's leading dimension (N)
-        cblas_sger(CblasColMajor, N, M,
-        alpha, y, yInc,
-        x, xInc,
-        A, N);
+        OPKIT_SGER(N, N,
+            alpha, y, yInc,
+            x, xInc,
+            A, N);
 
         // Equivalently,
         // cblas_sger(CblasRowMajor, M, N,
@@ -575,15 +493,7 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters
-        // 1. Size of vectors x and y
-        // 2. Scalar 'a'
-        // 3. x's data
-        // 4. x's increment (1)
-        // 5. y's data
-        // 6. y's increment (1)
-        cblas_daxpy(N, alpha, x, xInc, y, yInc);
+        OPKIT_DAXPY(N, alpha, x, xInc, y, yInc);
     }
 
     // Computes y += alpha * x, where x is a vector of size N,
@@ -595,15 +505,7 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters
-        // 1. Size of vectors x and y
-        // 2. Scalar 'a'
-        // 3. x's data
-        // 4. x's increment (1)
-        // 5. y's data
-        // 6. y's increment (1)
-        cblas_saxpy(N, alpha, x, xInc, y, yInc);
+        OPKIT_SAXPY(N, alpha, x, xInc, y, yInc);
     }
 
     // Computes x = alpha * x, where x is a vector of size N and
@@ -613,13 +515,7 @@ namespace opkit
         const size_t N, const int xInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters
-        // 1. Size of vector x
-        // 2. Scalar alpha
-        // 3. x's data
-        // 4. x's increment (1)
-        cblas_dscal(N, alpha, x, xInc);
+        OPKIT_DSCAL(N, alpha, x, xInc);
     }
 
     // Computes x = alpha * x, where x is a vector of size N and
@@ -629,13 +525,7 @@ namespace opkit
         const size_t N, const int xInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters
-        // 1. Size of vector x
-        // 2. Scalar alpha
-        // 3. x's data
-        // 4. x's increment (1)
-        cblas_sscal(N, alpha, x, xInc);
+        OPKIT_SSCAL(N, alpha, x, xInc);
     }
 
     // Returns the index where the maximum element is found in the vector x of
@@ -644,12 +534,7 @@ namespace opkit
     inline size_t vMaxIndex(const double* x, const size_t N, const int xInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters
-        // 1. Size of vector x
-        // 2. x's data
-        // 3. x's increment (1)
-        return cblas_idamax(N, x, xInc);
+        return OPKIT_IDAMAX(N, x, xInc);
     }
 
     // Returns the index where the maximum element is found in the vector x of
@@ -658,12 +543,7 @@ namespace opkit
     inline size_t vMaxIndex(const float* x, const size_t N, const int xInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters
-        // 1. Size of vector x
-        // 2. x's data
-        // 3. x's increment (1)
-        return cblas_isamax(N, x, xInc);
+        return OPKIT_ISAMAX(N, x, xInc);
     }
 
     // Copies the contents of x into y, where x and y are vectors of size N.
@@ -673,14 +553,7 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters
-        // 1. Size of vectors x and y
-        // 2. x's data
-        // 3. x's increment (1)
-        // 4. y's data
-        // 5. y's increment (1)
-        cblas_dcopy(N, x, xInc, y, yInc);
+        OPKIT_DCOPY(N, x, xInc, y, yInc);
     }
 
     // Copies the contents of x into y, where x and y are vectors of size N.
@@ -690,14 +563,7 @@ namespace opkit
         const int xInc = 1, const int yInc = 1)
     {
         USE_ONE_CORE();
-
-        // Parameters
-        // 1. Size of vectors x and y
-        // 2. x's data
-        // 3. x's increment (1)
-        // 4. y's data
-        // 5. y's increment (1)
-        cblas_scopy(N, x, xInc, y, yInc);
+        OPKIT_SCOPY(N, x, xInc, y, yInc);
     }
 };
 
