@@ -46,10 +46,14 @@ sudo make install
 
 #### Default Install Directory
 On Ubuntu 16, the headers will be copied to:
+```
 /usr/local/include/opkit
+```
 
 On Windows (assuming Administrator privileges have been granted):
+```
 C:/Program Files (x86)/optimization_toolkit/include/opkit
+```
 
 ## Compilation
 This is an example compilation command (using g++):
