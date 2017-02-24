@@ -58,11 +58,11 @@ This is an example compilation command (using g++):
 g++ -std=c++11 -O3 test.cpp -o test -lopenblas
 ```
 
-*NOTE:* This assumes that the header files that comprise the library are in a
+**NOTE:** This assumes that the header files that comprise the library are in a
 directory accessible by the path. If that is not the case, you will have to
 compile with the -I flag.
 
-*NOTE 2:* It may also be necessary to tell the compiler where to find the BLAS
+**NOTE 2:** It may also be necessary to tell the compiler where to find the BLAS
 headers (again using the -I) flag.
 
 ## GPU Acceleration
@@ -79,6 +79,6 @@ The variable ```OPKIT_NVBLAS``` is used to tell opkit to make use of NVBlas
 acceleration. It needs to be set either in the compilation command or via an
 explicit ```#define OPKIT_NVBLAS``` in the user's application.
 
-*NOTE:* In order for NVBlas to operate correctly, a file named 'nvblas.conf' must
+**NOTE:** In order for NVBlas to operate correctly, a file named 'nvblas.conf' must
 reside in the executable directory. An example file can be found in the /docs
 folder.
