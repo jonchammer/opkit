@@ -83,6 +83,6 @@ The variable ```OPKIT_NVBLAS``` is used to tell opkit to make use of NVBlas
 acceleration. It needs to be set either in the compilation command or via an
 explicit ```#define OPKIT_NVBLAS``` in the user's application.
 
-**NOTE:** In order for NVBlas to operate correctly, a file named 'nvblas.conf' must
-reside in the executable directory. An example file can be found in the /docs
-folder.
+**NOTE:** In order for NVBlas to operate correctly, a file named
+```nvblas.conf``` must reside in the executable directory. An example file can
+be found in the /docs folder.
