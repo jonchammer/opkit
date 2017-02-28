@@ -8,7 +8,7 @@
 #ifndef CATEGORICALERRORFUNCTION_H
 #define CATEGORICALERRORFUNCTION_H
 
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 #include "NeuralNetwork.h"
 #include "Acceleration.h"
@@ -22,14 +22,14 @@ namespace opkit
 {
 
 template <class T, class Model>
-class CategoricalErrorFunction : public ErrorFunction<T, Model>
+class CategoricalErrorFunction : public CostFunction<T, Model>
 {
 public:
 
-    using ErrorFunction<T, Model>::mBaseFunction;
+    using CostFunction<T, Model>::mBaseFunction;
 
     CategoricalErrorFunction(Model& baseFunction) :
-        ErrorFunction<T, Model>(baseFunction) {}
+        CostFunction<T, Model>(baseFunction) {}
 
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
@@ -59,14 +59,14 @@ public:
 // quickly by using batched operations, which aren't possible for normal
 // functions.
 template <class T>
-class CategoricalErrorFunction<T, NeuralNetwork<T>> : public ErrorFunction<T, NeuralNetwork<T>>
+class CategoricalErrorFunction<T, NeuralNetwork<T>> : public CostFunction<T, NeuralNetwork<T>>
 {
 public:
 
-    using ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction;
+    using CostFunction<T, NeuralNetwork<T>>::mBaseFunction;
 
     CategoricalErrorFunction(NeuralNetwork<T>& baseFunction) :
-        ErrorFunction<T, NeuralNetwork<T>>(baseFunction) {}
+        CostFunction<T, NeuralNetwork<T>>(baseFunction) {}
 
     // Since Neural Networks support batch operation, we make use of it here
     // to improve runtime performance.

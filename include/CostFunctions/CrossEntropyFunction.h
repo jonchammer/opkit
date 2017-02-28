@@ -12,7 +12,7 @@
 #include <cmath>
 #include <cassert>
 #include "Function.h"
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Dataset.h"
 #include "Matrix.h"
 #include "NeuralNetwork.h"
@@ -146,14 +146,14 @@ namespace opkit
 // only positive numbers. Negative numbers will cause the function to produce
 // bad results (e.g. NaNs or +- infinity).
 template <class T, class Model>
-class CrossEntropyFunction : public ErrorFunction<T, Model>
+class CrossEntropyFunction : public CostFunction<T, Model>
 {
 public:
 
-    using ErrorFunction<T, Model>::mBaseFunction;
+    using CostFunction<T, Model>::mBaseFunction;
 
     CrossEntropyFunction(Model& baseFunction) :
-        ErrorFunction<T, Model>(baseFunction)
+        CostFunction<T, Model>(baseFunction)
     {
         // Do nothing
     }
@@ -279,14 +279,14 @@ public:
 // efficient mechanism for calculating the gradient with them.
 template<class T>
 class CrossEntropyFunction<T, NeuralNetwork<T>> :
-    public ErrorFunction<T, NeuralNetwork<T>>
+    public CostFunction<T, NeuralNetwork<T>>
 {
 public:
 
-    using ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction;
+    using CostFunction<T, NeuralNetwork<T>>::mBaseFunction;
 
     CrossEntropyFunction(NeuralNetwork<T>& baseFunction) :
-        ErrorFunction<T, NeuralNetwork<T>>(baseFunction)
+        CostFunction<T, NeuralNetwork<T>>(baseFunction)
     {
         // Determine whether or not it is appropriate to use the softmax
         // optimization for simplified gradient calculations. The dynamic cast
@@ -369,7 +369,7 @@ private:
 
         return -sum;
     }
-    
+
 public:
 
     void calculateGradientInputs(const Matrix<T>& features,

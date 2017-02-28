@@ -8,7 +8,7 @@
 #ifndef OPTIMIZER_H
 #define OPTIMIZER_H
 
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 
 namespace opkit
@@ -22,7 +22,7 @@ public:
      * Every Optimizer must have a function on which to operate.
      * @param function. The function to be optimized.
      */
-    Optimizer(ErrorFunction<T, Model>* function) : function(function) {};
+    Optimizer(CostFunction<T, Model>* function) : function(function) {};
 
     /**
      * Default destructor
@@ -37,10 +37,10 @@ public:
     virtual void iterate(const Matrix<T>& features, const Matrix<T>& labels) = 0;
 
     // Setters / Getters
-    ErrorFunction<T, Model>* getFunction() {return function;}
+    CostFunction<T, Model>* getFunction() {return function;}
 
 protected:
-    ErrorFunction<T, Model>* function; // The function we are working with
+    CostFunction<T, Model>* function; // The function we are working with
 };
 
 };

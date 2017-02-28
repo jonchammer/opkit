@@ -13,7 +13,7 @@
 #include <limits>
 #include <random>
 #include "Optimizer.h"
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 using std::vector;
 
@@ -54,7 +54,7 @@ public:
     constexpr static T DEFAULT_VARIANCE_COOLING_RATE    = 0.9;
     constexpr static int    DEFAULT_EQUILIBRIUM_ITERATIONS   = 1000;
 
-    SimulatedAnnealing(ErrorFunction<T, Model>* function) :
+    SimulatedAnnealing(CostFunction<T, Model>* function) :
         // Superclass initialization
         Optimizer<T, Model>(function),
 

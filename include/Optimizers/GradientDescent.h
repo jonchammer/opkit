@@ -10,7 +10,7 @@
 
 #include <vector>
 #include "Optimizer.h"
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
@@ -33,7 +33,7 @@ public:
     using Optimizer<T, Model>::function;
     const T DEFAULT_LEARNING_RATE = 1E-4;
 
-    SimpleGradientDescent(ErrorFunction<T, Model>* function) :
+    SimpleGradientDescent(CostFunction<T, Model>* function) :
         Optimizer<T, Model>(function),
         mLearningRate(DEFAULT_LEARNING_RATE) {}
 
@@ -77,7 +77,7 @@ public:
     const T DEFAULT_LEARNING_RATE = 1E-4;
     const T DEFAULT_MOMENTUM      = 1E-3;
 
-    GradientDescent(ErrorFunction<T, Model>* function) :
+    GradientDescent(CostFunction<T, Model>* function) :
         Optimizer<T, Model>(function),
         mVelocity(function->getNumParameters(), 1.0),
         mLearningRate(DEFAULT_LEARNING_RATE),

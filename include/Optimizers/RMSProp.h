@@ -11,7 +11,7 @@
 #include <vector>
 #include <cmath>
 #include "Optimizer.h"
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 #include "Acceleration.h"
 using std::vector;
@@ -36,7 +36,7 @@ public:
     const T DEFAULT_DECAY         = 0.90;
     const T DEFAULT_LEARNING_RATE = 1E-4;
 
-    SimpleRMSProp(ErrorFunction<T, Model>* function) :
+    SimpleRMSProp(CostFunction<T, Model>* function) :
         Optimizer<T, Model>(function),
         mRMS(function->getNumParameters(), 1.0),
         mDecay(DEFAULT_DECAY),
@@ -114,7 +114,7 @@ public:
     const T DEFAULT_LEARNING_RATE = 1E-4;
     const T DEFAULT_MOMENTUM      = 1E-3;
 
-    RMSProp(ErrorFunction<T, Model>* function) :
+    RMSProp(CostFunction<T, Model>* function) :
         Optimizer<T, Model>(function),
         mRMS(function->getNumParameters(), 1.0),
         mVelocity(function->getNumParameters(), 1.0),

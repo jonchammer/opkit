@@ -11,7 +11,7 @@
 #include <vector>
 #include <cmath>
 #include "Optimizer.h"
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 #include "PrettyPrinter.h"
 using std::vector;
@@ -25,7 +25,7 @@ template <class T, class Model>
 class HessianFreeOptimizer : public Optimizer<T, Model>
 {
 public:
-    HessianFreeOptimizer(ErrorFunction<T, Model>* function) : Optimizer<T, Model>(function) {}
+    HessianFreeOptimizer(CostFunction<T, Model>* function) : Optimizer<T, Model>(function) {}
 
     void iterate(const Matrix<T>& features, const Matrix<T>& labels);
 

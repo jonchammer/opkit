@@ -1,12 +1,12 @@
 /*
- * File:   ErrorFunction.h
+ * File:   CostFunction.h
  * Author: Jon C. Hammer
  *
  * Created on August 12, 2016, 9:58 AM
  */
 
-#ifndef ERRORFUNCTION_H
-#define ERRORFUNCTION_H
+#ifndef COST_FUNCTION_H
+#define COST_FUNCTION_H
 
 #include "Function.h"
 #include "Dataset.h"
@@ -18,10 +18,10 @@ namespace opkit
 {
 
 template <class T, class Model>
-class ErrorFunction
+class CostFunction
 {
 public:
-    ErrorFunction(Model& baseFunction) :
+    CostFunction(Model& baseFunction) :
         mBaseFunction(baseFunction)
     {
         // Do nothing
@@ -84,10 +84,10 @@ protected:
 };
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
+void CostFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
     const Matrix<T>& labels, vector<T>& gradient)
 {
-    cout << "ErrorFunction::calculateGradientInputs()" << endl;
+    cout << "CostFunction::calculateGradientInputs()" << endl;
 
     // Constants used in the finite differences approximation
     // Epsilon needs to be a reasonably small number, but the size depends on
@@ -134,10 +134,10 @@ void ErrorFunction<T, Model>::calculateGradientInputs(const Matrix<T>& features,
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateGradientParameters(
+void CostFunction<T, Model>::calculateGradientParameters(
     const Matrix<T>& features, const Matrix<T>& labels, vector<T>& gradient)
 {
-    cout << "ErrorFunction::calculateGradientParameters()" << endl;
+    cout << "CostFunction::calculateGradientParameters()" << endl;
 
     // Constants used in the finite differences approximation
     // Epsilon needs to be a reasonably small number, but the size depends on
@@ -172,10 +172,10 @@ void ErrorFunction<T, Model>::calculateGradientParameters(
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
+void CostFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
     const Matrix<T>& labels, Matrix<T>& hessian)
 {
-    cout << "ErrorFunction::calculateHessianInputs()" << endl;
+    cout << "CostFunction::calculateHessianInputs()" << endl;
 
     // Epsilon has to be set to a larger value than that used in calculating
     // the gradient because it will be squared in the calculations below. If it
@@ -236,10 +236,10 @@ void ErrorFunction<T, Model>::calculateHessianInputs(const Matrix<T>& features,
 }
 
 template <class T, class Model>
-void ErrorFunction<T, Model>::calculateHessianParameters(
+void CostFunction<T, Model>::calculateHessianParameters(
     const Matrix<T>& features, const Matrix<T>& labels, Matrix<T>& hessian)
 {
-    cout << "ErrorFunction::calculateHessianParameters()" << endl;
+    cout << "CostFunction::calculateHessianParameters()" << endl;
 
     // Epsilon has to be set to a larger value than that used in calculating
     // the gradient because it will be squared in the calculations below. If it
@@ -292,4 +292,4 @@ void ErrorFunction<T, Model>::calculateHessianParameters(
 }
 
 };
-#endif /* ERRORFUNCTION_H */
+#endif /* COST_FUNCTION_H */

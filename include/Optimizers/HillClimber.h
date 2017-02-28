@@ -11,7 +11,7 @@
 #include <cmath>
 #include <limits>
 #include "Optimizer.h"
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 
 namespace opkit
@@ -26,7 +26,7 @@ template <class T, class Model>
 class HillClimber : public Optimizer<T, Model>
 {
 public:
-    HillClimber(ErrorFunction<T, Model>* function) : Optimizer<T, Model>(function)
+    HillClimber(CostFunction<T, Model>* function) : Optimizer<T, Model>(function)
     {
         mStepSize.resize(function->getNumParameters());
         std::fill(mStepSize.begin(), mStepSize.end(), 0.1);

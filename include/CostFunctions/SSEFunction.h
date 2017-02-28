@@ -11,7 +11,7 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Dataset.h"
 #include "Matrix.h"
 #include "NeuralNetwork.h"
@@ -24,13 +24,13 @@ namespace opkit
 
 // This class is an implementation of the SSE Error function.
 template <class T, class Model>
-class SSEFunction : public ErrorFunction<T, Model>
+class SSEFunction : public CostFunction<T, Model>
 {
 public:
 
-    using ErrorFunction<T, Model>::mBaseFunction;
+    using CostFunction<T, Model>::mBaseFunction;
 
-    SSEFunction(Model& baseFunction) : ErrorFunction<T, Model>(baseFunction)
+    SSEFunction(Model& baseFunction) : CostFunction<T, Model>(baseFunction)
     {
         // Do nothing
     }
@@ -243,13 +243,13 @@ public:
 // Template specialization for Neural Networks, since there is a much more
 // efficient mechanism for calculating the gradient with them.
 template<class T>
-class SSEFunction<T, NeuralNetwork<T>> : public ErrorFunction<T, NeuralNetwork<T>>
+class SSEFunction<T, NeuralNetwork<T>> : public CostFunction<T, NeuralNetwork<T>>
 {
 public:
 
-    using ErrorFunction<T, NeuralNetwork<T>>::mBaseFunction;
+    using CostFunction<T, NeuralNetwork<T>>::mBaseFunction;
 
-    SSEFunction(NeuralNetwork<T>& baseFunction) : ErrorFunction<T, NeuralNetwork<T>>(baseFunction)
+    SSEFunction(NeuralNetwork<T>& baseFunction) : CostFunction<T, NeuralNetwork<T>>(baseFunction)
     {
         // Do nothing
     }

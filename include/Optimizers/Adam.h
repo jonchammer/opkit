@@ -11,7 +11,7 @@
 #include <vector>
 #include <cmath>
 #include "Optimizer.h"
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
@@ -35,7 +35,7 @@ public:
     constexpr static T DEFAULT_EPSILON       = std::sqrt(std::numeric_limits<T>::epsilon());
 
     // Construct the optimizer with the default values for all hyperparameters
-    Adam(ErrorFunction<T, Model>* function) :
+    Adam(CostFunction<T, Model>* function) :
         Optimizer<T, Model>(function),
 
         mBiasedMeanEstimate(function->getNumParameters()),

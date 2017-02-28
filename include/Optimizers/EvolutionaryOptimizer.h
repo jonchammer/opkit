@@ -8,7 +8,7 @@
 #ifndef EVOLUTIONARYOPTIMIZATION_H
 #define EVOLUTIONARYOPTIMIZATION_H
 
-#include "ErrorFunction.h"
+#include "CostFunction.h"
 #include "Matrix.h"
 #include "Optimizer.h"
 
@@ -71,7 +71,7 @@ class EvolutionaryOptimizer : public Optimizer<T, Model>
 public:
 
     // Constructors
-    EvolutionaryOptimizer(ErrorFunction<T, Model>* function, EvolutionaryOptimizerParams& params);
+    EvolutionaryOptimizer(CostFunction<T, Model>* function, EvolutionaryOptimizerParams& params);
     void iterate(const Matrix<T>& features, const Matrix<T>& labels);
 
 private:
@@ -121,7 +121,7 @@ private:
 };
 
 template <class T, class Model>
-EvolutionaryOptimizer<T, Model>::EvolutionaryOptimizer(ErrorFunction<T, Model>* function,
+EvolutionaryOptimizer<T, Model>::EvolutionaryOptimizer(CostFunction<T, Model>* function,
     EvolutionaryOptimizerParams& params) :
     Optimizer<T, Model>(function),
 
