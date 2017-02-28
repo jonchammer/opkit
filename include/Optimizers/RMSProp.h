@@ -10,7 +10,7 @@
 
 #include <vector>
 #include <cmath>
-#include "Trainer.h"
+#include "Optimizer.h"
 #include "ErrorFunction.h"
 #include "Matrix.h"
 #include "Acceleration.h"
@@ -29,15 +29,15 @@ namespace opkit
 // See: http://climin.readthedocs.io/en/latest/rmsprop.html
 //      http://sebastianruder.com/optimizing-gradient-descent/index.html
 template <class T, class Model>
-class SimpleRMSProp : public Trainer<T, Model>
+class SimpleRMSProp : public Optimizer<T, Model>
 {
 public:
-    using Trainer<T, Model>::function;
+    using Optimizer<T, Model>::function;
     const T DEFAULT_DECAY         = 0.90;
     const T DEFAULT_LEARNING_RATE = 1E-4;
 
     SimpleRMSProp(ErrorFunction<T, Model>* function) :
-        Trainer<T, Model>(function),
+        Optimizer<T, Model>(function),
         mRMS(function->getNumParameters(), 1.0),
         mDecay(DEFAULT_DECAY),
         mLearningRate(DEFAULT_LEARNING_RATE) {}
@@ -106,16 +106,16 @@ private:
 // See: http://climin.readthedocs.io/en/latest/rmsprop.html
 //      http://sebastianruder.com/optimizing-gradient-descent/index.html
 template <class T, class Model>
-class RMSProp : public Trainer<T, Model>
+class RMSProp : public Optimizer<T, Model>
 {
 public:
-    using Trainer<T, Model>::function;
+    using Optimizer<T, Model>::function;
     const T DEFAULT_DECAY         = 0.90;
     const T DEFAULT_LEARNING_RATE = 1E-4;
     const T DEFAULT_MOMENTUM      = 1E-3;
 
     RMSProp(ErrorFunction<T, Model>* function) :
-        Trainer<T, Model>(function),
+        Optimizer<T, Model>(function),
         mRMS(function->getNumParameters(), 1.0),
         mVelocity(function->getNumParameters(), 1.0),
         mDecay(DEFAULT_DECAY),

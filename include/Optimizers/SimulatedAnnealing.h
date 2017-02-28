@@ -12,7 +12,7 @@
 #include <cmath>
 #include <limits>
 #include <random>
-#include "Trainer.h"
+#include "Optimizer.h"
 #include "ErrorFunction.h"
 #include "Matrix.h"
 using std::vector;
@@ -42,7 +42,7 @@ namespace opkit
 // The optimal value will always be returned, even if the algorithm is currently
 // searching a different part of the search space.
 template <class T, class Model>
-class SimulatedAnnealing : public Trainer<T, Model>
+class SimulatedAnnealing : public Optimizer<T, Model>
 {
 public:
 
@@ -56,7 +56,7 @@ public:
 
     SimulatedAnnealing(ErrorFunction<T, Model>* function) :
         // Superclass initialization
-        Trainer<T, Model>(function),
+        Optimizer<T, Model>(function),
 
         // Initialize meta parameters
         mInitialTemperature(DEFAULT_INITIAL_TEMPERATURE),
@@ -84,8 +84,8 @@ public:
     void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialization
-        vector<T>& params      = Trainer<T, Model>::function->getParameters();
-        mCurrentCost           = Trainer<T, Model>::function->evaluate(features, labels);
+        vector<T>& params      = Optimizer<T, Model>::function->getParameters();
+        mCurrentCost           = Optimizer<T, Model>::function->evaluate(features, labels);
         mTemperature           = mInitialTemperature;
         mCurrentVariance       = mInitialVariance;
 
@@ -103,7 +103,7 @@ public:
 
                 // Evaluate the new point
                 params.swap(candidate);
-                T proposedCost = Trainer<T, Model>::function->evaluate(features, labels);
+                T proposedCost = Optimizer<T, Model>::function->evaluate(features, labels);
 
                 // Save this solution if it is the best we've seen so far
                 if (proposedCost < mOptimalCost)

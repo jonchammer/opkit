@@ -9,7 +9,7 @@
 #define GRADIENTDESCENT_H
 
 #include <vector>
-#include "Trainer.h"
+#include "Optimizer.h"
 #include "ErrorFunction.h"
 #include "Matrix.h"
 #include "Acceleration.h"
@@ -27,14 +27,14 @@ namespace opkit
 // NOTE: The simple gradient descender has no advanced features like Nesterov
 // momentum. Instead, it is designed to be fast.
 template <class T, class Model>
-class SimpleGradientDescent : public Trainer<T, Model>
+class SimpleGradientDescent : public Optimizer<T, Model>
 {
 public:
-    using Trainer<T, Model>::function;
+    using Optimizer<T, Model>::function;
     const T DEFAULT_LEARNING_RATE = 1E-4;
 
     SimpleGradientDescent(ErrorFunction<T, Model>* function) :
-        Trainer<T, Model>(function),
+        Optimizer<T, Model>(function),
         mLearningRate(DEFAULT_LEARNING_RATE) {}
 
     void iterate(const Matrix<T>& features, const Matrix<T>& labels)
@@ -70,15 +70,15 @@ private:
 // be used. This implementation will very likely be slightly slower than that
 // used in SimpleGradientDescent.
 template <class T, class Model>
-class GradientDescent : public Trainer<T, Model>
+class GradientDescent : public Optimizer<T, Model>
 {
 public:
-    using Trainer<T, Model>::function;
+    using Optimizer<T, Model>::function;
     const T DEFAULT_LEARNING_RATE = 1E-4;
     const T DEFAULT_MOMENTUM      = 1E-3;
 
     GradientDescent(ErrorFunction<T, Model>* function) :
-        Trainer<T, Model>(function),
+        Optimizer<T, Model>(function),
         mVelocity(function->getNumParameters(), 1.0),
         mLearningRate(DEFAULT_LEARNING_RATE),
         mMomentum(DEFAULT_MOMENTUM) {}

@@ -1,12 +1,12 @@
 /*
- * File:   Trainer.h
+ * File:   Optimizer.h
  * Author: Jon C. Hammer
  *
  * Created on July 9, 2016, 9:42 PM
  */
 
-#ifndef TRAINER_H
-#define TRAINER_H
+#ifndef OPTIMIZER_H
+#define OPTIMIZER_H
 
 #include "ErrorFunction.h"
 #include "Matrix.h"
@@ -15,19 +15,19 @@ namespace opkit
 {
 
 template <class T, class Model>
-class Trainer
+class Optimizer
 {
 public:
     /**
-     * Every Trainer must have a function on which to operate.
+     * Every Optimizer must have a function on which to operate.
      * @param function. The function to be optimized.
      */
-    Trainer(ErrorFunction<T, Model>* function) : function(function) {};
+    Optimizer(ErrorFunction<T, Model>* function) : function(function) {};
 
     /**
      * Default destructor
      */
-    virtual ~Trainer() {}
+    virtual ~Optimizer() {}
 
     /**
      * Perform one or more steps in order to optimize the function. The exact
@@ -45,4 +45,4 @@ protected:
 
 };
 
-#endif /* TRAINER_H */
+#endif /* OPTIMIZER_H */

@@ -10,7 +10,7 @@
 
 #include <vector>
 #include <cmath>
-#include "Trainer.h"
+#include "Optimizer.h"
 #include "ErrorFunction.h"
 #include "Matrix.h"
 #include "Acceleration.h"
@@ -25,10 +25,10 @@ namespace opkit
 // and uses that information to derive a separate learning rate for each
 // optimizable parameter.
 template <class T, class Model>
-class Adam : public Trainer<T, Model>
+class Adam : public Optimizer<T, Model>
 {
 public:
-    using Trainer<T, Model>::function;
+    using Optimizer<T, Model>::function;
     constexpr static T DEFAULT_LEARNING_RATE = 1E-3;
     constexpr static T DEFAULT_BETA1         = 0.9;
     constexpr static T DEFAULT_BETA2         = 0.999;
@@ -36,7 +36,7 @@ public:
 
     // Construct the optimizer with the default values for all hyperparameters
     Adam(ErrorFunction<T, Model>* function) :
-        Trainer<T, Model>(function),
+        Optimizer<T, Model>(function),
 
         mBiasedMeanEstimate(function->getNumParameters()),
         mBiasedVarianceEstimate(function->getNumParameters()),

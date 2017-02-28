@@ -10,7 +10,7 @@
 
 #include "ErrorFunction.h"
 #include "Matrix.h"
-#include "Trainer.h"
+#include "Optimizer.h"
 
 namespace opkit
 {
@@ -66,7 +66,7 @@ struct EvolutionaryOptimizerParams
 // information is unavailable or expensive to calculate, but it tends to be
 // slower than some other methods (e.g. Gradient Descent) in general.
 template <class T, class Model>
-class EvolutionaryOptimizer : public Trainer<T, Model>
+class EvolutionaryOptimizer : public Optimizer<T, Model>
 {
 public:
 
@@ -123,7 +123,7 @@ private:
 template <class T, class Model>
 EvolutionaryOptimizer<T, Model>::EvolutionaryOptimizer(ErrorFunction<T, Model>* function,
     EvolutionaryOptimizerParams& params) :
-    Trainer<T, Model>(function),
+    Optimizer<T, Model>(function),
 
     // Initialize random number generators
     mUniform(0.0, 1.0),
@@ -355,7 +355,7 @@ void EvolutionaryOptimizer<T, Model>::iterate(const Matrix<T>& features, const M
     if (mMinError < currentMinError)
     {
         std::copy(mOptimalSolution.begin(), mOptimalSolution.end(),
-            Trainer<T, Model>::function->getParameters().begin());
+            Optimizer<T, Model>::function->getParameters().begin());
     }
 }
 
@@ -364,11 +364,11 @@ void EvolutionaryOptimizer<T, Model>::evaluateMember(int index,
     const Matrix<T>& features, const Matrix<T>& labels)
 {
     // Swap the desired parameters into the function
-    vector<T>& origParams = Trainer<T, Model>::function->getParameters();
+    vector<T>& origParams = Optimizer<T, Model>::function->getParameters();
     origParams.swap(mPopulation[index]);
 
     // Do the evaluation with the desired parameters
-    mErrors[index]    = Trainer<T, Model>::function->evaluate(features, labels);
+    mErrors[index]    = Optimizer<T, Model>::function->evaluate(features, labels);
     mInvErrors[index] = 1.0 / mErrors[index];
 
     // Put the original parameters back

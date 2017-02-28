@@ -10,7 +10,7 @@
 
 #include <cmath>
 #include <limits>
-#include "Trainer.h"
+#include "Optimizer.h"
 #include "ErrorFunction.h"
 #include "Matrix.h"
 
@@ -23,10 +23,10 @@ namespace opkit
 // converges extremely quickly for convex functions, but is more susceptible to
 // getting stuck in local minima than some other approaches.
 template <class T, class Model>
-class HillClimber : public Trainer<T, Model>
+class HillClimber : public Optimizer<T, Model>
 {
 public:
-    HillClimber(ErrorFunction<T, Model>* function) : Trainer<T, Model>(function)
+    HillClimber(ErrorFunction<T, Model>* function) : Optimizer<T, Model>(function)
     {
         mStepSize.resize(function->getNumParameters());
         std::fill(mStepSize.begin(), mStepSize.end(), 0.1);
@@ -38,18 +38,18 @@ public:
 
         // Try 4 change values and pick the one that does the best
         // for each parameter
-        vector<T>& params = Trainer<T, Model>::function->getParameters();
+        vector<T>& params = Optimizer<T, Model>::function->getParameters();
         for (size_t i = 0; i < params.size(); ++i)
         {
             T orig        = params[i];
             int minIndex  = -1;
-            T minError    = Trainer<T, Model>::function->evaluate(features, labels);
+            T minError    = Optimizer<T, Model>::function->evaluate(features, labels);
 
             // Try each change and record the best one.
             for (int j = 0; j < 4; ++j)
             {
                 params[i]   += (CHANGES[j] * mStepSize[i]);
-                T error      = Trainer<T, Model>::function->evaluate(features, labels);
+                T error      = Optimizer<T, Model>::function->evaluate(features, labels);
                 params[i]    = orig;
 
                 if (error < minError)
