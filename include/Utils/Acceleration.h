@@ -10,6 +10,10 @@
 
 #include <cblas.h>
 
+#ifdef OPKIT_NVBLAS
+    #include <nvblas.h>
+#endif
+
 namespace opkit
 {
 
@@ -94,7 +98,6 @@ namespace opkit
 // GPU to accelerate the L3 BLAS operations. The lower level operations will
 // have to come from another CPU BLAS library.
 #ifdef OPKIT_NVBLAS
-    #include <nvblas.h>
 
     #undef OPKIT_DGEMM
     #undef OPKIT_SGEMM
