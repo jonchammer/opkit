@@ -608,8 +608,7 @@ private:
 
             mBaseFunction.calculateDeltas();
 
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
+            // Calculate the gradient based on the deltas.
             nn.calculateGradientParametersBatch(features, gradient.data());
         }
     };
