@@ -357,6 +357,118 @@ private:
     Bitmask<T> mMask;
 };
 
+template <class T>
+class Convolutional1DLayer : public Layer<T>
+{
+public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mParameters;
+    using Layer<T>::mInputs;
+    using Layer<T>::mOutputs;
+    using Layer<T>::mDeltas;
+    using Layer<T>::mActivation;
+    using Layer<T>::mBatchSize;
+
+    Convolutional1DLayer
+    (
+        size_t inputSize, size_t batchSize, size_t inputChannels,
+        size_t filterSize, size_t numFilters,
+        size_t stride = 1, size_t zeroPadding = 0
+    ) :
+
+    // Superclass constructor - inputs, outputs, and batch size
+    Layer<T>(inputSize * inputChannels,
+        ((inputSize - filterSize + 2 * zeroPadding) / stride + 1) * numFilters,
+        batchSize),
+
+    // Paramaters
+    mInputSize(inputSize),
+    mInputChannels(inputChannels), mFilterSize(filterSize),
+    mNumFilters(numFilters), mStride(stride), mZeroPadding(zeroPadding),
+    mOutputSize((inputSize - filterSize + 2 * zeroPadding) / stride + 1),
+
+    mMaskMatrix(inputSize * inputChannels, mOutputSize)
+    {}
+
+    ~Convolutional1DLayer()
+    {}
+
+    // TODO: Deal with stride and multiple channels
+    void fillMaskMatrix(T* params)
+    {
+        for (size_t i = 0; i < mOutputSize; ++i)
+        {
+            for (size_t j = 0; j < mFilterSize; ++j)
+            {
+                size_t row = i - mZeroPadding + j;
+                size_t col = i;
+
+                if (row >= 0 && row < mInputSize)
+                    mMaskMatrix(row, col) = params[j];
+            }
+        }
+    }
+
+    void eval(const Matrix<T>& x) override
+    {
+        const size_t OUTPUT_BLOCK_SIZE = mBatchSize * mOutputSize * mInputChannels;
+
+        T* params = mParameters;
+        T* y      = mActivation.data();
+
+        for (size_t filter = 0; filter < mNumFilters; ++filter)
+        {
+            // Populate the mask matrix (inputs x outputs x numChannels)
+            fillMaskMatrix(params);
+
+            // Multiply the input by the mask matrix. This has the same effect
+            // as performing the normal convolution between the input and the
+            // current filter.
+            channeledMMMultiply(x.data(), mMaskMatrix.data(), y.data(),
+                mInputSize, mBatchSize, mOutputSize, mInputChannels);
+
+            // Add the filter bias to every output element. The bias will always
+            // follow the 'mFilterSize' weights that constitute a single filter
+            T bias = params[mFilterSize];
+            for (size_t i = 0; i < OUTPUT_BLOCK_SIZE; ++i)
+                y[i] += bias;
+
+            // Advance the pointers to the parameters and the activation to the
+            // next filter
+            params += mFilterSize + 1;
+            y      += OUTPUT_BLOCK_SIZE;
+        }
+    }
+
+    void calculateDeltas(const Matrix<T>& x, T* destination) override
+    {
+
+    }
+
+    void calculateGradient(const Matrix<T>& x, T* gradient) override
+    {
+
+    }
+
+    size_t getNumParameters() const override
+    {
+        return (mFilterSize * mInputChannels + 1) * mNumFilters;
+    }
+
+private:
+    size_t mInputSize;
+    size_t mInputChannels;
+    size_t mFilterSize;
+    size_t mNumFilters;
+    size_t mStride;
+    size_t mZeroPadding;
+    size_t mOutputSize;
+
+    Matrix<T> mMaskMatrix;
+};
+
 // // Fundamentally, CompressedSparseLayer is similar to FullyConnectedLayer.
 // // The only difference is that this class uses sparse storage to reduce the
 // // computational complexity of the evaluation and backprop steps.

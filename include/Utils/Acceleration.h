@@ -299,6 +299,34 @@ namespace opkit
         //     beta, C, N);
     }
 
+    // Computes C = alpha * A * B + beta * C, where A, B, and C are multi-
+    // channel matrices (or 3rd order tensors). Each channel is processed
+    // separately. A is assumed to be an M x K matrix containing 'numChannels'
+    // channels. Similarly, B is a K x N x numChannels tensor, and the result,
+    // C, is an M x N x numChannels tensor. Each MxK, KxN, or MxN elements
+    // constitute a single channel (for A, B, and C, respectively).
+    template <class T>
+    inline void channeledMMMultiply(const T* A, const T* B, T* C,
+        const size_t M, const size_t N, const size_t K, const size_t numChannels,
+        const T alpha = 1.0, const T beta = 0.0)
+    {
+        const size_t A_INC = M * K;
+        const size_t B_INC = K * N;
+        const size_t C_INC = M * N;
+
+        T* a = (T*) A;
+        T* b = (T*) B;
+        T* c = (T*) C;
+
+        for (size_t i = 0; i < numChannels; ++i)
+        {
+            mmMultiply(a, b, c, M, N, K, alpha, beta);
+            a += A_INC;
+            b += B_INC;
+            c += C_INC;
+        }
+    }
+
     // Computes y = alpha * A * x + beta * y, where A is an M x N
     // matrix, x is a vector of size N, y is a vector of size M,
     // and alpha and beta are scalars.
