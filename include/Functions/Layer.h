@@ -395,19 +395,48 @@ public:
     ~Convolutional1DLayer()
     {}
 
-    // TODO: Deal with stride and multiple channels
-    void fillMaskMatrix(T* params)
-    {
-        for (size_t i = 0; i < mOutputSize; ++i)
-        {
-            for (size_t j = 0; j < mFilterSize; ++j)
-            {
-                size_t row = i - mZeroPadding + j;
-                size_t col = i;
 
-                if (row >= 0 && row < mInputSize)
-                    mMaskMatrix(row, col) = params[j];
+    // This function copies the convolutional weights into the mask matrix in a
+    // Toeplitz arrangement. This effectively flattens the convolution of an
+    // input with one mask into a single matrix multiplication.
+    // 'filter' specifies which filter should be used [0, numFilters).
+    void fillMaskMatrix(size_t filter)
+    {
+        // INPUT LAYOUT
+        // ------------------------------------------
+        // w1-c1, w2-c1, ... wn-c1, --+
+        // w1-c2, w2-c2, ... wn-c2,   |
+        // ...                        |--- Filter 1
+        // w1-cm, w2-cm, ... wn-cm,   |
+        // b1                       --+
+        //
+        // (w = weight, c = channel, b = bias)
+        // [F1, F2, ... Fk] - Filters stored contiguously
+        // ------------------------------------------
+        T* params = mParameters + filter * (mInputSize * mInputChannels + 1);
+
+        size_t channelOffset = 0;
+        for (size_t channel = 0; channel < mInputChannels; ++channel)
+        {
+            // Write one slice of the mask matrix. We store each slice
+            // immediately after the previous one, so the mask matrix actually
+            // has 'mInputChannels' times more rows than in theory.
+            size_t startRow = -mZeroPadding;
+            for (size_t i = 0; i < mOutputSize; ++i)
+            {
+                for (size_t j = 0; j < mFilterSize; ++j)
+                {
+                    size_t row = startRow + j;
+                    if (row >= 0 && row < mInputSize)
+                        mMaskMatrix(channelOffset + row, i) = params[j];
+                }
+
+                startRow += mStride;
             }
+
+            // Advance to the next channel
+            params        += mInputSize;
+            channelOffset += mInputSize;
         }
     }
 
@@ -421,7 +450,7 @@ public:
         for (size_t filter = 0; filter < mNumFilters; ++filter)
         {
             // Populate the mask matrix (inputs x outputs x numChannels)
-            fillMaskMatrix(params);
+            fillMaskMatrix(filter);
 
             // Multiply the input by the mask matrix. This has the same effect
             // as performing the normal convolution between the input and the
@@ -430,14 +459,14 @@ public:
                 mInputSize, mBatchSize, mOutputSize, mInputChannels);
 
             // Add the filter bias to every output element. The bias will always
-            // follow the 'mFilterSize' weights that constitute a single filter
-            T bias = params[mFilterSize];
+            // follow the 'mFilterSize * mInputChannels' weights that constitute
+            // a single filter
+            T bias = params[mFilterSize * mInputChannels];
             for (size_t i = 0; i < OUTPUT_BLOCK_SIZE; ++i)
                 y[i] += bias;
 
-            // Advance the pointers to the parameters and the activation to the
-            // next filter
-            params += mFilterSize + 1;
+            // Advance the parameter and activation pointers to the next filter
+            params += mFilterSize * mInputChannels + 1;
             y      += OUTPUT_BLOCK_SIZE;
         }
     }
