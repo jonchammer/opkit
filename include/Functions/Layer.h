@@ -389,86 +389,27 @@ public:
     mNumFilters(numFilters), mStride(stride), mZeroPadding(zeroPadding),
     mOutputSize((inputSize - filterSize + 2 * zeroPadding) / stride + 1),
 
-    mMaskMatrix(inputSize * inputChannels, mOutputSize)
+    mInputMatrix(mOutputSize * batchSize, filterSize * inputChannels)
     {}
 
     ~Convolutional1DLayer()
     {}
 
-
-    // This function copies the convolutional weights into the mask matrix in a
-    // Toeplitz arrangement. This effectively flattens the convolution of an
-    // input with one mask into a single matrix multiplication.
-    // 'filter' specifies which filter should be used [0, numFilters).
-    void fillMaskMatrix(size_t filter)
-    {
-        // INPUT LAYOUT
-        // ------------------------------------------
-        // w1-c1, w2-c1, ... wn-c1, --+
-        // w1-c2, w2-c2, ... wn-c2,   |
-        // ...                        |--- Filter 1
-        // w1-cm, w2-cm, ... wn-cm,   |
-        // b1                       --+
-        //
-        // (w = weight, c = channel, b = bias)
-        // [F1, F2, ... Fk] - Filters stored contiguously
-        // ------------------------------------------
-        T* params = mParameters + filter * (mInputSize * mInputChannels + 1);
-
-        size_t channelOffset = 0;
-        for (size_t channel = 0; channel < mInputChannels; ++channel)
-        {
-            // Write one slice of the mask matrix. We store each slice
-            // immediately after the previous one, so the mask matrix actually
-            // has 'mInputChannels' times more rows than in theory.
-            size_t startRow = -mZeroPadding;
-            for (size_t i = 0; i < mOutputSize; ++i)
-            {
-                for (size_t j = 0; j < mFilterSize; ++j)
-                {
-                    size_t row = startRow + j;
-                    if (row >= 0 && row < mInputSize)
-                        mMaskMatrix(channelOffset + row, i) = params[j];
-                }
-
-                startRow += mStride;
-            }
-
-            // Advance to the next channel
-            params        += mInputSize;
-            channelOffset += mInputSize;
-        }
-    }
-
     void eval(const Matrix<T>& x) override
     {
-        const size_t OUTPUT_BLOCK_SIZE = mBatchSize * mOutputSize * mInputChannels;
+        // Expand x using the im2Row transformation. Each row of x will be
+        // transformed into 'mOutputSize' rows according to the convolution
+        // parameters. The relative order of the rows will be maintained.
+        im2Row(x.data(), mInputSize, mBatchSize, mInputChannels, mFilterSize, 1,
+            mZeroPadding, 0, mStride, 1, mInputMatrix.data());
 
-        T* params = mParameters;
-        T* y      = mActivation.data();
+        // Multiply the weights matrix by the transpose of the input matrix.
+        // TODO: Check interlacing and (M, N, K) for this call.
+        mtmMultiply(mParameters, mInputMatrix.data(), mActivation.data(),
+            mInputMatrix.getCols(), mNumFilters, mInputMatrix.getRows() );
 
-        for (size_t filter = 0; filter < mNumFilters; ++filter)
-        {
-            // Populate the mask matrix (inputs x outputs x numChannels)
-            fillMaskMatrix(filter);
-
-            // Multiply the input by the mask matrix. This has the same effect
-            // as performing the normal convolution between the input and the
-            // current filter.
-            channeledMMMultiply(x.data(), mMaskMatrix.data(), y.data(),
-                mInputSize, mBatchSize, mOutputSize, mInputChannels);
-
-            // Add the filter bias to every output element. The bias will always
-            // follow the 'mFilterSize * mInputChannels' weights that constitute
-            // a single filter
-            T bias = params[mFilterSize * mInputChannels];
-            for (size_t i = 0; i < OUTPUT_BLOCK_SIZE; ++i)
-                y[i] += bias;
-
-            // Advance the parameter and activation pointers to the next filter
-            params += mFilterSize * mInputChannels + 1;
-            y      += OUTPUT_BLOCK_SIZE;
-        }
+        // Add filter bias to each element
+        // TODO: ...
     }
 
     void calculateDeltas(const Matrix<T>& x, T* destination) override
@@ -495,7 +436,7 @@ private:
     size_t mZeroPadding;
     size_t mOutputSize;
 
-    Matrix<T> mMaskMatrix;
+    Matrix<T> mInputMatrix;
 };
 
 // // Fundamentally, CompressedSparseLayer is similar to FullyConnectedLayer.

@@ -140,462 +140,537 @@ namespace opkit
     #define OPKIT_L3_NO_TRANSPOSE "N"
 #endif
 
-    // For BLAS reference see:
-    // https://software.intel.com/sites/default/files/managed/ff/c8/mkl-2017-developer-reference-c_0.pdf
-    //
-    // NOTE: Some BLAS libraries make the assumption that matrices are stored
-    // in column-major order. Since our data is actually in row-major order,
-    // some sort of conversion would normally have to be applied in order to use
-    // those libraries. Helpfully, it is usually possible to perform an
-    // alternate computation (e.g. by switching the dimensions and positions of
-    // operands) to trick the library into doing the same work, despite the
-    // differences in ordering. The accelerated routines that use matrices below
-    // make use of these tricks so the underlying BLAS library always believes
-    // it is working on data in column-major order. This makes it easier to
-    // switch between libraries, since some (e.g. OpenBLAS) do these conversions
-    // automatically, but some (e.g. NVBlas) do not.
+// For BLAS reference see:
+// https://software.intel.com/sites/default/files/managed/ff/c8/mkl-2017-developer-reference-c_0.pdf
+//
+// NOTE: Some BLAS libraries make the assumption that matrices are stored
+// in column-major order. Since our data is actually in row-major order,
+// some sort of conversion would normally have to be applied in order to use
+// those libraries. Helpfully, it is usually possible to perform an
+// alternate computation (e.g. by switching the dimensions and positions of
+// operands) to trick the library into doing the same work, despite the
+// differences in ordering. The accelerated routines that use matrices below
+// make use of these tricks so the underlying BLAS library always believes
+// it is working on data in column-major order. This makes it easier to
+// switch between libraries, since some (e.g. OpenBLAS) do these conversions
+// automatically, but some (e.g. NVBlas) do not.
 
-    // Computes C = alpha * A * B + beta * C, where A is an M x K
-    // matrix, B is a K x N matrix, C is an M x N matrix, alpha is
-    // a scalar, and beta is a scalar.
-    inline void mmMultiply(const double* A, const double* B, double* C,
-        const size_t M, const size_t N, const size_t K,
-        const double alpha = 1.0, const double beta = 0.0)
+// Computes C = alpha * A * B + beta * C, where A is an M x K
+// matrix, B is a K x N matrix, C is an M x N matrix, alpha is
+// a scalar, and beta is a scalar.
+inline void mmMultiply(const double* A, const double* B, double* C,
+    const size_t M, const size_t N, const size_t K,
+    const double alpha = 1.0, const double beta = 0.0)
+{
+    USE_ONE_CORE();
+    //USE_ALL_CORES();
+
+    OPKIT_DGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
+        N, M, K,
+        alpha, B, N,
+        A, K,
+        beta, C, N);
+
+    // Equivalently,
+    // cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+    //     M, N, K,
+    //     alpha, A, K,
+    //     B, N,
+    //     beta, C, N);
+}
+
+// Computes C = alpha * A * B + beta * C, where A is an M x K
+// matrix, B is a K x N matrix, C is an M x N matrix, alpha is
+// a scalar, and beta is a scalar.
+inline void mmMultiply(const float* A, const float* B, float* C,
+    const size_t M, const size_t N, const size_t K,
+    const float alpha = 1.0f, const float beta = 0.0f)
+{
+    USE_ONE_CORE();
+    //USE_ALL_CORES();
+
+    OPKIT_SGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
+        N, M, K,
+        alpha, B, N,
+        A, K,
+        beta, C, N);
+
+    // Equivalently,
+    // cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+    //     M, N, K,
+    //     alpha, A, K,
+    //     B, N,
+    //     beta, C, N);
+}
+
+// Computes C = alpha * A * B^T + beta * C, where A is an M x K
+// matrix, B is an N x K matrix, C is an M x N matrix, alpha is
+// a scalar, and beta is a scalar.
+inline void mmtMultiply(const double* A, const double* B, double* C,
+    const size_t M, const size_t N, const size_t K,
+    const double alpha = 1.0, const double beta = 0.0)
+{
+    USE_ONE_CORE();
+    //USE_ALL_CORES();
+
+    OPKIT_DGEMM(OPKIT_L3_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
+        N, M, K,
+        alpha, B, K,
+        A, K,
+        beta, C, N);
+
+    // Equivalently,
+    // cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+    //     M, N, K,
+    //     alpha, A, K,
+    //     B, K,
+    //     beta, C, N);
+}
+
+// Computes C = alpha * A * B^T + beta * C, where A is an M x K
+// matrix, B is an N x K matrix, C is an M x N matrix, alpha is
+// a scalar, and beta is a scalar.
+inline void mmtMultiply(const float* A, const float* B, float* C,
+    const size_t M, const size_t N, const size_t K,
+    const float alpha = 1.0f, const float beta = 0.0f)
+{
+    USE_ONE_CORE();
+    //USE_ALL_CORES();
+
+    OPKIT_SGEMM(OPKIT_L3_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
+        N, M, K,
+        alpha, B, K,
+        A, K,
+        beta, C, N);
+
+    // Equivalently,
+    // cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+    //     M, N, K,
+    //     alpha, A, K,
+    //     B, K,
+    //     beta, C, N);
+}
+
+// Computes C = alpha * A^T * B + beta * C, where A is a K x M
+// matrix, B is a K x N matrix, C is an M x N matrix, alpha is
+// a scalar, and beta is a scalar.
+inline void mtmMultiply(const double* A, const double* B, double* C,
+    const size_t M, const size_t N, const size_t K,
+    const double alpha = 1.0, const double beta = 0.0)
+{
+    USE_ONE_CORE();
+    //USE_ALL_CORES();
+
+    OPKIT_DGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_TRANSPOSE,
+        N, M, K,
+        alpha, B, N,
+        A, M,
+        beta, C, N);
+
+    // Equivalently,
+    // cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+    //     M, N, K,
+    //     alpha, A, M,
+    //     B, N,
+    //     beta, C, N);
+}
+
+// Computes C = alpha * A^T * B + beta * C, where A is a K x M
+// matrix, B is a K x N matrix, C is an M x N matrix, alpha is
+// a scalar, and beta is a scalar.
+inline void mtmMultiply(const float* A, const float* B, float* C,
+    const size_t M, const size_t N, const size_t K,
+    const float alpha = 1.0f, const float beta = 0.0f)
+{
+    USE_ONE_CORE();
+    //USE_ALL_CORES();
+
+    OPKIT_SGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_TRANSPOSE,
+        N, M, K,
+        alpha, B, N,
+        A, M,
+        beta, C, N);
+
+    // Equivalently,
+    // cblas_sgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+    //     M, N, K,
+    //     alpha, A, M,
+    //     B, N,
+    //     beta, C, N);
+}
+
+// Computes C = alpha * A * B + beta * C, where A, B, and C are multi-
+// channel matrices (or 3rd order tensors). Each channel is processed
+// separately. A is assumed to be an M x K matrix containing 'numChannels'
+// channels. Similarly, B is a K x N x numChannels tensor, and the result,
+// C, is an M x N x numChannels tensor. Each MxK, KxN, or MxN elements
+// constitute a single channel (for A, B, and C, respectively).
+template <class T>
+inline void channeledMMMultiply(const T* A, const T* B, T* C,
+    const size_t M, const size_t N, const size_t K, const size_t numChannels,
+    const T alpha = 1.0, const T beta = 0.0)
+{
+    const size_t A_INC = M * K;
+    const size_t B_INC = K * N;
+    const size_t C_INC = M * N;
+
+    T* a = (T*) A;
+    T* b = (T*) B;
+    T* c = (T*) C;
+
+    for (size_t i = 0; i < numChannels; ++i)
     {
-        USE_ONE_CORE();
-        //USE_ALL_CORES();
-
-        OPKIT_DGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
-            N, M, K,
-            alpha, B, N,
-            A, K,
-            beta, C, N);
-
-        // Equivalently,
-        // cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-        //     M, N, K,
-        //     alpha, A, K,
-        //     B, N,
-        //     beta, C, N);
+        mmMultiply(a, b, c, M, N, K, alpha, beta);
+        a += A_INC;
+        b += B_INC;
+        c += C_INC;
     }
+}
 
-    // Computes C = alpha * A * B + beta * C, where A is an M x K
-    // matrix, B is a K x N matrix, C is an M x N matrix, alpha is
-    // a scalar, and beta is a scalar.
-    inline void mmMultiply(const float* A, const float* B, float* C,
-        const size_t M, const size_t N, const size_t K,
-        const float alpha = 1.0f, const float beta = 0.0f)
+// Computes y = alpha * A * x + beta * y, where A is an M x N
+// matrix, x is a vector of size N, y is a vector of size M,
+// and alpha and beta are scalars.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void mvMultiply(const double* A, const double* x, double* y,
+    const size_t M, const size_t N,
+    const double alpha = 1.0, const double beta = 0.0,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_DGEMV(OPKIT_L2_TRANSPOSE,
+        N, M,
+        alpha, A, N,
+        x, xInc,
+        beta, y, yInc);
+
+    // Equivalently,
+    // cblas_dgemv(CblasRowMajor, CblasNoTrans,
+    // M, N,
+    // alpha, A, N,
+    // x, xInc,
+    // beta, y, yInc);
+}
+
+// Computes y = alpha * A * x + beta * y, where A is an M x N
+// matrix, x is a vector of size N, y is a vector of size M,
+// and alpha and beta are scalars.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void mvMultiply(const float* A, const float* x, float* y,
+    const size_t M, const size_t N,
+    const float alpha = 1.0f, const float beta = 0.0f,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_SGEMV(OPKIT_L2_TRANSPOSE,
+        N, M,
+        alpha, A, N,
+        x, xInc,
+        beta, y, yInc);
+
+    // Equivalently,
+    // cblas_sgemv(CblasRowMajor, CblasNoTrans,
+    // M, N,
+    // alpha, A, N,
+    // x, xInc,
+    // beta, y, yInc);
+}
+
+// Computes y = alpha * A^T * x + beta * y, where A is an M x N
+// matrix, x is a vector of size M, y is a vector of size N,
+// and alpha and beta are scalars.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void mtvMultiply(const double* A, const double* x, double* y,
+    const size_t M, const size_t N,
+    const double alpha = 1.0, const double beta = 0.0,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_DGEMV(OPKIT_L2_NO_TRANSPOSE,
+        N, M,
+        alpha, A, N,
+        x, xInc,
+        beta, y, yInc);
+
+    // Equivalently,
+    // cblas_dgemv(CblasRowMajor, CblasTrans,
+    // M, N,
+    // alpha, A, N,
+    // x, xInc,
+    // beta, y, yInc);
+}
+
+// Computes y = alpha * A^T * x + beta * y, where A is an M x N
+// matrix, x is a vector of size M, y is a vector of size N,
+// and alpha and beta are scalars.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void mtvMultiply(const float* A, const float* x, float* y,
+    const size_t M, const size_t N,
+    const float alpha = 1.0f, const float beta = 0.0f,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_SGEMV(OPKIT_L2_NO_TRANSPOSE,
+        N, M,
+        alpha, A, N,
+        x, xInc,
+        beta, y, yInc);
+
+    // Equivalently,
+    // cblas_sgemv(CblasRowMajor, CblasTrans,
+    // M, N,
+    // alpha, A, N,
+    // x, xInc,
+    // beta, y, yInc);
+}
+
+// Computes y = alpha * A * x + beta * y, where A is an N x N
+// symmetric matrix, x is a vector of size N, y is a vector of size N,
+// and alpha and beta are scalars.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void symmetricMvMultiply(const double* A, const double* x, double* y,
+    const size_t N, const double alpha = 1.0, const double beta = 0.0,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+
+    // NOTE: Either row-major order or column-major order can be used for
+    // symmetric matrices.
+    OPKIT_DSYMV(OPKIT_UPPER,
+        N, alpha,
+        A, N,
+        x, xInc,
+        beta, y, yInc);
+}
+
+// Computes y = alpha * A * x + beta * y, where A is an N x N
+// symmetric matrix, x is a vector of size N, y is a vector of size N,
+// and alpha and beta are scalars.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void symmetricMvMultiply(const float* A, const float* x, float* y,
+    const size_t N, const float alpha = 1.0f, const float beta = 0.0f,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+
+    // NOTE: Either row-major order or column-major order can be used for
+    // symmetric matrices.
+    OPKIT_SSYMV(OPKIT_UPPER,
+        N, alpha,
+        A, N,
+        x, xInc,
+        beta, y, yInc);
+}
+
+// Adds alpha * x * y^T to A, where x is a vector of size M,
+// y is a vector of size N, A is a M x N matrix, and alpha is
+// a scalar. When A is initialized to 0's, this calculates the
+// vector outer product between x and y. Otherwise, it performs
+// a rank-1 update of A.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void outerProduct(const double* x, const double* y, double* A,
+    const size_t M, const size_t N, const double alpha = 1.0,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_DGER(N, M,
+        alpha, y, yInc,
+        x, xInc,
+        A, N);
+
+    // Equivalently,
+    // cblas_dger(CblasRowMajor, M, N,
+    // alpha, x, xInc,
+    // y, yInc,
+    // A, N);
+}
+
+// Adds alpha * x * y^T to A, where x is a vector of size M,
+// y is a vector of size N, A is a M x N matrix, and alpha is
+// a scalar. When A is initialized to 0's, this calculates the
+// vector outer product between x and y. Otherwise, it performs
+// a rank-1 update of A.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void outerProduct(const float* x, const float* y, float* A,
+    const size_t M, const size_t N, const float alpha = 1.0f,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_SGER(N, N,
+        alpha, y, yInc,
+        x, xInc,
+        A, N);
+
+    // Equivalently,
+    // cblas_sger(CblasRowMajor, M, N,
+    // alpha, x, xInc,
+    // y, yInc,
+    // A, N);
+}
+
+// Computes y += alpha * x, where x is a vector of size N,
+// y is a vector of size N, and alpha is a scalar.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void vAdd(const double* x, double* y,
+    const size_t N, const double alpha = 1.0,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_DAXPY(N, alpha, x, xInc, y, yInc);
+}
+
+// Computes y += alpha * x, where x is a vector of size N,
+// y is a vector of size N, and alpha is a scalar.
+// xInc and yInc can be adjusted if the vectors are stored
+// in an interlaced format.
+inline void vAdd(const float* x, float* y,
+    const size_t N, const float alpha = 1.0f,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_SAXPY(N, alpha, x, xInc, y, yInc);
+}
+
+// Computes x = alpha * x, where x is a vector of size N and
+// alpha is a scalar. xInc can be adjusted if the vector is
+// stored in an interlaced format.
+inline void vScale(double* x, const double alpha,
+    const size_t N, const int xInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_DSCAL(N, alpha, x, xInc);
+}
+
+// Computes x = alpha * x, where x is a vector of size N and
+// alpha is a scalar. xInc can be adjusted if the vector is
+// stored in an interlaced format.
+inline void vScale(float* x, const float alpha,
+    const size_t N, const int xInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_SSCAL(N, alpha, x, xInc);
+}
+
+// Returns the index where the maximum element is found in the vector x of
+// size N. xInc can be adjusted if the vector is
+// stored in an interlaced format.
+inline size_t vMaxIndex(const double* x, const size_t N, const int xInc = 1)
+{
+    USE_ONE_CORE();
+    return OPKIT_IDAMAX(N, x, xInc);
+}
+
+// Returns the index where the maximum element is found in the vector x of
+// size N. xInc can be adjusted if the vector is
+// stored in an interlaced format.
+inline size_t vMaxIndex(const float* x, const size_t N, const int xInc = 1)
+{
+    USE_ONE_CORE();
+    return OPKIT_ISAMAX(N, x, xInc);
+}
+
+// Copies the contents of x into y, where x and y are vectors of size N.
+// xInc and yInc can be adjusted if the vectors are stored in an
+// interlaced format.
+inline void vCopy(const double* x, double* y, const size_t N,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_DCOPY(N, x, xInc, y, yInc);
+}
+
+// Copies the contents of x into y, where x and y are vectors of size N.
+// xInc and yInc can be adjusted if the vectors are stored in an
+// interlaced format.
+inline void vCopy(const float* x, float* y, const size_t N,
+    const int xInc = 1, const int yInc = 1)
+{
+    USE_ONE_CORE();
+    OPKIT_SCOPY(N, x, xInc, y, yInc);
+}
+
+// This function is similar to the im2Col function found in Matlab. Given a
+// source tensor of dimensions (srcWidth * srcHeight * channels), this function
+// isolates each (windowWidth * windowHeight * channels) patch and copies it
+// into the given destination matrix as a single row.
+//
+// The destination matrix will have dimensions (K * N), where:
+// K = The number of patches = NumHorizontalBlocks * NumVerticalBlocks, where:
+//     NumHorizontalBlocks = ((srcWidth - windowWidth + 2*xPad) / xStride) + 1
+//     NumVerticalBlocks = ((srcHeight - windowHeight + 2*yPad) / yStride) + 1
+// N = windowWidth * windowHeight * channels
+//
+// 'src' is assumed to be in row-major order. Channels are stored sequentially,
+// rather than interleaved. 'dest' will also be filled in row-major order.
+//
+// The four remaining parameters determine how the window will slide across the
+// source tensor. 'xPad' and 'yPad' determine the amount of zero-padding to
+// apply in each dimension. 'xStride' and 'yStride' determine the window stride.
+// A larger stride will result in a smaller result, since some of the input
+// cells will be skipped over.
+template <class T>
+void im2Row(const T* src,
+    const size_t srcWidth, const size_t srcHeight, const size_t channels,
+    const size_t windowWidth, const size_t windowHeight,
+    const size_t xPad, const size_t yPad,
+    const size_t xStride, const size_t yStride, T* dest)
+{
+    // Save some useful values
+    const size_t NUM_HORIZONTAL_BLOCKS =
+        ((srcWidth - windowWidth + 2*xPad) / xStride) + 1;
+    const size_t NUM_VERTICAL_BLOCKS =
+        ((srcHeight - windowHeight + 2*yPad) / yStride) + 1;
+    const size_t OUT_WIDTH  = windowWidth * windowHeight * channels;
+    //const size_t OUT_HEIGHT = NUM_HORIZONTAL_BLOCKS * NUM_VERTICAL_BLOCKS;
+
+    for (size_t channel = 0; channel < channels; ++channel)
     {
-        USE_ONE_CORE();
-        //USE_ALL_CORES();
+        size_t destY = 0;
 
-        OPKIT_SGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
-            N, M, K,
-            alpha, B, N,
-            A, K,
-            beta, C, N);
-
-        // Equivalently,
-        // cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-        //     M, N, K,
-        //     alpha, A, K,
-        //     B, N,
-        //     beta, C, N);
-    }
-
-    // Computes C = alpha * A * B^T + beta * C, where A is an M x K
-    // matrix, B is an N x K matrix, C is an M x N matrix, alpha is
-    // a scalar, and beta is a scalar.
-    inline void mmtMultiply(const double* A, const double* B, double* C,
-        const size_t M, const size_t N, const size_t K,
-        const double alpha = 1.0, const double beta = 0.0)
-    {
-        USE_ONE_CORE();
-        //USE_ALL_CORES();
-
-        OPKIT_DGEMM(OPKIT_L3_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
-            N, M, K,
-            alpha, B, K,
-            A, K,
-            beta, C, N);
-
-        // Equivalently,
-        // cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-        //     M, N, K,
-        //     alpha, A, K,
-        //     B, K,
-        //     beta, C, N);
-    }
-
-    // Computes C = alpha * A * B^T + beta * C, where A is an M x K
-    // matrix, B is an N x K matrix, C is an M x N matrix, alpha is
-    // a scalar, and beta is a scalar.
-    inline void mmtMultiply(const float* A, const float* B, float* C,
-        const size_t M, const size_t N, const size_t K,
-        const float alpha = 1.0f, const float beta = 0.0f)
-    {
-        USE_ONE_CORE();
-        //USE_ALL_CORES();
-
-        OPKIT_SGEMM(OPKIT_L3_TRANSPOSE, OPKIT_L3_NO_TRANSPOSE,
-            N, M, K,
-            alpha, B, K,
-            A, K,
-            beta, C, N);
-
-        // Equivalently,
-        // cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-        //     M, N, K,
-        //     alpha, A, K,
-        //     B, K,
-        //     beta, C, N);
-    }
-
-    // Computes C = alpha * A^T * B + beta * C, where A is an K x M
-    // matrix, B is an K x N matrix, C is an M x N matrix, alpha is
-    // a scalar, and beta is a scalar.
-    inline void mtmMultiply(const double* A, const double* B, double* C,
-        const size_t M, const size_t N, const size_t K,
-        const double alpha = 1.0, const double beta = 0.0)
-    {
-        USE_ONE_CORE();
-        //USE_ALL_CORES();
-
-        OPKIT_DGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_TRANSPOSE,
-            N, M, K,
-            alpha, B, N,
-            A, M,
-            beta, C, N);
-
-        // Equivalently,
-        // cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
-        //     M, N, K,
-        //     alpha, A, M,
-        //     B, N,
-        //     beta, C, N);
-    }
-
-    // Computes C = alpha * A^T * B + beta * C, where A is an K x M
-    // matrix, B is an K x N matrix, C is an M x N matrix, alpha is
-    // a scalar, and beta is a scalar.
-    inline void mtmMultiply(const float* A, const float* B, float* C,
-        const size_t M, const size_t N, const size_t K,
-        const float alpha = 1.0f, const float beta = 0.0f)
-    {
-        USE_ONE_CORE();
-        //USE_ALL_CORES();
-
-        OPKIT_SGEMM(OPKIT_L3_NO_TRANSPOSE, OPKIT_L3_TRANSPOSE,
-            N, M, K,
-            alpha, B, N,
-            A, M,
-            beta, C, N);
-
-        // Equivalently,
-        // cblas_sgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
-        //     M, N, K,
-        //     alpha, A, M,
-        //     B, N,
-        //     beta, C, N);
-    }
-
-    // Computes C = alpha * A * B + beta * C, where A, B, and C are multi-
-    // channel matrices (or 3rd order tensors). Each channel is processed
-    // separately. A is assumed to be an M x K matrix containing 'numChannels'
-    // channels. Similarly, B is a K x N x numChannels tensor, and the result,
-    // C, is an M x N x numChannels tensor. Each MxK, KxN, or MxN elements
-    // constitute a single channel (for A, B, and C, respectively).
-    template <class T>
-    inline void channeledMMMultiply(const T* A, const T* B, T* C,
-        const size_t M, const size_t N, const size_t K, const size_t numChannels,
-        const T alpha = 1.0, const T beta = 0.0)
-    {
-        const size_t A_INC = M * K;
-        const size_t B_INC = K * N;
-        const size_t C_INC = M * N;
-
-        T* a = (T*) A;
-        T* b = (T*) B;
-        T* c = (T*) C;
-
-        for (size_t i = 0; i < numChannels; ++i)
+        // Iterate over each block in src
+        int srcY = -yPad;
+        for (size_t blockY = 0; blockY < NUM_VERTICAL_BLOCKS; ++blockY)
         {
-            mmMultiply(a, b, c, M, N, K, alpha, beta);
-            a += A_INC;
-            b += B_INC;
-            c += C_INC;
+            int srcX = -xPad;
+            for (size_t blockX = 0; blockX < NUM_HORIZONTAL_BLOCKS; ++blockX)
+            {
+                // Copy this block from src to dest
+                for (size_t dy = 0; dy < windowHeight; ++dy)
+                {
+                    for (size_t dx = 0; dx < windowWidth; ++dx)
+                    {
+                        int x = srcX + dx;
+                        int y = srcY + dy;
+
+                        size_t destX = (dy * windowWidth + dx) +
+                            (channel * (windowWidth * windowHeight));
+
+                        if (x >= 0 && x < srcWidth && y >= 0 && y < srcHeight)
+                            dest[destY * OUT_WIDTH + destX] = src[y * srcWidth + x];
+                        else dest[destY * OUT_WIDTH + destX] = T{};
+                    }
+                }
+
+                // Move forward one block
+                srcX += xStride;
+                ++destY;
+            }
+            srcY += yStride;
         }
+
+        // Advance src to the next channel
+        src += srcWidth * srcHeight;
     }
+}
 
-    // Computes y = alpha * A * x + beta * y, where A is an M x N
-    // matrix, x is a vector of size N, y is a vector of size M,
-    // and alpha and beta are scalars.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void mvMultiply(const double* A, const double* x, double* y,
-        const size_t M, const size_t N,
-        const double alpha = 1.0, const double beta = 0.0,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_DGEMV(OPKIT_L2_TRANSPOSE,
-            N, M,
-            alpha, A, N,
-            x, xInc,
-            beta, y, yInc);
-
-        // Equivalently,
-        // cblas_dgemv(CblasRowMajor, CblasNoTrans,
-        // M, N,
-        // alpha, A, N,
-        // x, xInc,
-        // beta, y, yInc);
-    }
-
-    // Computes y = alpha * A * x + beta * y, where A is an M x N
-    // matrix, x is a vector of size N, y is a vector of size M,
-    // and alpha and beta are scalars.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void mvMultiply(const float* A, const float* x, float* y,
-        const size_t M, const size_t N,
-        const float alpha = 1.0f, const float beta = 0.0f,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_SGEMV(OPKIT_L2_TRANSPOSE,
-            N, M,
-            alpha, A, N,
-            x, xInc,
-            beta, y, yInc);
-
-        // Equivalently,
-        // cblas_sgemv(CblasRowMajor, CblasNoTrans,
-        // M, N,
-        // alpha, A, N,
-        // x, xInc,
-        // beta, y, yInc);
-    }
-
-    // Computes y = alpha * A^T * x + beta * y, where A is an M x N
-    // matrix, x is a vector of size M, y is a vector of size N,
-    // and alpha and beta are scalars.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void mtvMultiply(const double* A, const double* x, double* y,
-        const size_t M, const size_t N,
-        const double alpha = 1.0, const double beta = 0.0,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_DGEMV(OPKIT_L2_NO_TRANSPOSE,
-            N, M,
-            alpha, A, N,
-            x, xInc,
-            beta, y, yInc);
-
-        // Equivalently,
-        // cblas_dgemv(CblasRowMajor, CblasTrans,
-        // M, N,
-        // alpha, A, N,
-        // x, xInc,
-        // beta, y, yInc);
-    }
-
-    // Computes y = alpha * A^T * x + beta * y, where A is an M x N
-    // matrix, x is a vector of size M, y is a vector of size N,
-    // and alpha and beta are scalars.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void mtvMultiply(const float* A, const float* x, float* y,
-        const size_t M, const size_t N,
-        const float alpha = 1.0f, const float beta = 0.0f,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_SGEMV(OPKIT_L2_NO_TRANSPOSE,
-            N, M,
-            alpha, A, N,
-            x, xInc,
-            beta, y, yInc);
-
-        // Equivalently,
-        // cblas_sgemv(CblasRowMajor, CblasTrans,
-        // M, N,
-        // alpha, A, N,
-        // x, xInc,
-        // beta, y, yInc);
-    }
-
-    // Computes y = alpha * A * x + beta * y, where A is an N x N
-    // symmetric matrix, x is a vector of size N, y is a vector of size N,
-    // and alpha and beta are scalars.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void symmetricMvMultiply(const double* A, const double* x, double* y,
-        const size_t N, const double alpha = 1.0, const double beta = 0.0,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-
-        // NOTE: Either row-major order or column-major order can be used for
-        // symmetric matrices.
-        OPKIT_DSYMV(OPKIT_UPPER,
-            N, alpha,
-            A, N,
-            x, xInc,
-            beta, y, yInc);
-    }
-
-    // Computes y = alpha * A * x + beta * y, where A is an N x N
-    // symmetric matrix, x is a vector of size N, y is a vector of size N,
-    // and alpha and beta are scalars.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void symmetricMvMultiply(const float* A, const float* x, float* y,
-        const size_t N, const float alpha = 1.0f, const float beta = 0.0f,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-
-        // NOTE: Either row-major order or column-major order can be used for
-        // symmetric matrices.
-        OPKIT_SSYMV(OPKIT_UPPER,
-            N, alpha,
-            A, N,
-            x, xInc,
-            beta, y, yInc);
-    }
-
-    // Adds alpha * x * y^T to A, where x is a vector of size M,
-    // y is a vector of size N, A is a M x N matrix, and alpha is
-    // a scalar. When A is initialized to 0's, this calculates the
-    // vector outer product between x and y. Otherwise, it performs
-    // a rank-1 update of A.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void outerProduct(const double* x, const double* y, double* A,
-        const size_t M, const size_t N, const double alpha = 1.0,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_DGER(N, M,
-            alpha, y, yInc,
-            x, xInc,
-            A, N);
-
-        // Equivalently,
-        // cblas_dger(CblasRowMajor, M, N,
-        // alpha, x, xInc,
-        // y, yInc,
-        // A, N);
-    }
-
-    // Adds alpha * x * y^T to A, where x is a vector of size M,
-    // y is a vector of size N, A is a M x N matrix, and alpha is
-    // a scalar. When A is initialized to 0's, this calculates the
-    // vector outer product between x and y. Otherwise, it performs
-    // a rank-1 update of A.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void outerProduct(const float* x, const float* y, float* A,
-        const size_t M, const size_t N, const float alpha = 1.0f,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_SGER(N, N,
-            alpha, y, yInc,
-            x, xInc,
-            A, N);
-
-        // Equivalently,
-        // cblas_sger(CblasRowMajor, M, N,
-        // alpha, x, xInc,
-        // y, yInc,
-        // A, N);
-    }
-
-    // Computes y += alpha * x, where x is a vector of size N,
-    // y is a vector of size N, and alpha is a scalar.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void vAdd(const double* x, double* y,
-        const size_t N, const double alpha = 1.0,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_DAXPY(N, alpha, x, xInc, y, yInc);
-    }
-
-    // Computes y += alpha * x, where x is a vector of size N,
-    // y is a vector of size N, and alpha is a scalar.
-    // xInc and yInc can be adjusted if the vectors are stored
-    // in an interlaced format.
-    inline void vAdd(const float* x, float* y,
-        const size_t N, const float alpha = 1.0f,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_SAXPY(N, alpha, x, xInc, y, yInc);
-    }
-
-    // Computes x = alpha * x, where x is a vector of size N and
-    // alpha is a scalar. xInc can be adjusted if the vector is
-    // stored in an interlaced format.
-    inline void vScale(double* x, const double alpha,
-        const size_t N, const int xInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_DSCAL(N, alpha, x, xInc);
-    }
-
-    // Computes x = alpha * x, where x is a vector of size N and
-    // alpha is a scalar. xInc can be adjusted if the vector is
-    // stored in an interlaced format.
-    inline void vScale(float* x, const float alpha,
-        const size_t N, const int xInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_SSCAL(N, alpha, x, xInc);
-    }
-
-    // Returns the index where the maximum element is found in the vector x of
-    // size N. xInc can be adjusted if the vector is
-    // stored in an interlaced format.
-    inline size_t vMaxIndex(const double* x, const size_t N, const int xInc = 1)
-    {
-        USE_ONE_CORE();
-        return OPKIT_IDAMAX(N, x, xInc);
-    }
-
-    // Returns the index where the maximum element is found in the vector x of
-    // size N. xInc can be adjusted if the vector is
-    // stored in an interlaced format.
-    inline size_t vMaxIndex(const float* x, const size_t N, const int xInc = 1)
-    {
-        USE_ONE_CORE();
-        return OPKIT_ISAMAX(N, x, xInc);
-    }
-
-    // Copies the contents of x into y, where x and y are vectors of size N.
-    // xInc and yInc can be adjusted if the vectors are stored in an
-    // interlaced format.
-    inline void vCopy(const double* x, double* y, const size_t N,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_DCOPY(N, x, xInc, y, yInc);
-    }
-
-    // Copies the contents of x into y, where x and y are vectors of size N.
-    // xInc and yInc can be adjusted if the vectors are stored in an
-    // interlaced format.
-    inline void vCopy(const float* x, float* y, const size_t N,
-        const int xInc = 1, const int yInc = 1)
-    {
-        USE_ONE_CORE();
-        OPKIT_SCOPY(N, x, xInc, y, yInc);
-    }
 };
 
 
