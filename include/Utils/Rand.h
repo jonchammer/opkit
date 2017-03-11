@@ -21,7 +21,7 @@ public:
 
     // Create a new RNG that uses the current time as the seed
     Rand() :
-        mSeed(std::chrono::system_clock::now().time_since_epoch().count()),
+        mSeed(getDefaultSeed()),
         mGenerator(mSeed)
     {}
 
@@ -70,11 +70,32 @@ public:
         return probabilities.size() - 1;
     }
 
+    // Returns a reference to the generator that is used internally for
+    // random number generation.
     std::default_random_engine& getGenerator()
     {
         return mGenerator;
     }
-    
+
+    // Changes the seed used by this RNG.
+    void setSeed(size_t seed)
+    {
+        mSeed = seed;
+        mGenerator.seed(seed);
+    }
+
+    // Resets the RNG sequence, starting from the current seed.
+    void reset()
+    {
+        mGenerator.seed(mSeed);
+    }
+
+    // Returns a seed based on the current time.
+    static size_t getDefaultSeed()
+    {
+        return std::chrono::system_clock::now().time_since_epoch().count();
+    }
+
 private:
     size_t mSeed;
     std::default_random_engine mGenerator;
