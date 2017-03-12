@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <cmath>
+#include <iostream>
 #include "PrettyPrinter.h"
 #include "Function.h"
 #include "Matrix.h"
@@ -163,8 +164,9 @@ void NeuralNetwork<T>::addLayer(Layer<T>* layer, bool ownLayer)
     // Make sure this layer is compatible with the rest of the network
     if (!mLayers.empty() && mLayers.back()->getOutputs() != layer->getInputs())
     {
-        cerr << "This number of inputs to this layer must match the number of"
-             << " outputs in the layer before." << endl;
+        std::cerr << "This number of inputs to this layer ("
+            << layer->getInputs() << ") must match the number of outputs in the"
+            << "layer before (" << mLayers.back()->getOutputs() << ")" << std::endl;
         throw Ex("Unable to add layer.");
     }
 

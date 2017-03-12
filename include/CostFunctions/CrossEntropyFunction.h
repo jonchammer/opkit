@@ -16,6 +16,7 @@
 #include "Dataset.h"
 #include "Matrix.h"
 #include "NeuralNetwork.h"
+#include "SoftmaxLayer.h"
 #include "Acceleration.h"
 #include "PrettyPrinter.h"
 using std::vector;
