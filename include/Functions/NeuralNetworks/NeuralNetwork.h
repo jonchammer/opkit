@@ -101,6 +101,9 @@ public:
     // Initializes the weights and biases with random values
     void initializeParameters(Rand& rand);
 
+    // Prints a table of information about this network to the given stream
+    void print(std::ostream& out, const string& prefix = "") const;
+
     // Getters / Setters
     size_t getInputs() const override
     {
@@ -352,6 +355,63 @@ void NeuralNetwork<T>::initializeParameters(Rand& rand)
         for (size_t j = 0; j < N; ++j)
             mParameters[index++] = rand.nextGaussian(0.0, 1.0) * mag;
     }
+}
+
+template <class T>
+void NeuralNetwork<T>::print(std::ostream& out, const string& prefix) const
+{
+    const size_t LINE_LENGTH = 64;
+    const char* HEADER_STRING = "%s   %4s | %-22s | %-7s | %-7s | %-10s | %s\n";
+    const char* DATA_STRING   = "%s | %4zu | %-22s | %7zu | %7zu | %10zu | %s\n";
+
+    const size_t BUFFER_SIZE = 1024;
+    char buffer[BUFFER_SIZE];
+
+    snprintf(buffer, BUFFER_SIZE, HEADER_STRING,
+        prefix.c_str(), "", "Type", "Inputs", "Outputs", "Weights", "Misc");
+    out << buffer;
+
+    // Print dividing line
+    out << prefix << " +";
+    for (size_t i = 0; i < LINE_LENGTH; ++i)
+        out << "-";
+    out << "+\n";
+
+    for (size_t i = 0; i < mLayers.size(); ++i)
+    {
+        snprintf(buffer, BUFFER_SIZE, DATA_STRING,
+            prefix.c_str(),
+            i,
+            mLayers[i]->getName().c_str(),
+            mLayers[i]->getInputs(),
+            mLayers[i]->getOutputs(),
+            mLayers[i]->getNumParameters(),
+            mLayers[i]->getMiscString().c_str());
+        out << buffer;
+    }
+
+    // Print dividing line
+    out << prefix << " +";
+    for (size_t i = 0; i < LINE_LENGTH; ++i)
+        out << "-";
+    out << "+\n";
+
+    // Print summary line
+    snprintf(buffer, BUFFER_SIZE, DATA_STRING,
+        prefix.c_str(),
+        mLayers.size(),
+        "Summary",
+        mLayers[0]->getInputs(),
+        mLayers.back()->getOutputs(),
+        getNumParameters(),
+        "");
+    out << buffer;
+
+    // Print dividing line
+    out << prefix << " +";
+    for (size_t i = 0; i < LINE_LENGTH; ++i)
+        out << "-";
+    out << "+\n";
 }
 
 };

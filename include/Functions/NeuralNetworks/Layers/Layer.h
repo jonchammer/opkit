@@ -8,6 +8,8 @@
 #ifndef LAYER_H
 #define LAYER_H
 
+#include <iostream>
+#include <iomanip>
 #include "Matrix.h"
 #include "Acceleration.h"
 
@@ -47,6 +49,15 @@ public:
     // Returns the number of optimizable parameters this layer uses. Some layers
     // only transform their inputs and so have 0 parameters.
     virtual size_t getNumParameters() const = 0;
+
+    virtual string getName() const
+    {
+        return "Layer";
+    }
+    virtual string getMiscString() const
+    {
+        return "";
+    }
 
     // When layers are added to the network, they are assigned a segment of the
     // network's parameters to work with. This function tells the layer which

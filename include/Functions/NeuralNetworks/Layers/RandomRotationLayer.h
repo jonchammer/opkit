@@ -120,10 +120,31 @@ public:
         return 0;
     }
 
+    std::string getName() const override
+    {
+        return "Random Rotation Layer";
+    }
+
+    std::string getMiscString() const override
+    {
+        char buffer[1024];
+        snprintf(buffer, 1024, "Shape: (%zux%zux%zu), Angle Range: [%.2f, %.2f]",
+            mWidth, mHeight, mChannels, getMinAngle(), getMaxAngle());
+
+        return string(buffer);
+    }
+
     void setTesting(bool testing)
     {
         mTesting = testing;
     }
+
+    // Simple getters
+    size_t getWidth()    const { return mWidth;                   }
+    size_t getHeight()   const { return mHeight;                  }
+    size_t getChannels() const { return mChannels;                }
+    double getMinAngle() const { return mMinAngle * 180.0 / M_PI; }
+    double getMaxAngle() const { return mMaxAngle * 180.0 / M_PI; }
 
 private:
     size_t mWidth, mHeight, mChannels;
@@ -132,5 +153,6 @@ private:
     Rand mRand;
     bool mTesting;
 };
+
 }
 #endif

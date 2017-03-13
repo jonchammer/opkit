@@ -78,6 +78,16 @@ public:
         return 0;
     }
 
+    std::string getName() const override
+    {
+        return "Activation Layer";
+    }
+
+    std::string getMiscString() const override
+    {
+        return "";
+    }
+
 private:
     Activation<T>* mActivationFunction;
     bool mOwnActivation;
