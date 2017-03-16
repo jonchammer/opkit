@@ -4,7 +4,7 @@
     <df root="." name="0">
       <df name="build">
         <df name="CMakeFiles">
-          <df name="3.7.1">
+          <df name="3.5.1">
             <df name="CompilerIdC">
               <in>CMakeCCompilerId.c</in>
             </df>
@@ -13,6 +13,12 @@
             </df>
           </df>
           <df name="CMakeTmp">
+          </df>
+          <df name="opkit.dir">
+            <df name="src">
+              <df name="Functions">
+              </df>
+            </df>
           </df>
           <in>feature_tests.c</in>
           <in>feature_tests.cxx</in>
@@ -23,7 +29,7 @@
       <df name="demos">
         <df name="build">
           <df name="CMakeFiles">
-            <df name="3.7.1">
+            <df name="3.5.1">
               <df name="CompilerIdC">
                 <in>CMakeCCompilerId.c</in>
               </df>
@@ -59,26 +65,36 @@
         <in>sseNeuralNetworkTest.cpp</in>
       </df>
       <df name="include">
+        <df name="CostFunctions">
+          <in>CategoricalErrorFunction.h</in>
+          <in>CompoundCostFunction.h</in>
+          <in>CostFunction.h</in>
+          <in>CrossEntropyFunction.h</in>
+          <in>L1Regularizer.h</in>
+          <in>L2Regularizer.h</in>
+          <in>SSEFunction.h</in>
+        </df>
         <df name="Functions">
           <in>ActivationFunction.h</in>
           <in>CategoricalErrorFunction.h</in>
           <in>CommonFunctions.h</in>
-          <in>CrossEntropyFunction.h</in>
-          <in>ErrorFunction.h</in>
           <in>Function.h</in>
           <in>Layer.h</in>
           <in>NeuralNetwork.h</in>
-          <in>SSEFunction.h</in>
+          <in>RandomCropLayer.h</in>
         </df>
-        <df name="Trainers">
+        <df name="Optimizers">
           <in>Adam.h</in>
           <in>EvolutionaryOptimizer.h</in>
           <in>GradientDescent.h</in>
           <in>HessianFreeOptimizer.h</in>
           <in>HillClimber.h</in>
+          <in>Optimizer.h</in>
           <in>RMSProp.h</in>
           <in>SimulatedAnnealing.h</in>
-          <in>Trainer.h</in>
+        </df>
+        <df name="Trainers">
+          <in>RMSProp.h</in>
         </df>
         <df name="Utils">
           <in>Acceleration.h</in>
@@ -98,6 +114,10 @@
         <in>SparseMatrixWrapper.h</in>
         <in>Tensor3D.h</in>
         <in>VectorOps.h</in>
+      </df>
+      <df name="src">
+        <df name="Utils">
+        </df>
       </df>
       <in>opkit.h</in>
     </df>
