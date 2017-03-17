@@ -16,6 +16,8 @@ struct Interpolator
         const T srcX, const T srcY) = 0;
 };
 
+// Chooses the closest source pixel to the desired location. Values outside the
+// range of the image are set to 0. This is fast, but provides blocky results.
 template <class T>
 struct NearestNeighborInterpolator : public Interpolator<T>
 {
@@ -31,6 +33,8 @@ struct NearestNeighborInterpolator : public Interpolator<T>
     }
 };
 
+// Chooses the source pixel based on bilinear interpolation. Values outside the
+// range of the image are set to 0. This is slower, but produces better results.
 template <class T>
 struct BilinearInterpolator : public Interpolator<T>
 {
@@ -63,6 +67,9 @@ struct BilinearInterpolator : public Interpolator<T>
     }
 };
 
+// Chooses the source pixel based on bilinear interpolation. Values outside the
+// range of the image are effectively clamped. This tends to produce more
+// consistent results, since there are no artificial black boxes.
 template <class T>
 struct ClampedBilinearInterpolator : public Interpolator<T>
 {
