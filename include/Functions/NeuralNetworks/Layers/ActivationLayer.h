@@ -83,9 +83,10 @@ public:
         return "Activation Layer";
     }
 
-    std::string getMiscString() const override
+    std::string* getProperties(size_t& numElements) const override
     {
-        return "";
+        numElements = 0;
+        return nullptr;
     }
 
 private:

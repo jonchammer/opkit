@@ -107,11 +107,6 @@ public:
         return "Fully Connected Layer";
     }
 
-    std::string getMiscString() const override
-    {
-        return "";
-    }
-
 private:
     T* mAverageMask; // Contains [1 / batchSize, 1 / batchSize, ...]
 };

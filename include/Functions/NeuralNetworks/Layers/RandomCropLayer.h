@@ -117,15 +117,15 @@ public:
         return "Random Crop Layer";
     }
 
-    std::string getMiscString() const override
-    {
-        char buffer[1024];
-        snprintf(buffer, 1024, "(%zux%zux%zu) -> (%zux%zux%zu)",
-            mInputWidth, mInputHeight, mChannels,
-            mOutputWidth, mOutputHeight, mChannels);
-
-        return string(buffer);
-    }
+    // std::string getMiscString() const override
+    // {
+    //     char buffer[1024];
+    //     snprintf(buffer, 1024, "(%zux%zux%zu) -> (%zux%zux%zu)",
+    //         mInputWidth, mInputHeight, mChannels,
+    //         mOutputWidth, mOutputHeight, mChannels);
+    //
+    //     return string(buffer);
+    // }
 
     void setTesting(bool testing)
     {

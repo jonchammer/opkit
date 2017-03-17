@@ -15,6 +15,7 @@
 #include "Dataset.h"
 #include "Matrix.h"
 #include "Error.h"
+#include "Rand.h"
 
 using std::cout;
 using std::endl;
@@ -271,14 +272,11 @@ protected:
 // Initialize the parameters with random values from a normal distribution
 // of the given mean and variance
 template <class T>
-void randomizeParameters(vector<T>& parameters,
+void randomizeParameters(vector<T>& parameters, Rand& rand,
     const double mean = T{}, const double variance = 1.0)
 {
-    std::default_random_engine generator;
-    std::normal_distribution<> rand(mean, variance);
-
     for (size_t i = 0; i < parameters.size(); ++i)
-        parameters[i] = rand(generator);
+        parameters[i] = rand.nextGaussian(mean, variance);
 }
 
 }

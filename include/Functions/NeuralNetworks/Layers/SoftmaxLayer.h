@@ -117,11 +117,6 @@ public:
     {
         return "Softmax Layer";
     }
-
-    std::string getMiscString() const override
-    {
-        return "";
-    }
 };
 
 }

@@ -1,5 +1,5 @@
-#ifndef RANDOM_AFFINE_TRANSFORMATION_LAYER_H
-#define RANDOM_AFFINE_TRANSFORMATION_LAYER_H
+#ifndef ELASTIC_DEFORMATION_LAYER_H
+#define ELASTIC_DEFORMATION_LAYER_H
 
 #include "Layer.h"
 #include "Matrix.h"
@@ -8,7 +8,7 @@ namespace opkit
 {
 
 template <class T>
-class RandomAffineTransformationLayer : public Layer<T>
+class ElasticDeformationLayer : public Layer<T>
 {
 public:
 
@@ -17,7 +17,7 @@ public:
     using Layer<T>::mActivation;
     using Layer<T>::mBatchSize;
 
-    RandomAffineTransformationLayer(const size_t inputWidth,
+    ElasticDeformationLayer(const size_t inputWidth,
         const size_t inputHeight, const size_t channels,
         const size_t outputWidth, const size_t outputHeight,
         const size_t batchSize, const size_t randSeed = Rand::getDefaultSeed()) :
@@ -41,7 +41,7 @@ public:
     }
 
 private:
-    void evalSingle(const Matrix<T>& in, const size_t row, const Matrix<T>& affineInv/*, const T tx, const T ty*/)
+    void evalSingle(const Matrix<T>& in, const size_t row, const Matrix<T>& affineInv)
     {
         // Cache the matrix elements we use
         // const T a = affineInv(0, 0);
@@ -61,7 +61,6 @@ private:
                     // // Multiply affineInv * (x, y) and interpolate with nearest neighbor
                     int srcX = (int)(affineInv(0, 0) * x + affineInv(0, 1) * y + affineInv(0, 2) + T{0.5});
                     int srcY = (int)(affineInv(1, 0) * x + affineInv(1, 1) * y + affineInv(1, 2) + T{0.5});
-
 
                     if (srcX >= 0 && srcX < mInputWidth && srcY >= 0 && srcY < mInputHeight)
                         dest[y * mOutputWidth + x] = src[srcY * mInputWidth + srcX];
@@ -86,12 +85,12 @@ private:
         T shearY   = mRand.nextReal(mMinShearY, mMaxShearY);
         T tx       = mRand.nextReal(mMinTranslationX, mMaxTranslationX);
         T ty       = mRand.nextReal(mMinTranslationY, mMaxTranslationY);
-        T w2       = mInputWidth / 2.0;
+        T w2       = mInputWidth  / 2.0;
         T h2       = mInputHeight / 2.0;
 
         // Correct order:
         // (scale * shear) * (translate) *
-        // (translate_center * rotate * translate_from_center)
+        //     (translate_center * rotate * translate_from_center)
 
         // Scale + Shear
         // m(0, 0) = scaleX;
@@ -303,7 +302,8 @@ public:
         }
         else
         {
-            // Use the identity affine transformation matrix
+            // Use the identity affine transformation matrix with a centering
+            // translation
             affine(0, 0) = T{1};
             affine(0, 1) = T{};
             affine(0, 2) = (mInputWidth - mOutputWidth) / T{2.0};
@@ -315,7 +315,9 @@ public:
             affine(2, 0) = T{};
             affine(2, 1) = T{};
             affine(2, 2) = T{1};
-            
+
+            invert3x3(affine);
+
             for (size_t i = 0; i < mBatchSize; ++i)
             {
                 // Perform the transformation
@@ -342,18 +344,43 @@ public:
 
     std::string getName() const override
     {
-        return "Random Affine Transformation Layer";
+        return "Elastic Deformation Layer";
     }
 
-    std::string getMiscString() const override
+    std::string* getProperties(size_t& numElements) const override
     {
-        return "";
-        // char buffer[1024];
-        // snprintf(buffer, 1024, "(%zux%zux%zu) -> (%zux%zux%zu)",
-        //     mInputWidth, mInputHeight, mChannels,
-        //     mOutputWidth, mOutputHeight, mChannels);
-        //
-        // return string(buffer);
+        const size_t NUM_ELEMENTS = 8;
+        std::string* arr = new std::string[NUM_ELEMENTS];
+
+        char buffer[1024];
+        snprintf(buffer, 1024, "(%zux%zux%zu) -> (%zux%zux%zu)",
+            mInputWidth, mInputHeight, mChannels,
+            mOutputWidth, mOutputHeight, mChannels);
+        arr[0] = string(buffer);
+
+        snprintf(buffer, 1024, "R: [%.2f, %.2f]", mMinRotation, mMaxRotation);
+        arr[1] = string(buffer);
+
+        snprintf(buffer, 1024, "Sx: [%.2f, %.2f]", mMinScaleX, mMaxScaleX);
+        arr[2] = string(buffer);
+
+        snprintf(buffer, 1024, "Sy: [%.2f, %.2f]", mMinScaleY, mMaxScaleY);
+        arr[3] = string(buffer);
+
+        snprintf(buffer, 1024, "Tx: [%.2f, %.2f]", mMinTranslationX, mMaxTranslationX);
+        arr[4] = string(buffer);
+
+        snprintf(buffer, 1024, "Ty: [%.2f, %.2f]", mMinTranslationY, mMaxTranslationY);
+        arr[5] = string(buffer);
+
+        snprintf(buffer, 1024, "Ux: [%.2f, %.2f]", mMinShearX, mMaxShearX);
+        arr[6] = string(buffer);
+
+        snprintf(buffer, 1024, "Uy: [%.2f, %.2f]", mMinShearY, mMaxShearY);
+        arr[7] = string(buffer);
+
+        numElements = NUM_ELEMENTS;
+        return arr;
     }
 
     void setTesting(bool testing)

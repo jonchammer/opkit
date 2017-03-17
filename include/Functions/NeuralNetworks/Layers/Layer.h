@@ -50,13 +50,15 @@ public:
     // only transform their inputs and so have 0 parameters.
     virtual size_t getNumParameters() const = 0;
 
-    virtual string getName() const
+    virtual std::string getName() const
     {
         return "Layer";
     }
-    virtual string getMiscString() const
+
+    virtual std::string* getProperties(size_t& numElements) const
     {
-        return "";
+        numElements = 0;
+        return nullptr;
     }
 
     // When layers are added to the network, they are assigned a segment of the

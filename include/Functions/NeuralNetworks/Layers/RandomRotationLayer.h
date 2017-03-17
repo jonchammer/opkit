@@ -125,14 +125,14 @@ public:
         return "Random Rotation Layer";
     }
 
-    std::string getMiscString() const override
-    {
-        char buffer[1024];
-        snprintf(buffer, 1024, "Shape: (%zux%zux%zu), Angle Range: [%.2f, %.2f]",
-            mWidth, mHeight, mChannels, getMinAngle(), getMaxAngle());
-
-        return string(buffer);
-    }
+    // std::string getMiscString() const override
+    // {
+    //     char buffer[1024];
+    //     snprintf(buffer, 1024, "Shape: (%zux%zux%zu), Angle Range: [%.2f, %.2f]",
+    //         mWidth, mHeight, mChannels, getMinAngle(), getMaxAngle());
+    //
+    //     return string(buffer);
+    // }
 
     void setTesting(bool testing)
     {

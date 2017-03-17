@@ -358,17 +358,19 @@ void NeuralNetwork<T>::initializeParameters(Rand& rand)
 }
 
 template <class T>
-void NeuralNetwork<T>::print(std::ostream& out, const string& prefix) const
+void NeuralNetwork<T>::print(std::ostream& out, const std::string& prefix) const
 {
-    const size_t LINE_LENGTH = 64;
-    const char* HEADER_STRING = "%s   %4s | %-22s | %-7s | %-7s | %-10s | %s\n";
-    const char* DATA_STRING   = "%s | %4zu | %-22s | %7zu | %7zu | %10zu | %s\n";
+    const size_t LINE_LENGTH  = 72;
+    const char* HEADER_STRING = "%s   %4s | %-30s | %-7s | %-7s | %-10s |\n";
+    const char* DATA_STRING   = "%s | %4zu | %-30s | %7zu | %7zu | %10zu |\n";
+    const char* MISC_ELEMENT_STRING = 
+        "%s |      |  - %-27s |         |         |            |\n";
 
     const size_t BUFFER_SIZE = 1024;
     char buffer[BUFFER_SIZE];
 
     snprintf(buffer, BUFFER_SIZE, HEADER_STRING,
-        prefix.c_str(), "", "Type", "Inputs", "Outputs", "Weights", "Misc");
+        prefix.c_str(), "", "Type / Properties", "Inputs", "Outputs", "Weights");
     out << buffer;
 
     // Print dividing line
@@ -385,9 +387,22 @@ void NeuralNetwork<T>::print(std::ostream& out, const string& prefix) const
             mLayers[i]->getName().c_str(),
             mLayers[i]->getInputs(),
             mLayers[i]->getOutputs(),
-            mLayers[i]->getNumParameters(),
-            mLayers[i]->getMiscString().c_str());
+            mLayers[i]->getNumParameters());
         out << buffer;
+
+        // Print out the extra information
+        size_t numElements;
+        string* miscArray = mLayers[i]->getProperties(numElements);
+
+        for (size_t i = 0; i < numElements; ++i)
+        {
+            snprintf(buffer, BUFFER_SIZE, MISC_ELEMENT_STRING,
+                prefix.c_str(), miscArray[i].c_str());
+            out << buffer;
+        }
+
+        if (miscArray != nullptr)
+            delete[] miscArray;
     }
 
     // Print dividing line
