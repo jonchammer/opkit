@@ -3,6 +3,7 @@
 
 #include "Layer.h"
 #include "Matrix.h"
+#include "Interpolation.h"
 
 namespace opkit
 {
@@ -12,6 +13,9 @@ class ElasticDeformationLayer : public Layer<T>
 {
 public:
 
+    // Allows users to specfiy which interpolation routine to use
+    enum InterpolationScheme {NEAREST_NEIGHBOR, BILINEAR, CLAMPED_BILINEAR};
+
     // Allows us to use the members in the base class without specifying
     // their complete names
     using Layer<T>::mActivation;
@@ -20,7 +24,9 @@ public:
     ElasticDeformationLayer(const size_t inputWidth,
         const size_t inputHeight, const size_t channels,
         const size_t outputWidth, const size_t outputHeight,
-        const size_t batchSize, const size_t randSeed = Rand::getDefaultSeed()) :
+        const size_t batchSize,
+        const InterpolationScheme scheme = InterpolationScheme::NEAREST_NEIGHBOR,
+        const size_t randSeed = Rand::getDefaultSeed()) :
 
         // Initialize standard parameters
         Layer<T>(inputWidth * inputHeight * channels,
@@ -38,16 +44,37 @@ public:
         mMinShearX(0.0), mMaxShearX(0.0),
         mMinShearY(0.0), mMaxShearY(0.0)
     {
+        // Create the appropriate interpolator
+        switch (scheme)
+        {
+            case NEAREST_NEIGHBOR:
+                mInterpolator = new NearestNeighborInterpolator<T>();
+                break;
+            case BILINEAR:
+                mInterpolator = new BilinearInterpolator<T>();
+                break;
+            case CLAMPED_BILINEAR:
+                mInterpolator = new ClampedBilinearInterpolator<T>();
+                break;
+        }
+    }
+
+    ~ElasticDeformationLayer()
+    {
+        delete mInterpolator;
     }
 
 private:
+
     void evalSingle(const Matrix<T>& in, const size_t row, const Matrix<T>& affineInv)
     {
         // Cache the matrix elements we use
-        // const T a = affineInv(0, 0);
-        // const T b = affineInv(0, 1);
-        // const T c = affineInv(1, 0);
-        // const T d = affineInv(1, 1);
+        T a11 = affineInv(0, 0);
+        T a12 = affineInv(0, 1);
+        T a13 = affineInv(0, 2);
+        T a21 = affineInv(1, 0);
+        T a22 = affineInv(1, 1);
+        T a23 = affineInv(1, 2);
 
         const T* src = in(row);
         T* dest      = mActivation(row);
@@ -58,13 +85,12 @@ private:
             {
                 for (size_t x = 0; x < mOutputWidth; ++x)
                 {
-                    // // Multiply affineInv * (x, y) and interpolate with nearest neighbor
-                    int srcX = (int)(affineInv(0, 0) * x + affineInv(0, 1) * y + affineInv(0, 2) + T{0.5});
-                    int srcY = (int)(affineInv(1, 0) * x + affineInv(1, 1) * y + affineInv(1, 2) + T{0.5});
+                    T srcX = a11 * x + a12 * y + a13;
+                    T srcY = a21 * x + a22 * y + a23;
 
-                    if (srcX >= 0 && srcX < mInputWidth && srcY >= 0 && srcY < mInputHeight)
-                        dest[y * mOutputWidth + x] = src[srcY * mInputWidth + srcX];
-                    else dest[y * mOutputWidth + x] = T{};
+                    // Multiply affineInv * (x, y) and interpolate
+                    dest[y * mOutputWidth + x] =
+                        mInterpolator->interpolate(src, mInputWidth, mInputHeight, srcX, srcY);
                 }
             }
 
@@ -280,6 +306,7 @@ private:
     }
 
 public:
+
     void eval(const Matrix<T>& x) override
     {
         static Matrix<T> affine(3, 3);
@@ -436,9 +463,10 @@ private:
     size_t mChannels;
     size_t mOutputWidth, mOutputHeight;
 
-    // Training vs. Testing mode
+    // Misc. State
     Rand mRand;
     bool mTesting;
+    Interpolator<T>* mInterpolator;
 
     // Transformation parameters
     double mMinRotation, mMaxRotation;
