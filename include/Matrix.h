@@ -205,6 +205,13 @@ public:
         }
     }
 
+    // Copy the complete contents of 'source' into this matrix. The dimensions
+    // of 'source' must match those of this matrix.
+    void copy(const Matrix<T> source)
+    {
+        vCopy(src.data(), mData, mRows * mCols);
+    }
+
     // Swap the contents of this matrix with 'other'
     void swap(Matrix<T>& other)
     {

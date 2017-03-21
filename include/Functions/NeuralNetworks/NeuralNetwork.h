@@ -24,53 +24,36 @@ namespace opkit
 {
 
 // This is a model representing a standard feedforward Artificial Neural Network
-// (ANN). A Neural Network consists of a set of neurons arranged in layers. Each
-// neuron calculates a weighted sum of its inputs, applies a nonlinear activation
-// function (e.g. tanh(x)), and outputs a result. The network topology can be
-// adjusted in order to mimic any traditional function.
-//
-// When a Neural Network is created, the user provides the topology in the form
-// of a vector of integers. Each number represents the number of neurons in the
-// corresponding layer. So <4, 2, 6> would represent a network with 4 inputs,
-// 2 nodes in the hidden layer, and 6 outputs.
+// (ANN). A Neural Network consists of layers. The output from one layer is fed
+// as input to the next. Layers represent arbitrary functions (usually for which
+// derivative information is readily available).
 template <class T>
 class NeuralNetwork : public Function<T>
 {
 public:
+
+    // -----------------------------------------------------------------------//
+    // Constructors / Destructors
+    // -----------------------------------------------------------------------//
+
     // Create an empty Neural Network. Layers need to be added by calling
     // 'addLayer' before anything useful can be done with it.
     NeuralNetwork() {}
 
     // Destroy the Neural Network
-    virtual ~NeuralNetwork()
-    {
-        // Delete the layers that we own
-        for (size_t i = 0; i < mLayers.size(); ++i)
-        {
-            if (mLayerOwnership[i])
-            {
-                delete mLayers[i];
-                mLayers[i] = nullptr;
-            }
-        }
+    virtual ~NeuralNetwork();
 
-        // Safeguard
-        mLayers.clear();
-    };
+    // -----------------------------------------------------------------------//
+    // Simple Sample Training Methods
+    // -----------------------------------------------------------------------//
 
-    // Add a new layer to this Neural Network. Layers are added to the end of
-    // the network, so add the layers from input layer to output layer. By
-    // default, the network owns this layer, so it will be destroyed when the
-    // network is destroyed.
-    void addLayer(Layer<T>* layer, bool ownLayer = true);
-
-    // Execute one forward pass through the network in order to produce an output.
+    // Pass a single sample through the network to produce an output. The size
+    // of 'input' must match the number of inputs to the first layer. Similarly,
+    // the size of 'output' must be the same as the number of outputs from the
+    // layers layer.
+    //
+    // *Required by the Function interface.
     void evaluate(const T* input, T* output) override;
-
-    // Execute one forward pass through the network in order to produce an
-    // output. As opposed to the first variant of 'evaluate', a set of 'N'
-    // inputs are evaluated simultaneously.
-    void evaluateBatch(const Matrix<T>& input, Matrix<T>& output);
 
     // Passes the error from the last layer into each of the nodes preceeding
     // it. This function assumes that the delta values for the last layer have
@@ -83,11 +66,6 @@ public:
     // every applicable node in the network.
     void calculateGradientParameters(const T* input, T* gradient);
 
-    // Calculates the gradient of the network with respect to the parameters,
-    // under the assumption that the deltas have already been calculated for
-    // every applicable node in the network.
-    void calculateGradientParametersBatch(const Matrix<T>& input, T* gradient);
-
     // Calculates the Jacobian of the network with respect to the weights and
     // biases. This involves one forward pass and one backwards pass for each
     // output of the network.
@@ -98,37 +76,30 @@ public:
     // network.
     void calculateJacobianInputs(const T* x, Matrix<T>& jacobian) override;
 
-    // Initializes the weights and biases with random values
-    void initializeParameters(Rand& rand);
+    // -----------------------------------------------------------------------//
+    // Batch Training Methods
+    // -----------------------------------------------------------------------//
 
-    // Prints a table of information about this network to the given stream
-    void print(std::ostream& out, const string& prefix = "") const;
+    // Pass a batch of 'N' samples through the network to produce 'N' separate
+    // outputs. 'inputs' must be an 'N x inputs' matrix, where each row is a
+    // single training sample. 'output' must be an 'N x outputs' matrix, where
+    // each row will hold one unique output vector.
+    void evaluateBatch(const Matrix<T>& input, Matrix<T>& output);
 
-    // Getters / Setters
-    size_t getInputs() const override
-    {
-        return mLayers.front()->getInputs();
-    }
+    // Calculates the gradient of the network with respect to the parameters,
+    // under the assumption that the deltas have already been calculated for
+    // every applicable node in the network.
+    void calculateGradientParametersBatch(const Matrix<T>& input, T* gradient);
 
-    size_t getOutputs() const override
-    {
-        return mLayers.back()->getOutputs();
-    }
+    // -----------------------------------------------------------------------//
+    // Layer Manipulation Methods
+    // -----------------------------------------------------------------------//
 
-    vector<T>& getParameters() override
-    {
-        return mParameters;
-    }
-
-    const vector<T>& getParameters() const override
-    {
-        return mParameters;
-    }
-
-    size_t getNumParameters() const override
-    {
-        return mParameters.size();
-    }
+    // Add a new layer to this Neural Network. Layers are added to the end of
+    // the network, so add the layers from input layer to output layer. By
+    // default, the network owns this layer, so it will be destroyed when the
+    // network is destroyed.
+    void addLayer(Layer<T>* layer, bool ownLayer = true);
 
     size_t getNumLayers() const
     {
@@ -155,10 +126,76 @@ public:
         return mLayers.back();
     }
 
+    // -----------------------------------------------------------------------//
+    // Parameter Access/Modification Methods
+    // -----------------------------------------------------------------------//
+
+    // Initializes parameters with random values.
+    void initializeParameters(Rand& rand);
+
+    vector<T>& getParameters() override
+    {
+        return mParameters;
+    }
+
+    const vector<T>& getParameters() const override
+    {
+        return mParameters;
+    }
+
+    size_t getNumParameters() const override
+    {
+        return mParameters.size();
+    }
+
+    // -----------------------------------------------------------------------//
+    // General Network Information
+    // -----------------------------------------------------------------------//
+
+    // Prints a table of information about this network to the given stream
+    void print(std::ostream& out, const string& prefix = "") const;
+
+    size_t getInputs() const override
+    {
+        return mLayers.front()->getInputs();
+    }
+
+    size_t getOutputs() const override
+    {
+        return mLayers.back()->getOutputs();
+    }
+
 private:
-    vector<T> mParameters;
+
+    // The layers themselves
     vector<Layer<T>*> mLayers;
     vector<bool> mLayerOwnership;
+
+    // The parameters for the entire network. Each layer is given a share of
+    // these, based on the value returned by Layer::getNumParameters().
+    vector<T> mParameters;
+
+    // These store the output of each layer and the derivatives of the network
+    // respect to those outputs.
+    vector<Matrix<T>> mActivations;
+    vector<Matrix<T>> mDeltas;
+};
+
+template <class T>
+NeuralNetwork<T>::~NeuralNetwork()
+{
+    // Delete the layers that we own
+    for (size_t i = 0; i < mLayers.size(); ++i)
+    {
+        if (mLayerOwnership[i])
+        {
+            delete mLayers[i];
+            mLayers[i] = nullptr;
+        }
+    }
+
+    // Safeguard
+    mLayers.clear();
 };
 
 template <class T>
@@ -195,44 +232,40 @@ void NeuralNetwork<T>::addLayer(Layer<T>* layer, bool ownLayer)
 template <class T>
 void NeuralNetwork<T>::evaluate(const T* input, T* output)
 {
-    // Create a matrix that wraps the contents of 'input'.
-    Matrix<T> temp((T*) input, 1, getInputs());
-    Matrix<T> out(output, 1, getOutputs());
+    T* x = (T*) input;
+    T* y = nullptr;
 
-    const Matrix<T>* x = &temp;
-
-    // Feed the output of the previous layer as input
-    // to the next layer.
-    for (int i = 0; i < mLayers.size() - 1; ++i)
+    // Feed the output of the previous layer as input to the next layer.
+    for (int i = 0; i < mLayers.size(); ++i)
     {
-        mLayers[i]->setEffectiveBatchSize(1);
-        mLayers[i]->eval(*x);
-        x = &mLayers[i]->getActivation();
+        y = mActivations[i](0);
+        mLayers[i]->eval(x, y);
+        x = y;
     }
 
-    // Feed the output of the last layer into 'output'
-    mLayers.back()->setEffectiveBatchSize(1);
-    mLayers.back()->eval(*x, out);
+    // Copy the output of the last layer into 'output'.
+    y = mActivations.back()(0);
+    vCopy(y, output, mActivations.back().getCols());
 }
 
 template <class T>
 void NeuralNetwork<T>::evaluateBatch(const Matrix<T>& input, Matrix<T>& output)
 {
-    const size_t N     = input.getRows();
-    const Matrix<T>* x = &input;
+    const size_t N = input.getRows();
+    Matrix<T>* x   = (Matrix<T>*) &input;
+    Matrix<T>* y   = nullptr;
 
     // Feed the output of the previous layer as input
     // to the next layer.
-    for (int i = 0; i < mLayers.size() - 1; ++i)
+    for (int i = 0; i < mLayers.size(); ++i)
     {
-        mLayers[i]->setEffectiveBatchSize(N);
-        mLayers[i]->eval(*x);
-        x = &mLayers[i]->getActivation();
+        y = &mActivations[i];
+        mLayers[i]->eval(*x, *y);
+        x = y;
     }
 
-    // Feed the output of the last layer into 'output'
-    mLayers.back()->setEffectiveBatchSize(N);
-    mLayers.back()->eval(*x, output);
+    // Copy the output of the last layer into 'output'.
+    output.copy(mActivations.back());
 }
 
 template <class T>
