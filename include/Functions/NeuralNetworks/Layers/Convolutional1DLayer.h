@@ -48,6 +48,8 @@ public:
 
     void eval(const Matrix<T>& x) override
     {
+        static Matrix<T> tempActivation(mActivation.getRows(), mActivation.getCols());
+
         // Expand x using the im2Row transformation. Each row of x will be
         // transformed into 'mOutputSize' rows according to the convolution
         // parameters. The relative order of the rows will be maintained.
@@ -55,22 +57,60 @@ public:
             mZeroPadding, 0, mStride, 1, mInputMatrix.data());
 
         // Multiply the weights matrix by the transpose of the input matrix.
-        // TODO: Check interlacing and (M, N, K) for this call.
-        mtmMultiply(mParameters, mInputMatrix.data(), mActivation.data(),
-            mInputMatrix.getCols(), mNumFilters, mInputMatrix.getRows() );
+        // activation = w * transpose(im2Row(x))
+        mmtMultiply(mParameters, mInputMatrix.data(), tempActivation.data(),
+            mNumFilters, mFilterSize * mInputChannels, mInputMatrix.getRows());
+
+        // Perform a blockwise transpose using im2Row
+        im2Row(tempActivation.data(), mOutputSize * mNumFilters, 1, mBatchSize,
+            mOutputSize, 1, 0, 0, mOutputSize, 1, mActivation.data());
 
         // Add filter bias to each element
-        // TODO: ...
+        const T* biases = mParameters + mFilterSize * mInputChannels * mNumFilters;
+        for (size_t y = 0; y < mNumFilters; ++y)
+        {
+            for (size_t x = 0; x < mInputMatrix.getRows(); ++x)
+                mActivation(y, x) += biases[y];
+        }
     }
 
     void calculateDeltas(const Matrix<T>& x, T* destination) override
     {
-
+        // TODO: Implement.
+        // destination = crossCorrelation(deltas, weights)
     }
 
     void calculateGradient(const Matrix<T>& x, T* gradient) override
     {
+        // We assume that im2Row has already been called using x, and the
+        // results are stored in mInputMatrix.
 
+        static Matrix<T> tempDeltas(mNumFilters, mOutputSize * mBatchSize);
+
+        // Perform a blockwise transpose of the deltas using im2Row
+        im2Row(mDeltas.data(), mOutputSize * mNumFilters, 1, mBatchSize,
+            mOutputSize, 1, 0, 0, mOutputSize, 1, tempDeltas.data());
+
+        // Calculate the sum of the gradients of the samples
+        mmMultiply(tempDeltas.data(), mInputMatrix.data(), gradient,
+            mNumFilters, mFilterSize * mInputChannels, mOutputSize * mBatchSize);
+
+        // Divide by the batch size to get the average gradient
+        vScale(gradient, T{1.0}/mBatchSize, getNumParameters());
+
+        // The gradient for the biases is the average delta values
+        T* gradBiases = gradient + (mFilterSize * mInputChannels * mNumFilters);
+        std::fill(gradBiases, gradBiases + mNumFilters, T{});
+        for (size_t y = 0; y < mDeltas.getRows(); ++y)
+        {
+            for (size_t x = 0; x < mDeltas.getCols(); ++x)
+                gradBiases[x] += mDeltas(y, x);
+        }
+        T invN = T{1.0} / mDeltas.getRows();
+        std::for_each(gradBiases, gradBiases + mNumFilters, [&N](T& elem)
+        {
+            elem *= invN;
+        });
     }
 
     size_t getNumParameters() const override

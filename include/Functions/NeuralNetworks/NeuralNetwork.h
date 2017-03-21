@@ -59,9 +59,9 @@ public:
     };
 
     // Add a new layer to this Neural Network. Layers are added to the end of
-    // the network, so add the layers from input layer to output layer. The
-    // caller of this function retains ownership of the layer--it will NOT be
-    // destroyed (if necessary) by the network.
+    // the network, so add the layers from input layer to output layer. By
+    // default, the network owns this layer, so it will be destroyed when the
+    // network is destroyed.
     void addLayer(Layer<T>* layer, bool ownLayer = true);
 
     // Execute one forward pass through the network in order to produce an output.
@@ -363,7 +363,7 @@ void NeuralNetwork<T>::print(std::ostream& out, const std::string& prefix) const
     const size_t LINE_LENGTH  = 72;
     const char* HEADER_STRING = "%s   %4s | %-30s | %-7s | %-7s | %-10s |\n";
     const char* DATA_STRING   = "%s | %4zu | %-30s | %7zu | %7zu | %10zu |\n";
-    const char* MISC_ELEMENT_STRING = 
+    const char* MISC_ELEMENT_STRING =
         "%s |      |  - %-27s |         |         |            |\n";
 
     const size_t BUFFER_SIZE = 1024;
