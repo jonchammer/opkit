@@ -172,6 +172,16 @@ public:
         return mDeltas[layer];
     }
 
+    Matrix<T>& getOutputDeltas()
+    {
+        return mDeltas.back();
+    }
+
+    const Matrix<T>& getOutputDeltas() const
+    {
+        return mDeltas.back();
+    }
+
     Matrix<T>& getActivation(const size_t layer)
     {
         return mActivations[layer];

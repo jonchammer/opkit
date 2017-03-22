@@ -257,7 +257,7 @@ public:
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
-        const size_t batchSize = mBaseFunction.getLayer(0)->getDeltas().getRows();
+        const size_t batchSize = mBaseFunction.getMaxBatchSize();
         const size_t M         = features.getCols();
         const size_t N         = labels.getCols();
 
@@ -338,7 +338,7 @@ public:
 
         // Calculate the deltas for the last layer by subtracting the evaluation
         // from the labels.
-        Matrix<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
+        Matrix<T>& outputDeltas = nn.getOutputDeltas();
         for (size_t i = 0; i < rows; ++i)
         {
             for (size_t j = 0; j < M; ++j)
@@ -346,24 +346,21 @@ public:
         }
 
         // Propagate the deltas back through the network
-        nn.calculateDeltas();
+        nn.backpropInputsBatch();
 
         // To get the gradient with respect to the inputs, we need to propagate
         // the deltas in the first layer. This will give us a matrix of all the
         // gradient values. We will need to flatten this to a vector by
-        // averaging the values across columns. We do so by multiplying the
-        // matrix transposed by [1/N, 1/N, 1/N, ...]. We also need to multiply
-        // the gradient by -2 to get the true gradient, so we include that in
-        // the masking matrix.
+        // averaging the values across columns.
         Layer<T>* front = nn.getLayer(0);
 
-        static Matrix<T> tempGradient(rows, front->getOutputs());
-        static vector<T> mask(rows, T{-2.0} / rows);
+        static Matrix<T> localGradients(rows, front->getOutputs());
+        front->backpropInputsBatch(features, localGradients.data());
 
-        front->setEffectiveBatchSize(rows);
-        front->calculateDeltas(features, tempGradient.data());
-        mtvMultiply(tempGradient.data(), mask.data(), gradient.data(),
-            tempGradient.getRows(), tempGradient.getCols());
+        // Average gradients across the columns
+        for (size_t i = 0; i < rows; ++i)
+            vAdd(localGradients(i), gradient.data(), N);
+        vScale(gradient.data(), T{1.0} / rows, N);
     }
 
     void calculateGradientParameters(const Matrix<T>& features,
@@ -383,21 +380,26 @@ public:
 
         // Calculate the deltas for the last layer by subtracting the evaluation
         // from the labels.
-        Matrix<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
+        Matrix<T>& outputDeltas = nn.getOutputDeltas();
         for (size_t i = 0; i < rows; ++i)
         {
             for (size_t j = 0; j < M; ++j)
                 outputDeltas(i, j) = labels(i, j) - evaluation(i, j);
         }
 
-        // Propagate the deltas back through the network, and use them to
-        // calculate the average gradient with respect to the parameters.
-        nn.calculateDeltas();
-        nn.calculateGradientParametersBatch(features, gradient.data());
+        // Propagate the deltas back through the network.
+        nn.backpropInputsBatch();
 
+        // Calculate the local gradients for each sample.
+        static Matrix<T> localGradients(rows, N);
+        nn.backpropParametersBatch(features, localGradients);
+
+        // Average gradients across the columns.
         // Technically, we need to multiply the final gradient by a factor
         // of -2 to get the true gradient with respect to the SSE function.
-        vScale(gradient.data(), T{-2.0}, N);
+        for (size_t i = 0; i < rows; ++i)
+            vAdd(localGradients(i), gradient.data(), N);
+        vScale(gradient.data(), T{-2.0} / rows, N);
     }
 
     void calculateHessianInputs(const Matrix<T>& features,
