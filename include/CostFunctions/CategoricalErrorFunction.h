@@ -68,11 +68,11 @@ public:
     CategoricalErrorFunction(NeuralNetwork<T>& baseFunction) :
         CostFunction<T, NeuralNetwork<T>>(baseFunction) {}
 
-    // Since Neural Networks support batch operation, we make use of it here
+    // Since Neural Networks support batch operations, we make use of it here
     // to improve runtime performance.
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
-        const size_t batchSize = mBaseFunction.getLayer(0)->getDeltas().getRows();
+        const size_t batchSize = mBaseFunction.getMaxBatchSize();
         const size_t M         = features.getCols();
         const size_t N         = labels.getCols();
 

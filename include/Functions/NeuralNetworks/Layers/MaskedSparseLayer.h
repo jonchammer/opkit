@@ -24,17 +24,14 @@ public:
     using Layer<T>::mParameters;
     using Layer<T>::mInputs;
     using Layer<T>::mOutputs;
-    using Layer<T>::mDeltas;
-    using Layer<T>::mActivation;
-    using Layer<T>::mBatchSize;
 
     // Create a new MasekdSparseLayer. The user specifies how many inputs and
     // outputs this layer has, as well as which percentage of the connections
     // should be filled (between [0.0 and 1.0]). The given Rand object is used
     // to determine which connections are made.
     MaskedSparseLayer(const size_t inputs, const size_t outputs,
-        const size_t batchSize, const double fillPercentage, Rand& rand) :
-        FullyConnectedLayer<T>(inputs, outputs, batchSize), mMask(inputs * outputs)
+        const double fillPercentage, Rand& rand) :
+        FullyConnectedLayer<T>(inputs, outputs), mMask(inputs * outputs)
     {
         // Effectively no mask when all cells are filled
         if (fillPercentage >= 1.0)
@@ -47,16 +44,30 @@ public:
     // Create a new MasekdSparseLayer. The user specifies how many inputs and
     // outputs this layer has, but by default, none of the connections are
     // enabled. Use getMask() to adjust which weights will be used.
-    MaskedSparseLayer(const size_t inputs, const size_t outputs,
-        const size_t batchSize) :
-        FullyConnectedLayer<T>(inputs, outputs, batchSize), mMask(inputs * outputs)
+    MaskedSparseLayer(const size_t inputs, const size_t outputs) :
+        FullyConnectedLayer<T>(inputs, outputs), mMask(inputs * outputs)
     {}
 
-    void eval(const Matrix<T>& x) override
+    void forwardSingle(const T* x, T* y) override
+    {
+        // Apply the mask. This will zero out some portion of the weights so
+        // they do not affect the computation. Note that if the weights are
+        // zeroed here, we do not need to mask the weights again in
+        // calculateDeltas(). The mask could be applied to the gradient that
+        // is calculated in calcuateGradient(), but there's no need to do any
+        // additional work.
+        mMask.apply(mParameters);
+        
+        // y = W * x + b
+        mvMultiply(mParameters, x, y, mOutputs, mInputs);
+        vAdd(mParameters + (mInputs * mOutputs), y, mOutputs);
+    }
+
+    void forwardBatch(const Matrix<T>& x, Matrix<T>& y) override
     {
         const T* xData  = x.data();
-        T* yData        = mActivation.data();
-        const size_t N  = mBatchSize;
+        T* yData        = y.data();
+        const size_t N  = x.getRows();
 
         // Apply the mask. This will zero out some portion of the weights so
         // they do not affect the computation. Note that if the weights are
@@ -78,12 +89,6 @@ public:
             vAdd(biases, yData, mOutputs);
             yData += mOutputs;
         }
-    }
-
-    size_t getNumParameters() const override
-    {
-        // N * M for the weights matrix and M for the bias terms
-        return mInputs * mOutputs + mOutputs;
     }
 
     Bitmask<T>& getMask()

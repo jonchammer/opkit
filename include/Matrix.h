@@ -205,11 +205,12 @@ public:
         }
     }
 
-    // Copy the complete contents of 'source' into this matrix. The dimensions
-    // of 'source' must match those of this matrix.
+    // Copy the complete contents of 'source' into this matrix. The number of
+    // columns for 'source' must match the number of columns in this matrix, but
+    // the number of rows may be smaller.
     void copy(const Matrix<T> source)
     {
-        vCopy(src.data(), mData, mRows * mCols);
+        vCopy(src.data(), mData, source.mRows * source.mCols);
     }
 
     // Swap the contents of this matrix with 'other'

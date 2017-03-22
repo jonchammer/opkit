@@ -20,14 +20,11 @@ public:
     // Allows us to use the members in the base class without specifying
     // their complete names
     using Layer<T>::mOutputs;
-    using Layer<T>::mActivation;
-    using Layer<T>::mDeltas;
-    using Layer<T>::mBatchSize;
 
     // Create a new layer with the given size and transformation function.
-    ActivationLayer(const size_t size, const size_t batchSize,
-        Activation<T>* activation, bool ownActivation = true) :
-        Layer<T>(size, size, batchSize),
+    ActivationLayer(const size_t size, Activation<T>* activation,
+        bool ownActivation = true) :
+        Layer<T>(size, size),
         mActivationFunction(activation),
         mOwnActivation(ownActivation)
     {}
@@ -44,38 +41,48 @@ public:
 
     // Performs the element-wise transformation according to the given
     // transformation function.
-    void eval(const Matrix<T>& x) override
+    void forwardSingle(const T* x, T* y) override
+    {
+        for (size_t i = 0; i < mOutputs; ++y)
+            y[i] = mActivationFunction->eval(x[i]);
+    }
+
+    // Batch implementation provided for better performance.
+    void forwardBatch(const Matrix<T>& x, Matrix<T>& y) override
     {
         const T* xData = x.data();
-        T* yData       = mActivation.data();
+        T* yData       = y.data();
 
-        const size_t N = mBatchSize * mOutputs;
+        const size_t N = x.getRows() * mOutputs;
         for (size_t i = 0; i < N; ++i)
             yData[i] = mActivationFunction->eval(xData[i]);
     }
 
     // The deltas for the downstream (left) layer are simply the deltas from
     // this layer multiplied by the derivative of the transformation function.
-    void calculateDeltas(const Matrix<T>& x, T* destination) override
+    void backpropInputsSingle(const T* x, const T* y,
+        const T* deltas, T* dest) override
     {
-        const T* input      = x.data();
-        const T* deltas     = mDeltas.data();
-        const T* activation = mActivation.data();
-
-        const size_t N = mBatchSize * mOutputs;
-        for (size_t i = 0; i < N; ++i)
-            destination[i] = deltas[i] * mActivationFunction->deriv(input[i], activation[i]);
+        for (size_t i = 0; i < mOutputs; ++i)
+        {
+            dest[i] = deltas[i] * mActivationFunction->deriv(x[i], y[i]);
+        }
     }
 
-    void calculateGradient(const Matrix<T>& x, T* gradient) override
+    // Batch implementation provided for better performance.
+    void backpropInputsBatch(const Matrix<T>& x, const Matrix<T>& y,
+        const Matrix<T>& deltas, Matrix<T>& dest)
     {
-        // We have no parameters, so there is no gradient to calculate
-        // for this layer.
-    }
+        const T* xData      = x.data();
+        const T* yData      = y.data();
+        const T* deltasData = deltas.data();
+        T* destData         = dest.data();
 
-    size_t getNumParameters() const override
-    {
-        return 0;
+        for (size_t i = 0; i < x.getRows() * mOutputs; ++x)
+        {
+            destData[i] =
+                deltasData[i] * mActivationFunction->deriv(xData[i], yData[i]);
+        }
     }
 
     std::string getName() const override

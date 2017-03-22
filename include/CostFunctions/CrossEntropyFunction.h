@@ -310,7 +310,7 @@ public:
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
-        const size_t batchSize = mBaseFunction.getLayer(0)->getDeltas().getRows();
+        const size_t batchSize = mBaseFunction.getMaxBatchSize();
         const size_t M         = features.getCols();
         const size_t N         = labels.getCols();
 
@@ -450,7 +450,7 @@ private:
             // Calculate the deltas for the layer preceeding the softmax layer
             // using the optimized approach (since we know what the answer
             // should be already).
-            Matrix<T>& preDeltas = nn.getLayer(layer)->getDeltas();
+            Matrix<T>& preDeltas = nn.getDeltas(layer);
             for (size_t i = 0; i < rows; ++i)
             {
                 for (size_t j = 0; j < M; ++j)
@@ -458,14 +458,7 @@ private:
             }
 
             // Calculate the remaining deltas like normal
-            for (int i = layer; i >= 1; --i)
-            {
-                Layer<T>* current = nn.getLayer(i);
-                Layer<T>* prev    = nn.getLayer(i - 1);
-
-                current->calculateDeltas(prev->getActivation(),
-                    prev->getDeltas().data());
-            }
+            nn.backpropInputsBatch(layer, 1);
 
             // To get the gradient with respect to the inputs, we need to propagate
             // the deltas in the first layer. This will give us a matrix of all the
@@ -477,8 +470,8 @@ private:
             static Matrix<T> tempGradient(rows, front->getOutputs());
             static vector<T> mask(rows, T{1.0} / rows);
 
-            front->setEffectiveBatchSize(rows);
-            front->calculateDeltas(features, tempGradient.data());
+            front->backpropInputsBatch(features, nn.getActivation(0),
+                nn.getDeltas(0), tempGradient.data());
             mtvMultiply(tempGradient.data(), mask.data(), gradient.data(),
                 tempGradient.getRows(), tempGradient.getCols());
         }
@@ -510,7 +503,7 @@ private:
             // Calculate the deltas for the layer preceeding the softmax layer
             // using the optimized approach (since we know what the answer
             // should be already).
-            Matrix<T>& preDeltas = nn.getLayer(layer)->getDeltas();
+            Matrix<T>& preDeltas = nn.getDeltas(layer);
             for (size_t i = 0; i < rows; ++i)
             {
                 for (size_t j = 0; j < M; ++j)
@@ -518,17 +511,9 @@ private:
             }
 
             // Calculate the remaining deltas like normal
-            for (int i = layer; i >= 1; --i)
-            {
-                Layer<T>* current = nn.getLayer(i);
-                Layer<T>* prev    = nn.getLayer(i - 1);
+            nn.backpropInputsBatch(layer, 1);
 
-                current->calculateDeltas(prev->getActivation(),
-                    prev->getDeltas().data());
-            }
-
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
+            // Calculate the gradient based on the deltas.
             nn.calculateGradientParametersBatch(features, gradient.data());
         }
     };

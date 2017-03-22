@@ -47,6 +47,24 @@ public:
     }
 
     // Use the backpropagation algorithm to calculate the derivative of the
+    // network with respect to each of the inputs to this layer. 'x' is of size
+    // 'inputs' and should hold the same value that was last used with
+    // 'forwardSingle'. 'deltas' is of size 'outputs' and represents the
+    // derivative of the network with respect to each of the output units of
+    // this layer. 'y' is the result of the previous 'forwardSingle' step, and
+    // has 'outputs' elements. The result will be placed in 'dest' and will be
+    // of size 'inputs'.
+    //
+    // The default implementation performs an identity mapping.
+    virtual void backpropInputsSingle(const T* x, const T* y,
+        const T* deltas, T* dest)
+    {
+        size_t N = std::min(mInputs, mOutputs);
+        vCopy(deltas, dest, N);
+        vScale(dest + N , T{}, mInputs - N);
+    }
+
+    // Use the backpropagation algorithm to calculate the derivative of the
     // network with respect to each of the parameters of this layer. 'x' is of
     // size 'inputs' and should hold the same value that was last used with
     // 'forwardSingle'. 'deltas' is of size 'outputs' and represents the
@@ -58,22 +76,6 @@ public:
     virtual void backpropParametersSingle(const T* x, const T* deltas, T* dest)
     {
         // Do nothing
-    }
-
-    // Use the backpropagation algorithm to calculate the derivative of the
-    // network with respect to each of the inputs to this layer. 'x' is of size
-    // 'inputs' and should hold the same value that was last used with
-    // 'forwardSingle'. 'deltas' is of size 'outputs' and represents the
-    // derivative of the network with respect to each of the output units of
-    // this layer. The result will be placed in 'dest' and will be of size
-    // 'inputs'.
-    //
-    // The default implementation performs an identity mapping.
-    virtual void backpropInputsSingle(const T* x, const T* deltas, T* dest)
-    {
-        size_t N = std::min(mInputs, mOutputs);
-        vCopy(deltas, dest, N);
-        vScale(dest + N , T{}, mInputs - N);
     }
 
     // -----------------------------------------------------------------------//
@@ -95,6 +97,26 @@ public:
     }
 
     // Use the backpropagation algorithm to calculate the derivative of the
+    // network with respect to each of the inputs to this layer using a batch of
+    // 'N' samples. 'x' must be an 'N x inputs' matrix, where each row
+    // is a single training sample. 'deltas' must be an 'N x outputs' matrix,
+    // where each row is the gradient of the network with respect to each of the
+    // output units units (for each training sample) in this layer. 'y' is also
+    // an 'N x outputs' matrix. It is the result of the previous call to
+    // 'forwardSingle'. The result will be placed in 'dest', which is an
+    // 'N x inputs' matrix.
+    //
+    // In the default implementation, N calls to backpropInputsSingle()
+    // are performed. If it is possible to more efficiently compute the batched
+    // result, this method should be overwritten by the corresponding subclass.
+    virtual void backpropInputsBatch(const Matrix<T>& x, const Matrix<T>& y,
+        const Matrix<T>& deltas, Matrix<T>& dest)
+    {
+        for (size_t i = 0; i < x.getRows(); ++x)
+            backpropInputsSingle(x(i), deltas(i), dest(i));
+    }
+
+    // Use the backpropagation algorithm to calculate the derivative of the
     // network with respect to each of the parameters of this layer using a
     // batch of 'N' samples. 'x' must be an 'N x inputs' matrix, where each row
     // is a single training sample. 'deltas' must be an 'N x outputs' matrix,
@@ -110,24 +132,6 @@ public:
     {
         for (size_t i = 0; i < x.getRows(); ++x)
             backpropParametersSingle(x(i), deltas(i), dest(i));
-    }
-
-    // Use the backpropagation algorithm to calculate the derivative of the
-    // network with respect to each of the inputs to this layer using a batch of
-    // 'N' samples. 'x' must be an 'N x inputs' matrix, where each row
-    // is a single training sample. 'deltas' must be an 'N x outputs' matrix,
-    // where each row is the gradient of the network with respect to each of the
-    // output units units (for each training sample) in this layer. The result
-    // will be placed in 'dest', which is an 'N x inputs' matrix.
-    //
-    // In the default implementation, N calls to backpropInputsSingle()
-    // are performed. If it is possible to more efficiently compute the batched
-    // result, this method should be overwritten by the corresponding subclass.
-    virtual void backpropInputsBatch(const Matrix<T>& x,
-        const Matrix<T>& deltas, Matrix<T>& dest)
-    {
-        for (size_t i = 0; i < x.getRows(); ++x)
-            backpropInputsSingle(x(i), deltas(i), dest(i));
     }
 
     // -----------------------------------------------------------------------//
