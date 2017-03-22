@@ -78,7 +78,7 @@ public:
         const T* deltasData = deltas.data();
         T* destData         = dest.data();
 
-        for (size_t i = 0; i < x.getRows() * mOutputs; ++x)
+        for (size_t i = 0; i < x.getRows() * mOutputs; ++i)
         {
             destData[i] =
                 deltasData[i] * mActivationFunction->deriv(xData[i], yData[i]);

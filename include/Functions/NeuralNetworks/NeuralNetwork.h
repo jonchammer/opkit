@@ -70,8 +70,12 @@ public:
     // layer to work with. Note that this must be >= 1, as continuing the
     // backpropagation algorithm past the first layer requires a different
     // interface.
-    void backpropInputsSingle(const size_t layerStart = mLayers.size() - 1,
-        const size_t layerEnd = 1);
+    void backpropInputsSingle(const size_t layerStart, const size_t layerEnd = 1);
+
+    void backpropInputsSingle()
+    {
+        backpropInputsSingle(mLayers.size() - 1, 1);
+    }
 
     // This function uses the backpropagation algorithm to determine the
     // partial derivative of the network with respect to each of the parameters
@@ -115,8 +119,12 @@ public:
     // layer to work with. Note that this must be >= 1, as continuing the
     // backpropagation algorithm past the first layer requires a different
     // interface.
-    void backpropInputsBatch(const size_t layerStart = mLayers.size() - 1,
-        const size_t layerEnd = 1);
+    void backpropInputsBatch(const size_t layerStart, const size_t layerEnd = 1);
+
+    void backpropInputsBatch()
+    {
+        backpropInputsBatch(mLayers.size() - 1, 1);
+    }
 
     // This function uses the backpropagation algorithm to determine the
     // partial derivative of the network with respect to each of the parameters
@@ -421,7 +429,6 @@ void NeuralNetwork<T>::calculateJacobianInputs(const T* x, Matrix<T>& jacobian)
     for (size_t i = 0; i < M; ++i)
     {
         // Calculate the deltas on the last layer first
-        Matrix<T>& outputDeltas = mLayers.back()->getDeltas();
         mDeltas.back().fill(T{});
         mDeltas.back()(0, i) = T{1.0};
 
@@ -431,7 +438,8 @@ void NeuralNetwork<T>::calculateJacobianInputs(const T* x, Matrix<T>& jacobian)
         // 3. Relate blame terms to the gradient. This operation is the
         // same as backpropagating the deltas in the first layer to the
         // inputs (x).
-        mLayers.front()->backpropInputsSingle(x, mDeltas[0](0), jacobian(i));
+        mLayers.front()->backpropInputsSingle(x, mActivations[0](0),
+            mDeltas[0](0), jacobian(i));
     }
 }
 

@@ -85,7 +85,7 @@ public:
         outerProduct(deltas, x, dest, mOutputs, mInputs);
 
         // dest_biases = deltas
-        vCopy(deltas, dest + (mOutputs * mInput), mOutputs);
+        vCopy(deltas, dest + (mOutputs * mInputs), mOutputs);
     }
 
     // TO ME: backpropParametersBatch might be possible, but the form is not

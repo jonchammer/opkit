@@ -21,7 +21,6 @@ public:
     // their complete names
     using Layer<T>::mInputs;
     using Layer<T>::mOutputs;
-    using Layer<T>::mBatchSize;
 
     // Create a Softmax layer. All we need to know is the dimension.
     SoftmaxLayer(size_t size) :
@@ -47,7 +46,7 @@ public:
     void backpropInputsSingle(const T* x, const T* y,
         const T* deltas, T* dest) override
     {
-        static vector<T> jacobian(mOutputs * mOutputs);
+        static Matrix<T> jacobian(mOutputs, mOutputs);
         T* jacobianData = jacobian.data();
 
         // Destination = J * deltas, where J = Diag(y) - y*y^T

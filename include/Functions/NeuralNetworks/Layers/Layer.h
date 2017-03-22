@@ -92,7 +92,7 @@ public:
     // should be overwritten by the corresponding subclass.
     virtual void forwardBatch(const Matrix<T>& x, Matrix<T>& y)
     {
-        for (size_t i = 0; i < x.getRows(); ++x)
+        for (size_t i = 0; i < x.getRows(); ++i)
             forwardSingle(x(i), y(i));
     }
 
@@ -112,8 +112,8 @@ public:
     virtual void backpropInputsBatch(const Matrix<T>& x, const Matrix<T>& y,
         const Matrix<T>& deltas, Matrix<T>& dest)
     {
-        for (size_t i = 0; i < x.getRows(); ++x)
-            backpropInputsSingle(x(i), deltas(i), dest(i));
+        for (size_t i = 0; i < x.getRows(); ++i)
+            backpropInputsSingle(x(i), y(i), deltas(i), dest(i));
     }
 
     // Use the backpropagation algorithm to calculate the derivative of the
@@ -130,7 +130,7 @@ public:
     virtual void backpropParametersBatch(const Matrix<T>& x,
         const Matrix<T>& deltas, Matrix<T>& dest)
     {
-        for (size_t i = 0; i < x.getRows(); ++x)
+        for (size_t i = 0; i < x.getRows(); ++i)
             backpropParametersSingle(x(i), deltas(i), dest(i));
     }
 
@@ -183,8 +183,7 @@ public:
     }
 
     // Getters
-    T* getParameters() const       { return mParameters; }
-    const T* getParameters() const { return mParameters; }
+    T* getParameters()             { return mParameters; }
     size_t getInputs() const       { return mInputs;     }
     size_t getOutputs() const      { return mOutputs;    }
 

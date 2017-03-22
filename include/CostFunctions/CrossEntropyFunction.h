@@ -523,7 +523,7 @@ private:
             // using the optimized approach (since we know what the answer
             // should be already).
             Matrix<T>& preDeltas = nn.getDeltas(layer);
-            for (size_t i = 0; i < rows; ++i)
+            for (size_t i = 0; i < batchSize; ++i)
             {
                 for (size_t j = 0; j < N; ++j)
                     preDeltas(i, j) = predictions(i, j) - batchLabels(i, j);
@@ -542,6 +542,7 @@ private:
         void calculateGradientParameters(const Matrix<T>& batchFeatures,
             const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
+            NeuralNetwork<T>& nn   = mBaseFunction;
             const size_t batchSize = batchFeatures.getRows();
             const size_t N         = batchLabels.getCols();
             const size_t M         = nn.getNumParameters();
@@ -552,7 +553,7 @@ private:
             localGradients.reshape(batchSize, M);
 
             // Evaluate this minibatch
-            mBaseFunction.evaluateBatch(batchFeatures, predictions);
+            nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
             int layer = nn.getNumLayers() - 1;
@@ -567,12 +568,12 @@ private:
             // using the optimized approach (since we know what the answer
             // should be already).
             Matrix<T>& preDeltas = nn.getDeltas(layer);
-            for (size_t i = 0; i < rows; ++i)
+            for (size_t i = 0; i < batchSize; ++i)
             {
                 for (size_t j = 0; j < N; ++j)
-                    preDeltas(i, j) = evaluation(i, j) - batchLabels(i, j);
+                    preDeltas(i, j) = predictions(i, j) - batchLabels(i, j);
             }
-            mBaseFunction.backpropInputsBatch(layer, 1);
+            nn.backpropInputsBatch(layer, 1);
 
             // Calculate the gradients based on the deltas.
             nn.backpropParametersBatch(batchFeatures, localGradients);
@@ -588,8 +589,8 @@ private:
         UnoptimizedImp(NeuralNetwork<T>& baseFunction) :
             Imp(baseFunction) {}
 
-        void calculateGradientInputs(Matrix<T>& batchFeatures,
-            Matrix<T>& batchLabels, vector<T>& gradient)
+        void calculateGradientInputs(const Matrix<T>& batchFeatures,
+            const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
             NeuralNetwork<T>& nn   = mBaseFunction;
             const size_t batchSize = batchFeatures.getRows();
@@ -606,7 +607,7 @@ private:
 
             // Calculate the deltas for each node in the network
             Matrix<T>& outputDeltas = nn.getDeltas(nn.getNumLayers() - 1);
-            for (size_t i = 0; i < rows; ++i)
+            for (size_t i = 0; i < batchSize; ++i)
             {
                 for (size_t j = 0; j < N; ++j)
                     outputDeltas(i, j) = -batchLabels(i, j) / predictions(i, j);
@@ -622,9 +623,10 @@ private:
                 vAdd(localGradients(i), gradient.data(), M);
         }
 
-        void calculateGradientParameters(Matrix<T>& batchFeatures,
-            Matrix<T>& batchLabels, vector<T>& gradient)
+        void calculateGradientParameters(const Matrix<T>& batchFeatures,
+            const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
+            NeuralNetwork<T>& nn   = mBaseFunction;
             const size_t batchSize = batchFeatures.getRows();
             const size_t N         = batchLabels.getCols();
             const size_t M         = nn.getNumParameters();
@@ -635,19 +637,19 @@ private:
             localGradients.reshape(batchSize, M);
 
             // Evaluate this minibatch
-            mBaseFunction.evaluateBatch(batchFeatures, predictions);
+            nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
-            Matrix<T>& outputDeltas = mBaseFunction.getDeltas(nn.getNumLayers() - 1);
-            for (size_t i = 0; i < rows; ++i)
+            Matrix<T>& outputDeltas = nn.getDeltas(nn.getNumLayers() - 1);
+            for (size_t i = 0; i < batchSize; ++i)
             {
                 for (size_t j = 0; j < N; ++j)
                     outputDeltas(i, j) = -batchLabels(i, j) / predictions(i, j);
             }
-            mBaseFunction.backpropInputsBatch();
+            nn.backpropInputsBatch();
 
             // Calculate the gradients based on the deltas.
-            nn.backpropParametersBatch(features, localGradients);
+            nn.backpropParametersBatch(batchFeatures, localGradients);
 
             // Add the local gradients to the current gradient vector
             for (size_t i = 0; i < batchSize; ++i)

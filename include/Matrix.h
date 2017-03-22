@@ -210,7 +210,7 @@ public:
     // the number of rows may be smaller.
     void copy(const Matrix<T> source)
     {
-        vCopy(src.data(), mData, source.mRows * source.mCols);
+        vCopy(source.data(), mData, source.mRows * source.mCols);
     }
 
     // Swap the contents of this matrix with 'other'
