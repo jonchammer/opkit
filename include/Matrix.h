@@ -46,6 +46,12 @@ public:
         std::copy(list.begin(), list.end(), mData);
     }
 
+    Matrix(const size_t rows, const size_t cols, T val) :
+        mData(new T[rows * cols]), mRows(rows), mCols(cols), mOwnsData(true)
+    {
+        fill(val);
+    }
+    
     Matrix(T* data, const size_t rows, const size_t cols) :
         mData(data), mRows(rows), mCols(cols), mOwnsData(false)
     {}
@@ -205,6 +211,14 @@ public:
         }
     }
 
+    // Copy the complete contents of 'source' into this matrix. The number of
+    // columns for 'source' must match the number of columns in this matrix, but
+    // the number of rows may be smaller.
+    void copy(const Matrix<T> source)
+    {
+        vCopy(source.data(), mData, source.mRows * source.mCols);
+    }
+
     // Swap the contents of this matrix with 'other'
     void swap(Matrix<T>& other)
     {
@@ -300,6 +314,7 @@ private:
 
 //----------------------------------------------------------------------------//
 
+
 // Interior nodes of the AST that have two children. This is marked as Operable
 // so it can be used with the operator overloads below.
 template <class LHS, class RHS, class Op>
@@ -346,6 +361,7 @@ struct BinaryOp
     {
         Matrix<T> temp;
         lhs.apply(temp);
+
         Base::apply(temp, rhs, target);
     }
 
@@ -551,7 +567,7 @@ typename std::enable_if
         std::is_base_of<Operable, RHS>::value,
     BinaryExpression<LHS, RHS, ScalarMultiplication>
 >::type
-operator* (const LHS lhs, const RHS& rhs)
+operator* (const LHS& lhs, const RHS& rhs)
 {
     return BinaryExpression<LHS, RHS, ScalarMultiplication>(lhs, rhs);
 }
@@ -565,7 +581,7 @@ typename std::enable_if
         std::is_base_of<Operable, LHS>::value,
     BinaryExpression<LHS, RHS, ScalarMultiplication>
 >::type
-operator* (const LHS& lhs, const RHS rhs)
+operator* (const LHS& lhs, const RHS& rhs)
 {
     return BinaryExpression<LHS, RHS, ScalarMultiplication>(lhs, rhs);
 }
@@ -582,6 +598,38 @@ transpose (const Base& base)
 {
     return UnaryExpression<Base, Transpose>(base);
 }
+
+template <class T>
+std::ostream& operator<<(std::ostream& out, const Matrix<T>& m)
+{
+    printMatrix(out, m);
+    return out;
+}
+
+template <class T, class Op>
+std::ostream& operator<<(std::ostream& out, const BinaryExpression<Matrix<T>, Matrix<T>, Op>& exp)
+{
+    out << "Left:  \n(" << endl << exp.left  << endl << ")" << endl;
+    out << "Right: \n(" << endl << exp.right << endl << ")" << endl;
+    return out;
+}
+
+template <class T, class RHS, class Op>
+std::ostream& operator<<(std::ostream& out, const BinaryExpression<Matrix<T>, RHS, Op>& exp)
+{
+    out << "Left:  \n(" << endl << exp.left  << endl << ")" << endl;
+    out << "Right: \n(" << endl << exp.right << endl << ")" << endl;
+    return out;
+}
+
+template <class LHS, class T, class Op>
+std::ostream& operator<<(std::ostream& out, const BinaryExpression<LHS, Matrix<T>, Op>& exp)
+{
+    out << "Left:  \n(" << endl << exp.left  << endl << ")" << endl;
+    out << "Right: \n(" << endl << exp.right << endl << ")" << endl;
+    return out;
+}
+
 
 };
 

@@ -22,7 +22,7 @@ include_directories("/usr/local/include/opkit")
 include_directories("/usr/include/openblas")
 
 # Create lists of all of the header files and the source files
-set(SOURCES src/neuralNetworkBatchTest.cpp)
+set(SOURCES src/sseNeuralNetworkTest.cpp)
 add_executable(demo ${SOURCES})
 
 # Find and link the BLAS Library

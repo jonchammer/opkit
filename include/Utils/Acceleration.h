@@ -503,7 +503,7 @@ inline void outerProduct(const float* x, const float* y, float* A,
     const int xInc = 1, const int yInc = 1)
 {
     USE_ONE_CORE();
-    OPKIT_SGER(N, N,
+    OPKIT_SGER(N, M,
         alpha, y, yInc,
         x, xInc,
         A, N);

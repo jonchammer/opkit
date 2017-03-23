@@ -16,21 +16,15 @@ public:
     // Allows users to specfiy which interpolation routine to use
     enum InterpolationScheme {NEAREST_NEIGHBOR, BILINEAR, CLAMPED_BILINEAR};
 
-    // Allows us to use the members in the base class without specifying
-    // their complete names
-    using Layer<T>::mActivation;
-    using Layer<T>::mBatchSize;
-
     ElasticDeformationLayer(const size_t inputWidth,
         const size_t inputHeight, const size_t channels,
         const size_t outputWidth, const size_t outputHeight,
-        const size_t batchSize,
         const InterpolationScheme scheme = InterpolationScheme::NEAREST_NEIGHBOR,
         const size_t randSeed = Rand::getDefaultSeed()) :
 
         // Initialize standard parameters
         Layer<T>(inputWidth * inputHeight * channels,
-            outputWidth * outputHeight * channels, batchSize),
+            outputWidth * outputHeight * channels),
         mInputWidth(inputWidth), mInputHeight(inputHeight), mChannels(channels),
         mOutputWidth(outputWidth), mOutputHeight(outputHeight), mRand(randSeed),
         mTesting(false),
@@ -64,9 +58,93 @@ public:
         delete mInterpolator;
     }
 
+    void forwardSingle(const T* x, T* y) override
+    {
+        static Matrix<T> affine(3, 3);
+        if (!mTesting)
+        {
+            // Create the affine transformation matrix
+            generateAffineMatrix(affine);
+
+            // Invert the affine matrix so we can fill the output image
+            // from the inside out.
+            // invert2x2(affine);
+            invert3x3(affine);
+
+            // Perform the transformation
+            evalSingle(x, affine, y);
+        }
+        else
+        {
+            // Use the identity affine transformation matrix with a centering
+            // translation
+            affine(0, 0) = T{1};
+            affine(0, 1) = T{};
+            affine(0, 2) = (mInputWidth - mOutputWidth) / T{2.0};
+
+            affine(1, 0) = T{};
+            affine(1, 1) = T{1};
+            affine(1, 2) = (mInputHeight - mOutputHeight) / T{2.0};
+
+            affine(2, 0) = T{};
+            affine(2, 1) = T{};
+            affine(2, 2) = T{1};
+
+            invert3x3(affine);
+
+            // Perform the transformation
+            evalSingle(x, affine, y);
+        }
+    }
+
+    void forwardBatch(const Matrix<T>& x, Matrix<T>& y)
+    {
+        static Matrix<T> affine(3, 3);
+
+        if (!mTesting)
+        {
+            for (size_t i = 0; i < x.getRows(); ++i)
+            {
+                // Create the affine transformation matrix
+                generateAffineMatrix(affine);
+
+                // Invert the affine matrix so we can fill the output image
+                // from the inside out.
+                // invert2x2(affine);
+                invert3x3(affine);
+
+                // Perform the transformation
+                evalSingle(x(i), affine, y(i));
+            }
+        }
+        else
+        {
+            // Use the identity affine transformation matrix with a centering
+            // translation
+            affine(0, 0) = T{1};
+            affine(0, 1) = T{};
+            affine(0, 2) = (mInputWidth - mOutputWidth) / T{2.0};
+
+            affine(1, 0) = T{};
+            affine(1, 1) = T{1};
+            affine(1, 2) = (mInputHeight - mOutputHeight) / T{2.0};
+
+            affine(2, 0) = T{};
+            affine(2, 1) = T{};
+            affine(2, 2) = T{1};
+
+            invert3x3(affine);
+
+            for (size_t i = 0; i < x.getRows(); ++i)
+            {
+                // Perform the transformation
+                evalSingle(x(i), affine, y(i));
+            }
+        }
+    }
 private:
 
-    void evalSingle(const Matrix<T>& in, const size_t row, const Matrix<T>& affineInv)
+    void evalSingle(const T* in, const Matrix<T>& affineInv, T* out)
     {
         // Cache the matrix elements we use
         T a11 = affineInv(0, 0);
@@ -76,8 +154,8 @@ private:
         T a22 = affineInv(1, 1);
         T a23 = affineInv(1, 2);
 
-        const T* src = in(row);
-        T* dest      = mActivation(row);
+        const T* src = in;
+        T* dest      = out;
 
         for (size_t channel = 0; channel < mChannels; ++channel)
         {
@@ -306,68 +384,6 @@ private:
     }
 
 public:
-
-    void eval(const Matrix<T>& x) override
-    {
-        static Matrix<T> affine(3, 3);
-
-        if (!mTesting)
-        {
-            for (size_t i = 0; i < mBatchSize; ++i)
-            {
-                // Create the affine transformation matrix
-                generateAffineMatrix(affine);
-
-                // Invert the affine matrix so we can fill the output image
-                // from the inside out.
-                // invert2x2(affine);
-                invert3x3(affine);
-
-                // Perform the transformation
-                evalSingle(x, i, affine);
-            }
-        }
-        else
-        {
-            // Use the identity affine transformation matrix with a centering
-            // translation
-            affine(0, 0) = T{1};
-            affine(0, 1) = T{};
-            affine(0, 2) = (mInputWidth - mOutputWidth) / T{2.0};
-
-            affine(1, 0) = T{};
-            affine(1, 1) = T{1};
-            affine(1, 2) = (mInputHeight - mOutputHeight) / T{2.0};
-
-            affine(2, 0) = T{};
-            affine(2, 1) = T{};
-            affine(2, 2) = T{1};
-
-            invert3x3(affine);
-
-            for (size_t i = 0; i < mBatchSize; ++i)
-            {
-                // Perform the transformation
-                evalSingle(x, i, affine);
-            }
-        }
-    }
-
-    void calculateDeltas(const Matrix<T>& x, T* destination) override
-    {
-        // TODO: Implement.
-    }
-
-    void calculateGradient(const Matrix<T>& x, T* gradient) override
-    {
-        // Do nothing. There is no gradient to calculate since there are
-        // no optimizable parameters.
-    }
-
-    size_t getNumParameters() const override
-    {
-        return 0;
-    }
 
     std::string getName() const override
     {

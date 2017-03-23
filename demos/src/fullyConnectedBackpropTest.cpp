@@ -28,17 +28,23 @@ bool testBackpropParameters(NeuralNetwork<Type>& network, vector<Type>& input)
     network.calculateJacobianParameters(input.data(), jacobian);
     network.Function<Type>::calculateJacobianParameters(input.data(), jacobian2);
 
-   //  cout << "Exact:" << endl;
-   //  printMatrix(jacobian, 8, 11);
-   // //
-   //  cout << "Finite Differences:" << endl;
-   //  printMatrix(jacobian2, 8, 11);
+//    cout << "Exact:" << endl;
+//    printMatrix(cout, jacobian, 8, 11);
+//
+//    cout << "Finite Differences:" << endl;
+//    printMatrix(cout, jacobian2, 8, 11);
 
-    for (size_t j = 0; j < jacobian.getRows(); ++j)
+    if (jacobian.getRows() != jacobian2.getRows() || jacobian.getCols() != jacobian2.getCols())
     {
-        for (size_t k = 0; k < jacobian.getCols(); ++k)
+        cout << "Backprop (parameters) - FAIL" << endl;
+        cout << "Dimensions don't match." << endl;
+        return false;
+    }
+    for (size_t j = 0; j < jacobian2.getRows(); ++j)
+    {
+        for (size_t k = 0; k < jacobian2.getCols(); ++k)
         {
-            if ((jacobian(j, k) - jacobian2(j, k)) > 0.001)
+            if (std::abs(jacobian(j, k) - jacobian2(j, k)) > 0.001)
             {
                 cout << "Backprop (parameters) - FAIL" << endl;
                 return false;
@@ -66,11 +72,18 @@ bool testBackpropInputs(NeuralNetwork<Type>& network, vector<Type>& input)
 //    cout << "Finite Differences:" << endl;
 //    printMatrix(jacobian2, 8, 11);
 
-    for (size_t j = 0; j < jacobian.getRows(); ++j)
+    if (jacobian.getRows() != jacobian2.getRows() || jacobian.getCols() != jacobian2.getCols())
     {
-        for (size_t k = 0; k < jacobian.getCols(); ++k)
+        cout << "Backprop (inputs) - FAIL" << endl;
+        cout << "Dimensions don't match." << endl;
+        return false;
+    }
+
+    for (size_t j = 0; j < jacobian2.getRows(); ++j)
+    {
+        for (size_t k = 0; k < jacobian2.getCols(); ++k)
         {
-            if ((jacobian(j, k) - jacobian2(j, k)) > 0.001)
+            if (std::abs(jacobian(j, k) - jacobian2(j, k)) > 0.001)
             {
                 cout << "Backprop (inputs) - FAIL" << endl;
                 return false;
@@ -88,13 +101,13 @@ int main()
     // Create a test network
     NeuralNetwork<Type> network;
 
-    network.addLayer(new FullyConnectedLayer<Type>(3, 100, 1));
-    //network.addLayer(new ActivationLayer<Type>(100, new tanhActivation<Type>()));
-    network.addLayer(new FullyConnectedLayer<Type>(100, 50, 1));
-    //network.addLayer(new ActivationLayer<Type>(50, new tanhActivation<Type>()));
-    network.addLayer(new FullyConnectedLayer<Type>(50, 2, 1));
+    network.addLayer(new FullyConnectedLayer<Type>(3, 100));
+    network.addLayer(new ActivationLayer<Type>(100, new tanhActivation<Type>()));
+    network.addLayer(new FullyConnectedLayer<Type>(100, 50));
+    network.addLayer(new ActivationLayer<Type>(50, new tanhActivation<Type>()));
+    network.addLayer(new FullyConnectedLayer<Type>(50, 10));
     //network.addLayer(new ActivationLayer<Type>(2, new tanhActivation<Type>()));
-    //network.addLayer(new SoftmaxLayer<Type>(2));
+    network.addLayer(new SoftmaxLayer<Type>(10));
 
     Rand rand(42);
     network.initializeParameters(rand);
@@ -107,7 +120,7 @@ int main()
 
     if (!testBackpropParameters(network, input))
         return 1;
-    else if (!testBackpropInputs(network, input))
+    if (!testBackpropInputs(network, input))
         return 2;
 
     return 0;

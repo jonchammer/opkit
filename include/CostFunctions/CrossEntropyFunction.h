@@ -310,7 +310,7 @@ public:
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         // Initialize variables
-        const size_t batchSize = mBaseFunction.getLayer(0)->getDeltas().getRows();
+        const size_t batchSize = mBaseFunction.getMaxBatchSize();
         const size_t M         = features.getCols();
         const size_t N         = labels.getCols();
 
@@ -376,12 +376,22 @@ public:
     void calculateGradientInputs(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient)
     {
+        // Make sure gradient has enough space
+        const size_t N = mBaseFunction.getInputs();
+        assert(gradient.size() >= N);
+
+        // Let the implementation do the dirty work
         mImp->calculateGradientInputs(features, labels, gradient);
     }
 
     void calculateGradientParameters(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient)
     {
+        // Make sure gradient has enough space
+        const size_t N = mBaseFunction.getNumParameters();
+        assert(gradient.size() >= N);
+
+        // Let the implementation do the dirty work
         mImp->calculateGradientParameters(features, labels, gradient);
     }
 
@@ -423,20 +433,21 @@ private:
         OptimizedImp(NeuralNetwork<T>& baseFunction) :
             Imp(baseFunction) {}
 
-        void calculateGradientInputs(const Matrix<T>& features,
-            const Matrix<T>& labels, vector<T>& gradient) override
+        void calculateGradientInputs(const Matrix<T>& batchFeatures,
+            const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
-            NeuralNetwork<T>& nn = mBaseFunction;
-            const size_t N       = nn.getInputs();
-            const size_t M       = nn.getOutputs();
-            const size_t rows    = features.getRows();
+            NeuralNetwork<T>& nn   = mBaseFunction;
+            const size_t batchSize = batchFeatures.getRows();
+            const size_t N         = batchLabels.getCols();
+            const size_t M         = batchFeatures.getCols();
 
-            // Make sure gradient has enough space
-            assert(gradient.size() >= N);
+            static Matrix<T> predictions(batchSize, N);
+            static Matrix<T> localGradients(batchSize, M);
+            predictions.reshape(batchSize, N);
+            localGradients.reshape(batchSize, M);
 
-            // Forward prop the training data through the network
-            static Matrix<T> evaluation(rows, M);
-            nn.evaluateBatch(features, evaluation);
+            // Evaluate this minibatch
+            nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
             int layer = nn.getNumLayers() - 1;
@@ -450,53 +461,36 @@ private:
             // Calculate the deltas for the layer preceeding the softmax layer
             // using the optimized approach (since we know what the answer
             // should be already).
-            Matrix<T>& preDeltas = nn.getLayer(layer)->getDeltas();
-            for (size_t i = 0; i < rows; ++i)
+            Matrix<T>& preDeltas = nn.getDeltas(layer);
+            for (size_t i = 0; i < batchSize; ++i)
             {
-                for (size_t j = 0; j < M; ++j)
-                    preDeltas(i, j) = evaluation(i, j) - labels(i, j);
+                for (size_t j = 0; j < N; ++j)
+                    preDeltas(i, j) = predictions(i, j) - batchLabels(i, j);
             }
+            nn.backpropInputsBatch(layer, 1);
 
-            // Calculate the remaining deltas like normal
-            for (int i = layer; i >= 1; --i)
-            {
-                Layer<T>* current = nn.getLayer(i);
-                Layer<T>* prev    = nn.getLayer(i - 1);
+            // Calculate the gradients based on the deltas.
+            nn.getLayer(0)->backpropInputsBatch(batchFeatures,
+                nn.getActivation(0), nn.getDeltas(0), localGradients);
 
-                current->calculateDeltas(prev->getActivation(),
-                    prev->getDeltas().data());
-            }
-
-            // To get the gradient with respect to the inputs, we need to propagate
-            // the deltas in the first layer. This will give us a matrix of all the
-            // gradient values. We will need to flatten this to a vector by
-            // averaging the values across columns. We do so by multiplying the
-            // matrix transposed by [1/N, 1/N, 1/N, ...].
-            Layer<T>* front = nn.getLayer(0);
-
-            static Matrix<T> tempGradient(rows, front->getOutputs());
-            static vector<T> mask(rows, T{1.0} / rows);
-
-            front->setEffectiveBatchSize(rows);
-            front->calculateDeltas(features, tempGradient.data());
-            mtvMultiply(tempGradient.data(), mask.data(), gradient.data(),
-                tempGradient.getRows(), tempGradient.getCols());
+            // Average across the columns to get the average gradient
+            static Matrix<T> ones(1, batchSize, T{1});
+            mtvMultiply(localGradients.data(), ones.data(), gradient.data(),
+                batchSize, M, T{1.0} / batchSize);
         }
 
-        void calculateGradientParameters(const Matrix<T>& features,
-            const Matrix<T>& labels, vector<T>& gradient) override
+        void calculateGradientParameters(const Matrix<T>& batchFeatures,
+            const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
-            NeuralNetwork<T>& nn = mBaseFunction;
-            const size_t N       = nn.getNumParameters();
-            const size_t M       = nn.getOutputs();
-            const size_t rows    = features.getRows();
+            NeuralNetwork<T>& nn   = mBaseFunction;
+            const size_t batchSize = batchFeatures.getRows();
+            const size_t N         = batchLabels.getCols();
+            const size_t M         = nn.getNumParameters();
 
-            // Make sure gradient has enough space
-            assert(gradient.size() >= N);
-
-            // Forward prop the training data through the network
-            static Matrix<T> evaluation(rows, M);
-            nn.evaluateBatch(features, evaluation);
+            // Evaluate this minibatch
+            static Matrix<T> predictions(batchSize, N);
+            predictions.reshape(batchSize, N);
+            nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
             int layer = nn.getNumLayers() - 1;
@@ -510,26 +504,16 @@ private:
             // Calculate the deltas for the layer preceeding the softmax layer
             // using the optimized approach (since we know what the answer
             // should be already).
-            Matrix<T>& preDeltas = nn.getLayer(layer)->getDeltas();
-            for (size_t i = 0; i < rows; ++i)
+            Matrix<T>& preDeltas = nn.getDeltas(layer);
+            for (size_t i = 0; i < batchSize; ++i)
             {
-                for (size_t j = 0; j < M; ++j)
-                    preDeltas(i, j) = evaluation(i, j) - labels(i, j);
+                for (size_t j = 0; j < N; ++j)
+                    preDeltas(i, j) = predictions(i, j) - batchLabels(i, j);
             }
+            nn.backpropInputsBatch(layer, 1);
 
-            // Calculate the remaining deltas like normal
-            for (int i = layer; i >= 1; --i)
-            {
-                Layer<T>* current = nn.getLayer(i);
-                Layer<T>* prev    = nn.getLayer(i - 1);
-
-                current->calculateDeltas(prev->getActivation(),
-                    prev->getDeltas().data());
-            }
-
-            // Calculate the gradient based on the deltas. Values are summed
-            // for each pattern.
-            nn.calculateGradientParametersBatch(features, gradient.data());
+            // Calculate the average gradient based on the deltas.
+            nn.backpropParametersBatch(batchFeatures, gradient.data());
         }
     };
 
@@ -538,79 +522,65 @@ private:
         UnoptimizedImp(NeuralNetwork<T>& baseFunction) :
             Imp(baseFunction) {}
 
-        void calculateGradientInputs(const Matrix<T>& features,
-            const Matrix<T>& labels, vector<T>& gradient) override
+        void calculateGradientInputs(const Matrix<T>& batchFeatures,
+            const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
-            NeuralNetwork<T>& nn = mBaseFunction;
-            const size_t N       = nn.getInputs();
-            const size_t M       = nn.getOutputs();
-            const size_t rows    = features.getRows();
+            NeuralNetwork<T>& nn   = mBaseFunction;
+            const size_t batchSize = batchFeatures.getRows();
+            const size_t N         = batchLabels.getCols();
+            const size_t M         = batchFeatures.getCols();
 
-            // Make sure gradient has enough space
-            assert(gradient.size() >= N);
+            static Matrix<T> predictions(batchSize, N);
+            static Matrix<T> localGradients(batchSize, M);
+            predictions.reshape(batchSize, N);
+            localGradients.reshape(batchSize, M);
 
-            // Forward prop the training data through the network
-            static Matrix<T> evaluation(rows, M);
-            nn.evaluateBatch(features, evaluation);
+            // Evaluate this minibatch
+            nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
-            int layer = nn.getNumLayers() - 1;
-
-            // Calculate the deltas on the last layer first
-            Matrix<T>& outputDeltas = nn.getOutputLayer()->getDeltas();
-            for (size_t i = 0; i < rows; ++i)
+            Matrix<T>& outputDeltas = nn.getDeltas(nn.getNumLayers() - 1);
+            for (size_t i = 0; i < batchSize; ++i)
             {
-                for (size_t j = 0; j < M; ++j)
-                    outputDeltas(i, j) = -labels(i, j) / evaluation(i, j);
+                for (size_t j = 0; j < N; ++j)
+                    outputDeltas(i, j) = -batchLabels(i, j) / predictions(i, j);
             }
-            nn.calculateDeltas();
+            nn.backpropInputsBatch();
 
-            // To get the gradient with respect to the inputs, we need to propagate
-            // the deltas in the first layer. This will give us a matrix of all the
-            // gradient values. We will need to flatten this to a vector by
-            // averaging the values across columns. We do so by multiplying the
-            // matrix transposed by [1/N, 1/N, 1/N, ...].
-            Layer<T>* front = nn.getLayer(0);
+            // Calculate the gradients based on the deltas.
+            nn.getLayer(0)->backpropInputsBatch(batchFeatures,
+                nn.getActivation(0), nn.getDeltas(0), localGradients);
 
-            static Matrix<T> tempGradient(rows, front->getOutputs());
-            static vector<T> mask(rows, T{1.0} / rows);
-
-            front->setEffectiveBatchSize(rows);
-            front->calculateDeltas(features, tempGradient.data());
-            mtvMultiply(tempGradient.data(), mask.data(), gradient.data(),
-                tempGradient.getRows(), tempGradient.getCols());
+            // Average across the columns to get the average gradient
+            static Matrix<T> ones(1, batchSize, T{1});
+            mtvMultiply(localGradients.data(), ones.data(), gradient.data(),
+                batchSize, M, T{1.0} / batchSize);
         }
 
-        void calculateGradientParameters(const Matrix<T>& features,
-            const Matrix<T>& labels, vector<T>& gradient) override
+        void calculateGradientParameters(const Matrix<T>& batchFeatures,
+            const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
-            NeuralNetwork<T>& nn = mBaseFunction;
-            const size_t N       = nn.getNumParameters();
-            const size_t M       = nn.getOutputs();
-            const size_t rows    = features.getRows();
+            NeuralNetwork<T>& nn   = mBaseFunction;
+            const size_t batchSize = batchFeatures.getRows();
+            const size_t N         = batchLabels.getCols();
+            const size_t M         = nn.getNumParameters();
 
-            // Make sure gradient has enough space
-            assert(gradient.size() >= N);
-
-            // Forward prop the training data through the network
-            static Matrix<T> evaluation(rows, M);
-            nn.evaluateBatch(features, evaluation);
+            // Evaluate this minibatch
+            static Matrix<T> predictions(batchSize, N);
+            predictions.reshape(batchSize, N);
+            nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
-            int layer = nn.getNumLayers() - 1;
-
-            // Calculate the deltas for every node in the network.
-            Matrix<T>& outputDeltas = mBaseFunction.getOutputLayer()->getDeltas();
-            for (size_t i = 0; i < rows; ++i)
+            Matrix<T>& outputDeltas = nn.getDeltas(nn.getNumLayers() - 1);
+            for (size_t i = 0; i < batchSize; ++i)
             {
-                for (size_t j = 0; j < M; ++j)
-                    outputDeltas(i, j) = -labels(i, j) / evaluation(i, j);
+                for (size_t j = 0; j < N; ++j)
+                    outputDeltas(i, j) = -batchLabels(i, j) / predictions(i, j);
             }
+            nn.backpropInputsBatch();
 
-            mBaseFunction.calculateDeltas();
-
-            // Calculate the gradient based on the deltas.
-            nn.calculateGradientParametersBatch(features, gradient.data());
+            // Calculate the average gradient based on the deltas.
+            nn.backpropParametersBatch(batchFeatures, gradient.data());
         }
     };
 

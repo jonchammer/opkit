@@ -21,31 +21,24 @@ public:
     using Layer<T>::mParameters;
     using Layer<T>::mInputs;
     using Layer<T>::mOutputs;
-    using Layer<T>::mDeltas;
-    using Layer<T>::mActivation;
-    using Layer<T>::mBatchSize;
 
     // Create a new FullyConnectedLayer. We need to specify the input and
-    // output dimensions, as well as the maximum batch size.
-    FullyConnectedLayer(const size_t inputs, const size_t outputs,
-        const size_t batchSize) :
-        Layer<T>(inputs, outputs, batchSize),
-        mAverageMask(new T[batchSize])
+    // output dimensions.
+    FullyConnectedLayer(const size_t inputs, const size_t outputs) :
+        Layer<T>(inputs, outputs) {}
+
+    virtual void forwardSingle(const T* x, T* y) override
     {
-        std::fill(mAverageMask, mAverageMask + batchSize, T{1.0}/batchSize);
+        // y = W * x + b
+        mvMultiply(mParameters, x, y, mOutputs, mInputs);
+        vAdd(mParameters + (mInputs * mOutputs), y, mOutputs);
     }
 
-    ~FullyConnectedLayer()
-    {
-        delete[] mAverageMask;
-        mAverageMask = nullptr;
-    }
-
-    virtual void eval(const Matrix<T>& x) override
+    virtual void forwardBatch(const Matrix<T>& x, Matrix<T>& y) override
     {
         const T* xData  = x.data();
-        T* yData        = mActivation.data();
-        const size_t N  = mBatchSize;
+        T* yData        = y.data();
+        const size_t N  = x.getRows();
 
         // y = x * W^T + b
         // Weights are arranged as an 'mOutputs' x 'mInputs' matrix in row-major
@@ -68,32 +61,52 @@ public:
         }
     }
 
-    void calculateDeltas(const Matrix<T>& x, T* destination) override
+    void backpropInputsSingle(const T* x, const T* y,
+        const T* deltas, T* dest) override
     {
-        const T* deltas = mDeltas.data();
-        const size_t N  = mBatchSize;
-
-        // Calculate destination = deltas * W
-        mmMultiply(deltas, mParameters, destination, N, mInputs, mOutputs);
+        // dest = W^T * deltas
+        mtvMultiply(mParameters, deltas, dest, mOutputs, mInputs);
     }
 
-    void calculateGradient(const Matrix<T>& x, T* gradient) override
+    void backpropInputsBatch(const Matrix<T>& x, const Matrix<T>& y,
+        const Matrix<T>& deltas, Matrix<T>& dest) override
     {
-        const T* input  = x.data();
-        const T* deltas = mDeltas.data();
-        const size_t N  = mBatchSize;
+        const T* deltasData = deltas.data();
+        T* destData         = dest.data();
+        const size_t N      = x.getRows();
+
+        // Calculate destination = deltas * W
+        mmMultiply(deltasData, mParameters, destData, N, mInputs, mOutputs);
+    }
+
+    void backpropParametersSingle(const T* x, const T* deltas, T* dest) override
+    {
+        // dest_parameters = outer product(deltas, x)
+        std::fill(dest, dest + mInputs*mOutputs, T{});
+        outerProduct(deltas, x, dest, mOutputs, mInputs);
+
+        // dest_biases = deltas
+        vCopy(deltas, dest + (mOutputs * mInputs), mOutputs);
+    }
+
+    void backpropParametersBatch(const Matrix<T>& x, const Matrix<T>& deltas,
+        T* dest) override
+    {
+        const size_t N = x.getRows();
 
         // Calculate the sum of the gradients for each sample in the batch using
         // a single matrix multiplication. We then need to divide every cell by
         // the batch size to get the average gradient. We use the formula:
         // gradient(weights) = (deltas^T * x) / N;
-        mtmMultiply(deltas, input, gradient, mOutputs, mInputs, N, T{1.0} / N);
+        mtmMultiply(deltas.data(), x.data(), dest, mOutputs, mInputs, N, T{1.0} / N);
 
         // Generate the average bias gradient by taking the average of the deltas
         // across the columns (or equivalently, by taking the average across the
         // rows in the transpose of the deltas). We implement this by
         // multiplying: deltas^T * the vector [1/N, 1/N, ... ].
-        mtvMultiply(deltas, mAverageMask, gradient + mInputs * mOutputs, N, mOutputs);
+        static Matrix<T> ones(1, N, T{1});
+        mtvMultiply(deltas.data(), ones.data(), dest + mInputs * mOutputs,
+            N, mOutputs, T{1.0} / N);
     }
 
     size_t getNumParameters() const override
@@ -106,9 +119,6 @@ public:
     {
         return "Fully Connected Layer";
     }
-
-private:
-    T* mAverageMask; // Contains [1 / batchSize, 1 / batchSize, ...]
 };
 }
 

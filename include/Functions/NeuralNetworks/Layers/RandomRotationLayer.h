@@ -16,22 +16,17 @@ namespace opkit
 template <class T>
 class RandomRotationLayer : public Layer<T>
 {
+
 public:
-
-    // Allows us to use the members in the base class without specifying
-    // their complete names
-    using Layer<T>::mActivation;
-    using Layer<T>::mBatchSize;
-
     // Create a new Random Rotation Layer. We need to know the dimensions of the
     // input/output, as well as maximum and minimum rotation angles.
     RandomRotationLayer(const size_t width, const size_t height,
         const size_t channels,
         const double minAngleDegrees, const double maxAngleDegrees,
-        const size_t batchSize, const size_t seed = Rand::getDefaultSeed()) :
+        const size_t seed = Rand::getDefaultSeed()) :
 
         Layer<T>(width * height * channels,
-            width * height * channels, batchSize),
+            width * height * channels),
         mWidth(width),
         mHeight(height),
         mChannels(channels),
@@ -46,10 +41,10 @@ public:
 private:
 
     // Rotates a single image (one row in x) by the given angle in radians.
-    void evalSingle(const Matrix<T>& x, const size_t row, const double angle)
+    void evalSingle(const T* x, const double angle, T* y)
     {
-        const T* src = x(row);
-        T* dest      = mActivation(row);
+        const T* src = x;
+        T* dest      = y;
 
         double cosAngle = std::cos(-angle);
         double sinAngle = std::sin(-angle);
@@ -84,40 +79,41 @@ private:
     }
 
 public:
-    void eval(const Matrix<T>& x) override
+
+    void forwardSingle(const T* x, T* y)
+    {
+        if (!mTesting)
+        {
+            // Choose the angle randomly
+            double angle = mRand.nextReal(mMinAngle, mMaxAngle);
+            evalSingle(x, angle, y);
+        }
+
+        else
+        {
+            // Use no rotation for testing. Just pass the data through unaltered.
+            vCopy(x, y, mWidth * mHeight);
+        }
+    }
+
+    void forwardBatch(const Matrix<T>& x, Matrix<T>& y)
     {
         if (!mTesting)
         {
             // Each sample has a different rotation
-            for (size_t i = 0; i < mBatchSize; ++i)
+            for (size_t i = 0; i < x.getRows(); ++i)
             {
                 // Choose the angle randomly
                 double angle = mRand.nextReal(mMinAngle, mMaxAngle);
-                evalSingle(x, i, angle);
+                evalSingle(x(i), angle, y(i));
             }
         }
 
         else
         {
             // Use no rotation for testing. Just pass the data through unaltered.
-            vCopy(x.data(), mActivation.data(), mBatchSize * x.getCols());
+            vCopy(x.data(), y.data(), x.getRows() * x.getCols());
         }
-    }
-
-    void calculateDeltas(const Matrix<T>& x, T* destination) override
-    {
-        // TODO: Implement.
-    }
-
-    void calculateGradient(const Matrix<T>& x, T* gradient) override
-    {
-        // Do nothing. There is no gradient to calculate since there are
-        // no optimizable parameters.
-    }
-
-    size_t getNumParameters() const override
-    {
-        return 0;
     }
 
     std::string getName() const override
@@ -125,14 +121,22 @@ public:
         return "Random Rotation Layer";
     }
 
-    // std::string getMiscString() const override
-    // {
-    //     char buffer[1024];
-    //     snprintf(buffer, 1024, "Shape: (%zux%zux%zu), Angle Range: [%.2f, %.2f]",
-    //         mWidth, mHeight, mChannels, getMinAngle(), getMaxAngle());
-    //
-    //     return string(buffer);
-    // }
+    std::string* getProperties(size_t& numElements) const override
+    {
+        const size_t NUM_ELEMENTS = 2;
+        std::string* arr = new std::string[NUM_ELEMENTS];
+
+        char buffer[1024];
+        snprintf(buffer, 1024, "(%zux%zux%zu)",
+            mWidth, mHeight, mChannels);
+        arr[0] = string(buffer);
+
+        snprintf(buffer, 1024, "R: [%.2f, %.2f]", mMinAngle, mMaxAngle);
+        arr[1] = string(buffer);
+
+        numElements = NUM_ELEMENTS;
+        return arr;
+    }
 
     void setTesting(bool testing)
     {

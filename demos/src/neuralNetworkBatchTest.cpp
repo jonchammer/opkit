@@ -50,8 +50,8 @@ int main()
     const size_t inputs    = trainFeatures.getCols();
     const size_t outputs   = trainLabels.getCols();
 
-    FullyConnectedLayer<double> layer1(inputs, outputs, batchSize);
-    NeuralNetwork<double> network;
+    FullyConnectedLayer<double> layer1(inputs, outputs);
+    NeuralNetwork<double> network(batchSize);
     network.addLayer(&layer1, false);
 
     Rand rand(42);
@@ -100,8 +100,8 @@ int main()
             if (std::abs(res(i, j) - predictions(i, j)) > 1E-5)
             {
                 cout << "Row: " << i << endl;
-                printVector(res(i), outputs);
-                printVector(predictions(i), outputs);
+                printVector(cout, res(i), outputs);
+                printVector(cout, predictions(i), outputs);
             }
         }
     }
@@ -119,10 +119,10 @@ int main()
                 cout << "ROW: " << row << endl;
 
                 cout << "BATCH OUTPUT: " << endl;
-                printVector(predictions(row), outputs);
+                printVector(cout, predictions(row), outputs);
 
                 cout << "SINGLE OUTPUT: " << endl;
-                printVector(prediction);
+                printVector(cout, prediction);
 
                 break;
             }
