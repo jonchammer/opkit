@@ -82,6 +82,7 @@ public:
     void backpropParametersSingle(const T* x, const T* deltas, T* dest)
     {
         // dest_parameters = outer product(deltas, x)
+        std::fill(dest, dest + mInputs*mOutputs, T{});
         outerProduct(deltas, x, dest, mOutputs, mInputs);
 
         // dest_biases = deltas

@@ -82,7 +82,9 @@ int main()
 {
     // Create a function
     TestFunction<Type> func;
-    randomizeParameters(func.getParameters(), 0.0, 0.1);
+
+    Rand rand(42);
+    randomizeParameters(func.getParameters(), rand, 0.0, 0.1);
 
     // Create a synthetic dataset
     Matrix<Type> features(5, 2,
@@ -109,15 +111,15 @@ int main()
     const size_t N = func.getNumParameters();
     vector<Type> gradientParameters1(N), gradientParameters2(N);
     errorFunction.calculateGradientParameters(features, labels, gradientParameters1);
-    errorFunction.ErrorFunction::calculateGradientParameters(features, labels, gradientParameters2);
+    errorFunction.CostFunction::calculateGradientParameters(features, labels, gradientParameters2);
 
     for (size_t i = 0; i < gradientParameters1.size(); ++i)
     {
         if (abs(gradientParameters1[i] - gradientParameters2[i]) > 0.001)
         {
             cout << "Gradient Parameters - FAIL" << endl;
-            printVector(gradientParameters1);
-            printVector(gradientParameters2);
+            printVector(cout, gradientParameters1);
+            printVector(cout, gradientParameters2);
             return 1;
         }
     }
@@ -127,15 +129,15 @@ int main()
     const size_t M = func.getInputs();
     vector<Type> gradientInputs1(M), gradientInputs2(M);
     errorFunction.calculateGradientInputs(features, labels, gradientInputs1);
-    errorFunction.ErrorFunction::calculateGradientInputs(features, labels, gradientInputs2);
+    errorFunction.CostFunction::calculateGradientInputs(features, labels, gradientInputs2);
 
     for (size_t i = 0; i < gradientInputs1.size(); ++i)
     {
         if (abs(gradientInputs1[i] - gradientInputs2[i]) > 0.001)
         {
             cout << "Gradient Inputs - FAIL" << endl;
-            printVector(gradientInputs1);
-            printVector(gradientInputs2);
+            printVector(cout, gradientInputs1);
+            printVector(cout, gradientInputs2);
             return 1;
         }
     }
@@ -145,7 +147,7 @@ int main()
     Matrix<Type> hessianParameters1(N, N);
     Matrix<Type> hessianParameters2(N, N);
     errorFunction.calculateHessianParameters(features, labels, hessianParameters1);
-    errorFunction.ErrorFunction::calculateHessianParameters(features, labels, hessianParameters2);
+    errorFunction.CostFunction::calculateHessianParameters(features, labels, hessianParameters2);
 
     for (size_t i = 0; i < hessianParameters1.getRows(); ++i)
     for (size_t j = 0; j < hessianParameters1.getCols(); ++j)
@@ -153,8 +155,8 @@ int main()
         if (abs(hessianParameters1(i, j) - hessianParameters2(i, j)) > 0.001)
         {
             cout << "Hessian Parameters - FAIL" << endl;
-            printMatrix(hessianParameters1); cout << endl;
-            printMatrix(hessianParameters2);
+            printMatrix(cout, hessianParameters1); cout << endl;
+            printMatrix(cout, hessianParameters2);
             return 1;
         }
     }
@@ -164,7 +166,7 @@ int main()
     Matrix<Type> hessianInputs1(M, M);
     Matrix<Type> hessianInputs2(M, M);
     errorFunction.calculateHessianInputs(features, labels, hessianInputs1);
-    errorFunction.ErrorFunction::calculateHessianInputs(features, labels, hessianInputs2);
+    errorFunction.CostFunction::calculateHessianInputs(features, labels, hessianInputs2);
 
     for (size_t i = 0; i < hessianInputs1.getRows(); ++i)
     for (size_t j = 0; j < hessianInputs1.getCols(); ++j)
@@ -172,8 +174,8 @@ int main()
         if (abs(hessianInputs1(i, j) - hessianInputs2(i, j)) > 0.001)
         {
             cout << "Hessian Inputs - FAIL" << endl;
-            printMatrix(hessianInputs1);
-            printMatrix(hessianInputs2);
+            printMatrix(cout, hessianInputs1);
+            printMatrix(cout, hessianInputs2);
             return 1;
         }
     }

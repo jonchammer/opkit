@@ -4,7 +4,7 @@
     <df root="." name="0">
       <df name="build">
         <df name="CMakeFiles">
-          <df name="3.5.1">
+          <df name="3.7.1">
             <df name="CompilerIdC">
               <in>CMakeCCompilerId.c</in>
             </df>
@@ -13,12 +13,6 @@
             </df>
           </df>
           <df name="CMakeTmp">
-          </df>
-          <df name="opkit.dir">
-            <df name="src">
-              <df name="Functions">
-              </df>
-            </df>
           </df>
           <in>feature_tests.c</in>
           <in>feature_tests.cxx</in>
@@ -29,7 +23,7 @@
       <df name="demos">
         <df name="build">
           <df name="CMakeFiles">
-            <df name="3.5.1">
+            <df name="3.7.1">
               <df name="CompilerIdC">
                 <in>CMakeCCompilerId.c</in>
               </df>
@@ -75,13 +69,26 @@
           <in>SSEFunction.h</in>
         </df>
         <df name="Functions">
-          <in>ActivationFunction.h</in>
+          <df name="NeuralNetworks">
+            <df name="Layers">
+              <in>ActivationLayer.h</in>
+              <in>CompressedSparseLayer.h</in>
+              <in>Convolutional1DLayer.h</in>
+              <in>Convolutional2DLayer.h</in>
+              <in>ElasticDeformationLayer.h</in>
+              <in>FullyConnectedLayer.h</in>
+              <in>Layer.h</in>
+              <in>MaskedSparseLayer.h</in>
+              <in>RandomCropLayer.h</in>
+              <in>RandomRotationLayer.h</in>
+              <in>SoftmaxLayer.h</in>
+            </df>
+            <in>ActivationFunction.h</in>
+            <in>NeuralNetwork.h</in>
+          </df>
           <in>CategoricalErrorFunction.h</in>
           <in>CommonFunctions.h</in>
           <in>Function.h</in>
-          <in>Layer.h</in>
-          <in>NeuralNetwork.h</in>
-          <in>RandomCropLayer.h</in>
         </df>
         <df name="Optimizers">
           <in>Adam.h</in>
@@ -102,6 +109,7 @@
           <in>Bitmask.h</in>
           <in>DataLoader.h</in>
           <in>DataNormalizer.h</in>
+          <in>Interpolation.h</in>
           <in>ModelPersistence.h</in>
           <in>PrettyPrinter.h</in>
           <in>Rand.h</in>
@@ -115,10 +123,6 @@
         <in>Tensor3D.h</in>
         <in>VectorOps.h</in>
       </df>
-      <df name="src">
-        <df name="Utils">
-        </df>
-      </df>
       <in>opkit.h</in>
     </df>
   </logicalFolder>
@@ -127,7 +131,7 @@
     <conf name="Debug" type="0">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
-        <platform>3</platform>
+        <platform>2</platform>
       </toolsSet>
       <compile>
         <compiledirpicklist>
@@ -147,6 +151,8 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
+        <gdb_signals>
+        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>
@@ -192,6 +198,8 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
+        <gdb_signals>
+        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>

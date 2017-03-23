@@ -43,7 +43,7 @@ public:
     // transformation function.
     void forwardSingle(const T* x, T* y) override
     {
-        for (size_t i = 0; i < mOutputs; ++y)
+        for (size_t i = 0; i < mOutputs; ++i)
             y[i] = mActivationFunction->eval(x[i]);
     }
 
@@ -64,9 +64,7 @@ public:
         const T* deltas, T* dest) override
     {
         for (size_t i = 0; i < mOutputs; ++i)
-        {
             dest[i] = deltas[i] * mActivationFunction->deriv(x[i], y[i]);
-        }
     }
 
     // Batch implementation provided for better performance.
@@ -88,12 +86,6 @@ public:
     std::string getName() const override
     {
         return "Activation Layer";
-    }
-
-    std::string* getProperties(size_t& numElements) const override
-    {
-        numElements = 0;
-        return nullptr;
     }
 
 private:

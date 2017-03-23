@@ -37,24 +37,27 @@ int main()
     // Create a testing network
     const size_t batchSize = trainFeatures.getRows();
 
-    FullyConnectedLayer<double> layer1(trainFeatures.getCols(), 10, batchSize);
-    FullyConnectedLayer<double> layer2(10, trainLabels.getCols(), batchSize);
+    FullyConnectedLayer<double> layer1(trainFeatures.getCols(), 10);
+    FullyConnectedLayer<double> layer2(10, trainLabels.getCols());
+    SoftmaxLayer<double> layer3(trainLabels.getCols());
 
-    NeuralNetwork<double> network;
+    NeuralNetwork<double> network(batchSize);
     network.addLayer(&layer1, false);
     network.addLayer(&layer2, false);
+    network.addLayer(&layer3, false);
 
     Rand rand(42);
     network.initializeParameters(rand);
 
     // Create a trainer
-    SSEFunction<double, NeuralNetwork<double>> errorFunc(network);
+    //SSEFunction<double, NeuralNetwork<double>> errorFunc(network);
+    CrossEntropyFunction<double, NeuralNetwork<double>> errorFunc(network);
 
     // Calculate the gradient with respect to the parameters using the template
     // specialization and using the finite differences approach.
     vector<double> gradient(network.getNumParameters()), gradient2(network.getNumParameters());
     errorFunc.calculateGradientParameters(trainFeatures, trainLabels, gradient);
-    errorFunc.ErrorFunction<double, NeuralNetwork<double>>::calculateGradientParameters(trainFeatures, trainLabels, gradient2);
+    errorFunc.CostFunction<double, NeuralNetwork<double>>::calculateGradientParameters(trainFeatures, trainLabels, gradient2);
 
     for (size_t i = 0; i < gradient.size(); ++i)
     {
@@ -63,30 +66,31 @@ int main()
             cout << "Gradient parameters: Fail!" << endl;
 
             cout << "SSE Version (size " << gradient.size() << ")" << endl;
-            printVector(gradient, 4);
+            printVector(cout, gradient, 4);
 
             cout << "Finite Differences Version (size " << gradient2.size() << ")" << endl;
-            printVector(gradient2, 4);
+            printVector(cout, gradient2, 4);
             return 1;
         }
     }
     cout << "Gradient parameters: Pass!" << endl;
 
-    errorFunc.calculateGradientInputs(trainFeatures, trainLabels, gradient);
-    errorFunc.ErrorFunction<double, NeuralNetwork<double>>::calculateGradientInputs(trainFeatures, trainLabels, gradient2);
+    vector<double> gradientInputs(network.getInputs()), gradientInputs2(network.getInputs());
+    errorFunc.calculateGradientInputs(trainFeatures, trainLabels, gradientInputs);
+    errorFunc.CostFunction<double, NeuralNetwork<double>>::calculateGradientInputs(trainFeatures, trainLabels, gradientInputs2);
 
-    for (size_t i = 0; i < gradient.size(); ++i)
+    for (size_t i = 0; i < gradientInputs.size(); ++i)
     {
-        if (abs(gradient[i] - gradient2[i]) > 0.001)
+        if (abs(gradientInputs[i] - gradientInputs2[i]) > 0.001)
         {
             cout << "Gradient inputs: Fail!" << endl;
-            cout << abs(gradient[i] - gradient2[i]) << endl;
+            cout << abs(gradientInputs[i] - gradientInputs2[i]) << endl;
 
-            cout << "SSE Version (size " << gradient.size() << ")" << endl;
-            printVector(gradient, 8);
+            cout << "SSE Version (size " << gradientInputs.size() << ")" << endl;
+            printVector(cout, gradientInputs, 8);
 
-            cout << "Finite Differences Version (size " << gradient2.size() << ")" << endl;
-            printVector(gradient2, 8);
+            cout << "Finite Differences Version (size " << gradientInputs2.size() << ")" << endl;
+            printVector(cout, gradientInputs2, 8);
 
             return 1;
         }

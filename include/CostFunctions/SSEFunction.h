@@ -354,13 +354,14 @@ public:
         // averaging the values across columns.
         Layer<T>* front = nn.getLayer(0);
 
-        static Matrix<T> localGradients(rows, front->getOutputs());
-        front->backpropInputsBatch(features, localGradients.data());
+        static Matrix<T> localGradients(rows, N);
+        front->backpropInputsBatch(features, nn.getActivation(0),
+            nn.getDeltas(0), localGradients);
 
         // Average gradients across the columns
         for (size_t i = 0; i < rows; ++i)
             vAdd(localGradients(i), gradient.data(), N);
-        vScale(gradient.data(), T{1.0} / rows, N);
+        vScale(gradient.data(), T{-2.0} / rows, N);
     }
 
     void calculateGradientParameters(const Matrix<T>& features,
