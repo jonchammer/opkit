@@ -376,84 +376,23 @@ public:
     void calculateGradientInputs(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient)
     {
-        NeuralNetwork<T>& nn   = mBaseFunction;
-        const size_t M         = nn.getOutputs();
-        const size_t P         = nn.getInputs();
-        const size_t batchSize = nn.getMaxBatchSize();
-
         // Make sure gradient has enough space
-        assert(gradient.size() >= P);
+        const size_t N = mBaseFunction.getInputs();
+        assert(gradient.size() >= N);
 
-        Matrix<T> batchFeatures((T*) features.data(), batchSize, P);
-        Matrix<T> batchLabels((T*) labels.data(), batchSize, M);
-
-        // Calculate gradients for most of the batches
-        size_t rows = features.getRows();
-        while (rows >= batchSize)
-        {
-            mImp->calculateGradientInputs(batchFeatures, batchLabels, gradient);
-
-            // Move to the next batch
-            T* featureData = batchFeatures.data();
-            T* labelData   = batchLabels.data();
-            batchFeatures.setData(featureData + batchSize * P);
-            batchLabels.setData(labelData + batchSize * M);
-
-            rows -= batchSize;
-        }
-
-        // Deal with the leftover elements
-        if (rows > 0)
-        {
-            batchFeatures.reshape(rows, P);
-            batchLabels.reshape(rows, M);
-            mImp->calculateGradientInputs(batchFeatures, batchLabels, gradient);
-        }
-
-        // Divide by the number of rows to get the average gradient
-        vScale(gradient.data(), T{1.0} / features.getRows(), P);
+        // Let the implementation do the dirty work
+        mImp->calculateGradientInputs(features, labels, gradient);
     }
 
     void calculateGradientParameters(const Matrix<T>& features,
         const Matrix<T>& labels, vector<T>& gradient)
     {
-        NeuralNetwork<T>& nn   = mBaseFunction;
-        const size_t N         = nn.getNumParameters();
-        const size_t M         = nn.getOutputs();
-        const size_t P         = nn.getInputs();
-        const size_t batchSize = nn.getMaxBatchSize();
-
         // Make sure gradient has enough space
+        const size_t N = mBaseFunction.getNumParameters();
         assert(gradient.size() >= N);
 
-        Matrix<T> batchFeatures((T*) features.data(), batchSize, P);
-        Matrix<T> batchLabels((T*) labels.data(), batchSize, M);
-
-        // Calculate gradients for most of the batches
-        size_t rows = features.getRows();
-        while (rows >= batchSize)
-        {
-            mImp->calculateGradientParameters(batchFeatures, batchLabels, gradient);
-
-            // Move to the next batch
-            T* featureData = batchFeatures.data();
-            T* labelData   = batchLabels.data();
-            batchFeatures.setData(featureData + batchSize * P);
-            batchLabels.setData(labelData + batchSize * M);
-
-            rows -= batchSize;
-        }
-
-        // Deal with the leftover elements
-        if (rows > 0)
-        {
-            batchFeatures.reshape(rows, P);
-            batchLabels.reshape(rows, M);
-            mImp->calculateGradientParameters(batchFeatures, batchLabels, gradient);
-        }
-
-        // Divide by the number of rows to get the average gradient
-        vScale(gradient.data(), T{1.0} / features.getRows(), N);
+        // Let the implementation do the dirty work
+        mImp->calculateGradientParameters(features, labels, gradient);
     }
 
     void calculateHessianInputs(const Matrix<T>& features,
@@ -534,9 +473,10 @@ private:
             nn.getLayer(0)->backpropInputsBatch(batchFeatures,
                 nn.getActivation(0), nn.getDeltas(0), localGradients);
 
-            // Add the local gradients to the current gradient vector
-            for (size_t i = 0; i < batchSize; ++i)
-                vAdd(localGradients(i), gradient.data(), M);
+            // Average across the columns to get the average gradient
+            static Matrix<T> ones(1, batchSize, T{1});
+            mtvMultiply(localGradients.data(), ones.data(), gradient.data(),
+                batchSize, M, T{1.0} / batchSize);
         }
 
         void calculateGradientParameters(const Matrix<T>& batchFeatures,
@@ -547,12 +487,9 @@ private:
             const size_t N         = batchLabels.getCols();
             const size_t M         = nn.getNumParameters();
 
-            static Matrix<T> predictions(batchSize, N);
-            static Matrix<T> localGradients(batchSize, M);
-            predictions.reshape(batchSize, N);
-            localGradients.reshape(batchSize, M);
-
             // Evaluate this minibatch
+            static Matrix<T> predictions(batchSize, N);
+            predictions.reshape(batchSize, N);
             nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
@@ -575,12 +512,8 @@ private:
             }
             nn.backpropInputsBatch(layer, 1);
 
-            // Calculate the gradients based on the deltas.
-            nn.backpropParametersBatch(batchFeatures, localGradients);
-
-            // Add the local gradients to the current gradient vector
-            for (size_t i = 0; i < batchSize; ++i)
-                vAdd(localGradients(i), gradient.data(), M);
+            // Calculate the average gradient based on the deltas.
+            nn.backpropParametersBatch(batchFeatures, gradient.data());
         }
     };
 
@@ -618,9 +551,10 @@ private:
             nn.getLayer(0)->backpropInputsBatch(batchFeatures,
                 nn.getActivation(0), nn.getDeltas(0), localGradients);
 
-            // Add the local gradients to the current gradient vector
-            for (size_t i = 0; i < batchSize; ++i)
-                vAdd(localGradients(i), gradient.data(), M);
+            // Average across the columns to get the average gradient
+            static Matrix<T> ones(1, batchSize, T{1});
+            mtvMultiply(localGradients.data(), ones.data(), gradient.data(),
+                batchSize, M, T{1.0} / batchSize);
         }
 
         void calculateGradientParameters(const Matrix<T>& batchFeatures,
@@ -631,12 +565,9 @@ private:
             const size_t N         = batchLabels.getCols();
             const size_t M         = nn.getNumParameters();
 
-            static Matrix<T> predictions(batchSize, N);
-            static Matrix<T> localGradients(batchSize, M);
-            predictions.reshape(batchSize, N);
-            localGradients.reshape(batchSize, M);
-
             // Evaluate this minibatch
+            static Matrix<T> predictions(batchSize, N);
+            predictions.reshape(batchSize, N);
             nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
@@ -648,12 +579,8 @@ private:
             }
             nn.backpropInputsBatch();
 
-            // Calculate the gradients based on the deltas.
-            nn.backpropParametersBatch(batchFeatures, localGradients);
-
-            // Add the local gradients to the current gradient vector
-            for (size_t i = 0; i < batchSize; ++i)
-                vAdd(localGradients(i), gradient.data(), M);
+            // Calculate the average gradient based on the deltas.
+            nn.backpropParametersBatch(batchFeatures, gradient.data());
         }
     };
 

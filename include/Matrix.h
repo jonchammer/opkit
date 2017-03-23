@@ -46,6 +46,12 @@ public:
         std::copy(list.begin(), list.end(), mData);
     }
 
+    Matrix(const size_t rows, const size_t cols, T val) :
+        mData(new T[rows * cols]), mRows(rows), mCols(cols), mOwnsData(true)
+    {
+        fill(val);
+    }
+    
     Matrix(T* data, const size_t rows, const size_t cols) :
         mData(data), mRows(rows), mCols(cols), mOwnsData(false)
     {}

@@ -127,9 +127,12 @@ public:
     }
 
     // This function uses the backpropagation algorithm to determine the
-    // partial derivative of the network with respect to each of the parameters
-    // in all of the layers for a batch of training samples.
-    void backpropParametersBatch(const Matrix<T>& input, Matrix<T>& gradient);
+    // AVERAGE partial derivative of the network with respect to each of the
+    // parameters in all of the layers for a batch of training samples. This
+    // function will return a single vector, not a matrix containing the
+    // gradient for each sample. To accomplish that, you should call
+    // 'backpropParametersSingle' for each sample.
+    void backpropParametersBatch(const Matrix<T>& input, T* gradient);
 
     // -----------------------------------------------------------------------//
     // Layer Manipulation Methods
@@ -359,32 +362,15 @@ void NeuralNetwork<T>::backpropParametersSingle(const T* input, T* gradient)
 
 template <class T>
 void NeuralNetwork<T>::backpropParametersBatch(
-    const Matrix<T>& input, Matrix<T>& gradient)
+    const Matrix<T>& input, T* gradient)
 {
-    const size_t N = input.getRows();
-
-    // Each layer will write its results into this matrix. We will copy the
-    // values into their final locations after each layer has finished its
-    // calculations.
-    static Matrix<T> temp(N, getNumParameters());
-    size_t col = 0;
-
     const Matrix<T>* x = &input;
     for (size_t i = 0; i < mLayers.size(); ++i)
     {
-        const size_t M = mLayers[i]->getNumParameters();
+        mLayers[i]->backpropParametersBatch(*x, mDeltas[i], gradient);
 
-        // Write the layer gradient into temp
-        temp.reshape(N, M);
-        mLayers[i]->backpropParametersBatch(*x, mDeltas[i], temp);
-
-        // Copy temp to the appropriate location in 'gradient'. The individual
-        // matrices are effectively concatenated horizontally.
-        gradient.copy(temp, 0, 0, temp.getRows(), temp.getCols(), 0, col);
-        col += M;
-
-        // Prepare for the next layer
-        x = &mActivations[i];
+        x         = &mActivations[i];
+        gradient += mLayers[i]->getNumParameters();
     }
 }
 

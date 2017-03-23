@@ -116,22 +116,38 @@ public:
             backpropInputsSingle(x(i), y(i), deltas(i), dest(i));
     }
 
-    // Use the backpropagation algorithm to calculate the derivative of the
-    // network with respect to each of the parameters of this layer using a
+    // Use the backpropagation algorithm to calculate the average derivative of
+    // the network with respect to each of the parameters of this layer using a
     // batch of 'N' samples. 'x' must be an 'N x inputs' matrix, where each row
     // is a single training sample. 'deltas' must be an 'N x outputs' matrix,
     // where each row is the gradient of the network with respect to each of the
-    // output units units (for each training sample) in this layer. The result
-    // will be placed in 'dest', which is an 'N x getNumParameters()' matrix.
+    // output units units (for each training sample) in this layer. The average
+    // gradient will be placed in 'dest'.
+    //
+    // NOTE: If it is desired to save each of the 'N' individual gradients, the
+    // user should call backpropParametersSingle to fill in each row. This
+    // function will condense those gradients by returning only the average
+    // (computed per column).
     //
     // In the default implementation, N calls to backpropParametersSingle()
     // are performed. If it is possible to more efficiently compute the batched
     // result, this method should be overwritten by the corresponding subclass.
     virtual void backpropParametersBatch(const Matrix<T>& x,
-        const Matrix<T>& deltas, Matrix<T>& dest)
+        const Matrix<T>& deltas, T* dest)
     {
-        for (size_t i = 0; i < x.getRows(); ++i)
-            backpropParametersSingle(x(i), deltas(i), dest(i));
+        const size_t N = x.getRows();
+        const size_t M = getNumParameters();
+        if (M > 0)
+        {
+            // Compute the matrix of local gradients
+            static Matrix<T> localGradients(N, M);
+            for (size_t i = 0; i < N; ++i)
+                backpropParametersSingle(x(i), deltas(i), localGradients(i));
+
+            // Multiply by the vector [1/N, 1/N, ...] to compute the average
+            static Matrix<T> ones(1, N, T{1});
+            mtvMultiply(localGradients.data(), ones.data(), dest, N, M, T{1.0} / N);
+        }
     }
 
     // -----------------------------------------------------------------------//

@@ -391,16 +391,12 @@ public:
         // Propagate the deltas back through the network.
         nn.backpropInputsBatch();
 
-        // Calculate the local gradients for each sample.
-        static Matrix<T> localGradients(rows, N);
-        nn.backpropParametersBatch(features, localGradients);
+        // Calculate the average gradient.
+        nn.backpropParametersBatch(features, gradient.data());
 
-        // Average gradients across the columns.
         // Technically, we need to multiply the final gradient by a factor
         // of -2 to get the true gradient with respect to the SSE function.
-        for (size_t i = 0; i < rows; ++i)
-            vAdd(localGradients(i), gradient.data(), N);
-        vScale(gradient.data(), T{-2.0} / rows, N);
+        vScale(gradient.data(), T{-2.0}, N);
     }
 
     void calculateHessianInputs(const Matrix<T>& features,

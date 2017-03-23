@@ -79,7 +79,7 @@ public:
         mmMultiply(deltasData, mParameters, destData, N, mInputs, mOutputs);
     }
 
-    void backpropParametersSingle(const T* x, const T* deltas, T* dest)
+    void backpropParametersSingle(const T* x, const T* deltas, T* dest) override
     {
         // dest_parameters = outer product(deltas, x)
         std::fill(dest, dest + mInputs*mOutputs, T{});
@@ -89,9 +89,25 @@ public:
         vCopy(deltas, dest + (mOutputs * mInputs), mOutputs);
     }
 
-    // TO ME: backpropParametersBatch might be possible, but the form is not
-    // obvious. Until I figure out a good solution, we'll use the simple
-    // approach, calling backpropParametersSingle() repeatedly.
+    void backpropParametersBatch(const Matrix<T>& x, const Matrix<T>& deltas,
+        T* dest) override
+    {
+        const size_t N = x.getRows();
+
+        // Calculate the sum of the gradients for each sample in the batch using
+        // a single matrix multiplication. We then need to divide every cell by
+        // the batch size to get the average gradient. We use the formula:
+        // gradient(weights) = (deltas^T * x) / N;
+        mtmMultiply(deltas.data(), x.data(), dest, mOutputs, mInputs, N, T{1.0} / N);
+
+        // Generate the average bias gradient by taking the average of the deltas
+        // across the columns (or equivalently, by taking the average across the
+        // rows in the transpose of the deltas). We implement this by
+        // multiplying: deltas^T * the vector [1/N, 1/N, ... ].
+        static Matrix<T> ones(1, N, T{1});
+        mtvMultiply(deltas.data(), ones.data(), dest + mInputs * mOutputs,
+            N, mOutputs, T{1.0} / N);
+    }
 
     size_t getNumParameters() const override
     {
