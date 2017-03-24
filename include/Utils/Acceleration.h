@@ -671,6 +671,90 @@ void im2Row(const T* src,
     }
 }
 
+// This function can be thought of as an inverse to im2Row. Given a source
+// matrix with dimensions (K * N) x (windowWidth * windowHeight * channels),
+// where:
+// K = The number of patches = NumHorizontalBlocks * NumVerticalBlocks, where:
+//     NumHorizontalBlocks = ((destWidth - windowWidth + 2*xPad) / xStride) + 1
+//     NumVerticalBlocks = ((destHeight - windowHeight + 2*yPad) / yStride) + 1
+// N = windowWidth * windowHeight * channels
+//
+// Each row of the source is interpreted as a single patch in an original 2D
+// image with dimensions (destWidth x destHeight x channels). This function will
+// add the contributions from each patch to essentially reconstruct the original
+// image. Note that the reconstruction will not be exact, unless the stride
+// matches the window dimensions. Otherwise, many elements will be counted
+// repeatedly.
+//
+// 'src' is assumed to be in row-major order. Channels are stored sequentially,
+// rather than interleaved. 'dest' will also be filled in row-major order.
+//
+// The four remaining parameters determine how the window will slide across the
+// source tensor. 'xPad' and 'yPad' determine the amount of zero-padding to
+// apply in each dimension. 'xStride' and 'yStride' determine the window stride.
+// A larger stride will result in a smaller result, since some of the input
+// cells will be skipped over. These should be the same parameters that were
+// used when im2Row was originally called.
+template <class T>
+void row2Im(const T* src,
+    const size_t windowWidth, const size_t windowHeight, const size_t channels,
+    const size_t destWidth, const size_t destHeight,
+    const size_t xPad, const size_t yPad,
+    const size_t xStride, const size_t yStride, T* dest)
+{
+    // Save some useful values
+    const size_t NUM_HORIZONTAL_BLOCKS =
+        ((destWidth - windowWidth + 2*xPad) / xStride) + 1;
+    const size_t NUM_VERTICAL_BLOCKS =
+        ((destHeight - windowHeight + 2*yPad) / yStride) + 1;
+    const size_t SRC_ROWS  = NUM_HORIZONTAL_BLOCKS * NUM_VERTICAL_BLOCKS;
+    const size_t SRC_COLS  = windowWidth * windowHeight * channels;
+
+    // Ensure each element of 'dest' starts out at 0 so the accumulation logic
+    // makes sense.
+    std::fill(dest, dest + destWidth * destHeight * channels, T{});
+
+    for (size_t c = 0; c < channels; ++c)
+    {
+        // Figure out which data in 'src' we're working with
+        const T* srcStart = src + c * windowWidth * windowHeight;
+
+        // Iterate over each patch in the src matrix
+        int destY = -yPad;
+        for (size_t blockY = 0; blockY < NUM_VERTICAL_BLOCKS; ++blockY)
+        {
+            int destX = -xPad;
+            for (size_t blockX = 0; blockX < NUM_HORIZONTAL_BLOCKS; ++blockX)
+            {
+                // Add the contents of this patch to the corresponding cells
+                // in src
+                for (size_t dy = 0; dy < windowHeight; ++dy)
+                {
+                    for (size_t dx = 0; dx < windowWidth; ++dx)
+                    {
+                        int x = destX + dx;
+                        int y = destY + dy;
+
+                        if (x >= 0 && x < destWidth &&
+                            y >= 0 && y < destHeight)
+                        {
+                            int destIndex = destWidth * (y * channels + c) + x;
+                            dest[destIndex] += srcStart[dy * windowWidth + dx];
+                        }
+                    }
+                }
+
+                // Move to the next horizontal patch
+                destX    += xStride;
+                srcStart += SRC_COLS;
+            }
+
+            // Move to the next vertical patch
+            destY += yStride;
+        }
+    }
+}
+
 };
 
 

@@ -8,6 +8,12 @@
 namespace opkit
 {
 
+// This is an implementation of a 1D convolutional layer. It supports multiple
+// convolution kernels, as well as arbitrary zero padding and stride values.
+// The implementation is based off of this paper:
+// http://cs.nju.edu.cn/wujx/paper/CNN.pdf
+// It uses the im2Row and row2Im transforms to reduce the convolutions to simple
+// matrix multiplications for improved performance.
 template <class T>
 class Convolutional1DLayer : public Layer<T>
 {
@@ -18,105 +24,121 @@ public:
     using Layer<T>::mParameters;
     using Layer<T>::mInputs;
     using Layer<T>::mOutputs;
-    using Layer<T>::mDeltas;
-    using Layer<T>::mActivation;
-    using Layer<T>::mBatchSize;
 
     Convolutional1DLayer
     (
-        size_t inputSize, size_t batchSize, size_t inputChannels,
+        size_t inputSize, size_t inputChannels,
         size_t filterSize, size_t numFilters,
         size_t stride = 1, size_t zeroPadding = 0
     ) :
+        // Superclass constructor - inputs, outputs
+        Layer<T>(inputSize * inputChannels,
+            ((inputSize - filterSize + 2 * zeroPadding) / stride + 1) * numFilters),
 
-    // Superclass constructor - inputs, outputs, and batch size
-    Layer<T>(inputSize * inputChannels,
-        ((inputSize - filterSize + 2 * zeroPadding) / stride + 1) * numFilters,
-        batchSize),
+        // Paramaters
+        mInputSize(inputSize),
+        mInputChannels(inputChannels), mFilterSize(filterSize),
+        mNumFilters(numFilters), mStride(stride), mZeroPadding(zeroPadding),
+        mOutputSize((inputSize - filterSize + 2 * zeroPadding) / stride + 1),
 
-    // Paramaters
-    mInputSize(inputSize),
-    mInputChannels(inputChannels), mFilterSize(filterSize),
-    mNumFilters(numFilters), mStride(stride), mZeroPadding(zeroPadding),
-    mOutputSize((inputSize - filterSize + 2 * zeroPadding) / stride + 1),
-
-    mInputMatrix(mOutputSize * batchSize, filterSize * inputChannels)
+        mInputMatrix(mOutputSize, filterSize * inputChannels)
     {}
 
-    ~Convolutional1DLayer()
-    {}
-
-    void eval(const Matrix<T>& x) override
+    void forwardSingle(const T* x, T* y) override
     {
-        static Matrix<T> tempActivation(mActivation.getRows(), mActivation.getCols());
-
-        // Expand x using the im2Row transformation. Each row of x will be
-        // transformed into 'mOutputSize' rows according to the convolution
-        // parameters. The relative order of the rows will be maintained.
-        im2Row(x.data(), mInputSize, mBatchSize, mInputChannels, mFilterSize, 1,
-            mZeroPadding, 0, mStride, 1, mInputMatrix.data());
+        // Expand x using the im2Row transformation. 'x' will be transformed
+        // into 'mOutputSize' rows according to the convolution parameters.
+        im2Row(x, mInputSize, 1, mInputChannels, mFilterSize, 1, mZeroPadding, 0,
+            mStride, 1, mInputMatrix.data());
 
         // Multiply the weights matrix by the transpose of the input matrix.
-        // activation = w * transpose(im2Row(x))
-        mmtMultiply(mParameters, mInputMatrix.data(), tempActivation.data(),
-            mNumFilters, mFilterSize * mInputChannels, mInputMatrix.getRows());
+        // y = w * transpose(im2Row(x))
+        mmtMultiply(mParameters, mInputMatrix.data(), y,
+            mNumFilters, mOutputSize, mFilterSize * mInputChannels);
 
-        // Perform a blockwise transpose using im2Row
-        im2Row(tempActivation.data(), mOutputSize * mNumFilters, 1, mBatchSize,
-            mOutputSize, 1, 0, 0, mOutputSize, 1, mActivation.data());
+        // Add the bias for each filter
+        const T* biases = mParameters +
+            (mFilterSize * mInputChannels * mNumFilters);
 
-        // Add filter bias to each element
-        const T* biases = mParameters + mFilterSize * mInputChannels * mNumFilters;
-        for (size_t y = 0; y < mNumFilters; ++y)
+        for (size_t row = 0; row < mNumFilters; ++row)
         {
-            for (size_t x = 0; x < mInputMatrix.getRows(); ++x)
-                mActivation(y, x) += biases[y];
+            const T bias = biases[row];
+            for (size_t col = 0; col < mOutputSize; ++col)
+                y[row * mOutputSize + col] += bias;
         }
     }
 
-    void calculateDeltas(const Matrix<T>& x, T* destination) override
+    void backpropInputsSingle(const T* x, const T* y, const T* deltas, T* dest) override
     {
-        // TODO: Implement.
-        // destination = crossCorrelation(deltas, weights)
+        // destination = row2im(deltas^T * weights)
+        // - deltas^T:           outputSize x numFilters
+        // - weights:            numFilters x (filterSize * channels)
+        // - deltas^T * weights: outputSize x (filterSize * channels)
+        // destination:          channels x size
+        static Matrix<T> intermediate(mOutputSize, mFilterSize * mInputChannels);
+        mtmMultiply(deltas, mParameters, intermediate.data(),
+            mOutputSize, mFilterSize * mInputChannels, mNumFilters);
+
+        row2Im(intermediate.data(),
+            mFilterSize, 1, mInputChannels,
+            mInputSize, 1,
+            mZeroPadding, 0, mStride, 1, dest);
     }
 
-    void calculateGradient(const Matrix<T>& x, T* gradient) override
+    void backpropParametersSingle(const T* x, const T* deltas, T* dest) override
     {
         // We assume that im2Row has already been called using x, and the
         // results are stored in mInputMatrix.
 
-        static Matrix<T> tempDeltas(mNumFilters, mOutputSize * mBatchSize);
+        // gradient_weights = deltas * im2Row(x)
+        mmMultiply(deltas, mInputMatrix.data(), dest,
+            mNumFilters, mFilterSize * mInputChannels, mOutputSize);
 
-        // Perform a blockwise transpose of the deltas using im2Row
-        im2Row(mDeltas.data(), mOutputSize * mNumFilters, 1, mBatchSize,
-            mOutputSize, 1, 0, 0, mOutputSize, 1, tempDeltas.data());
-
-        // Calculate the sum of the gradients of the samples
-        mmMultiply(tempDeltas.data(), mInputMatrix.data(), gradient,
-            mNumFilters, mFilterSize * mInputChannels, mOutputSize * mBatchSize);
-
-        // Divide by the batch size to get the average gradient
-        vScale(gradient, T{1.0}/mBatchSize, getNumParameters());
-
-        // The gradient for the biases is the average delta values
-        T* gradBiases = gradient + (mFilterSize * mInputChannels * mNumFilters);
-        std::fill(gradBiases, gradBiases + mNumFilters, T{});
-        for (size_t y = 0; y < mDeltas.getRows(); ++y)
-        {
-            for (size_t x = 0; x < mDeltas.getCols(); ++x)
-                gradBiases[x] += mDeltas(y, x);
-        }
-        T invN = T{1.0} / mDeltas.getRows();
-        std::for_each(gradBiases, gradBiases + mNumFilters, [&invN](T& elem)
-        {
-            elem *= invN;
-        });
+        // gradient_biases = sum_per_row(deltas)
+        static Matrix<T> ones(mOutputSize, 1, T{1});
+        mvMultiply(deltas, ones.data(),
+            dest + mFilterSize * mInputChannels * mNumFilters,
+            mNumFilters, mOutputSize);
     }
 
     size_t getNumParameters() const override
     {
         return (mFilterSize * mInputChannels + 1) * mNumFilters;
     }
+
+    std::string getName() const
+    {
+        return "1D Convolutional Layer";
+    }
+
+    std::string* getProperties(size_t& numElements) const override
+    {
+        std::string* arr = new std::string[5];
+
+        char buffer[1024];
+        snprintf(buffer, 1024, "(%zux%zu) -> (%zux%zu)",
+            mInputSize, mInputChannels,
+            mOutputSize, mNumFilters);
+        arr[0] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %zu", "Filter Size:", mFilterSize);
+        arr[1] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %zu", "Num Filters:", mNumFilters);
+        arr[2] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %zu", "Stride:", mStride);
+        arr[3] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %zu", "Padding:", mZeroPadding);
+        arr[4] = string(buffer);
+
+        numElements = 5;
+        return arr;
+    }
+
+    size_t getOutputSize() const     { return mOutputSize; }
+    size_t getOutputChannels() const { return mNumFilters; }
 
 private:
     size_t mInputSize;

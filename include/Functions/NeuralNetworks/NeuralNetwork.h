@@ -441,6 +441,14 @@ void NeuralNetwork<T>::addLayer(Layer<T>* layer, bool ownLayer)
         throw Ex("Unable to add layer.");
     }
 
+    // Make sure this layer makes sense.
+    else if (layer->getInputs() == 0 || layer->getOutputs() == 0)
+    {
+        std::cerr << "The number of inputs and outputs to this layer must be"
+            << " > 0" << std::endl;
+        throw Ex("Unable to add layer.");
+    }
+
     // Increase the network's storage to accommodate the new layer.
     mParameters.resize(mParameters.size() + layer->getNumParameters());
     mLayers.push_back(layer);
