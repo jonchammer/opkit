@@ -37,15 +37,15 @@ int main()
     nn.addLayer(layer4);
     nn.print(cout, "");
     nn.initializeParameters(rand);
-    // cout << "Filters: " << endl;
-    // printVector(cout, nn.getParameters());
+    cout << "Filters: " << endl;
+    printVector(cout, nn.getParameters());
 
     // Create some test data
     vector<Type> x(INPUT_SIZE * INPUT_CHANNELS);
     for (size_t i = 0; i < x.size(); ++i)
         x[i] = rand.nextReal(0.0, 10.0);
-    // cout << "x: ";
-    // printVector(cout, x);
+    cout << "x: ";
+    printVector(cout, x);
 
     // Evaluate the jacobian using both the exact approach and the finite
     // differences approximation.

@@ -27,6 +27,11 @@ public:
         // Do nothing
     }
 
+    virtual ~CostFunction()
+    {
+        // Do nothing
+    }
+    
     // Error functions compare the output of a base function on a given feature
     // to a known result. The interface presented in 'Function' for these
     // methods isn't really applicable to Error Functions, so these are

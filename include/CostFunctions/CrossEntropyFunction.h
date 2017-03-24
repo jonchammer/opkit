@@ -11,6 +11,7 @@
 #include <vector>
 #include <cmath>
 #include <cassert>
+#include <memory>
 #include "Function.h"
 #include "CostFunction.h"
 #include "Dataset.h"
@@ -297,14 +298,8 @@ public:
         SoftmaxLayer<T>* ptr  = dynamic_cast<SoftmaxLayer<T>*>(outputLayer);
 
         if ((ptr != nullptr) && (mBaseFunction.getNumLayers() > 1))
-            mImp = new OptimizedImp(mBaseFunction);
-        else mImp = new UnoptimizedImp(mBaseFunction);
-    }
-
-    ~CrossEntropyFunction()
-    {
-        delete mImp;
-        mImp = nullptr;
+            mImp = std::unique_ptr<Imp>(new OptimizedImp(mBaseFunction));
+        else mImp = std::unique_ptr<Imp>(new UnoptimizedImp(mBaseFunction));
     }
 
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
@@ -571,7 +566,7 @@ private:
             nn.evaluateBatch(batchFeatures, predictions);
 
             // Calculate the deltas for each node in the network
-            Matrix<T>& outputDeltas = nn.getDeltas(nn.getNumLayers() - 1);
+            Matrix<T>& outputDeltas = nn.getOutputDeltas();
             for (size_t i = 0; i < batchSize; ++i)
             {
                 for (size_t j = 0; j < N; ++j)
@@ -585,7 +580,7 @@ private:
     };
 
     // The only piece of data for this class - a pointer to the chosen implementation
-    Imp* mImp;
+    std::unique_ptr<Imp> mImp;
 };
 
 };

@@ -717,7 +717,7 @@ void row2Im(const T* src,
     for (size_t c = 0; c < channels; ++c)
     {
         // Figure out which data in 'src' we're working with
-        const T* srcStart = src + c * windowWidth * windowHeight;
+        const T* srcStart = src + (c * windowWidth * windowHeight);
 
         // Iterate over each patch in the src matrix
         int destY = -yPad;
@@ -739,7 +739,9 @@ void row2Im(const T* src,
                             y >= 0 && y < destHeight)
                         {
                             int destIndex = destWidth * (y * channels + c) + x;
-                            dest[destIndex] += srcStart[dy * windowWidth + dx];
+                            int srcIndex  = dy * windowWidth + dx;
+                            
+                            dest[destIndex] += srcStart[srcIndex];
                         }
                     }
                 }

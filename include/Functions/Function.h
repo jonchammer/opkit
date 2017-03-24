@@ -174,7 +174,6 @@ class Function
 {
 public:
     // ------------------------- Interface Methods ------------------------- //
-
     // Apply this function to the given input in order to produce an output.
     // That output will be stored in 'output'.
     virtual void evaluate(const T* input, T* output) = 0;

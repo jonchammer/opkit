@@ -25,10 +25,22 @@ public:
     CompoundCostFunction(Model& baseFunction) :
         CostFunction<T, Model>(baseFunction) {}
 
+    ~CompoundCostFunction()
+    {
+        for (size_t i = 0; i < mCostFunctions.size(); ++i)
+        {
+            if (mFunctionOwnership[i])
+            {
+                delete mCostFunctions[i];
+                mCostFunctions[i] = nullptr;
+            }
+        }
+    }
     // Add a new cost function to this object.
-    void addCostFunction(CostFunction<T, Model>* fn)
+    void addCostFunction(CostFunction<T, Model>* fn, bool ownsFunction = true)
     {
         mCostFunctions.push_back(fn);
+        mFunctionOwnership.push_back(ownsFunction);
     }
 
     T evaluate(const Matrix<T>& features, const Matrix<T>& labels)
@@ -96,7 +108,7 @@ public:
         const size_t N = hessian.getCols();
         static Matrix<T> localHessian(M, N);
         hessian.fill(T{});
-        
+
         // Calculate each individual gradient and sum them together to generate
         // the final gradient.
         for (CostFunction<T, Model>*& fn : mCostFunctions)
@@ -108,6 +120,7 @@ public:
 
 private:
     vector<CostFunction<T, Model>*> mCostFunctions;
+    vector<bool> mFunctionOwnership;
 };
 
 }

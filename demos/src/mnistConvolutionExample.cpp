@@ -8,16 +8,21 @@
 #include <iostream>
 #include "opkit/opkit.h"
 
-using namespace std;
+using namespace opkit;
+using std::cout;
+using std::endl;
+using std::vector;
 
-double variance(const Dataset& Dataset, size_t column)
+using Type = double;
+
+Type variance(const Dataset<Type>& Dataset, size_t column)
 {
     // Calculate the variance
-    double sum  = 0.0;
-    double mean = Dataset.columnMean(column);
+    Type sum  = 0.0;
+    Type mean = Dataset.columnMean(column);
     for (size_t i = 0; i < Dataset.rows(); ++i)
     {
-        double temp = Dataset[i][column] - mean;
+        Type temp = Dataset[i][column] - mean;
         sum += temp * temp;
     }
 
@@ -28,7 +33,7 @@ int main()
 {
     // Load the data
     cout << "Loading data..." << endl;
-    Dataset trainFeatures, trainLabels, testFeatures, testLabels;
+    Dataset<T> trainFeatures, trainLabels, testFeatures, testLabels;
     trainFeatures.loadARFF("../../data/mnist_train_features.arff");
     trainLabels.loadARFF("../../data/mnist_train_labels.arff");
     testFeatures.loadARFF("../../data/mnist_test_features.arff");

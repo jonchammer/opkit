@@ -7,7 +7,167 @@
 
 namespace opkit
 {
-    
+
+// This is an implementation of a 2D convolutional layer. It supports multiple
+// convolution kernels, as well as arbitrary zero padding and stride values.
+// The implementation is based off of this paper:
+// http://cs.nju.edu.cn/wujx/paper/CNN.pdf
+// It uses the im2Row and row2Im transforms to reduce the convolutions to simple
+// matrix multiplications for improved performance.
+template <class T>
+class Convolutional2DLayer : public Layer<T>
+{
+public:
+
+    // Allows us to use the members in the base class without specifying
+    // their complete names
+    using Layer<T>::mParameters;
+
+    Convolutional2DLayer
+    (
+        size_t inputWidth, size_t inputHeight, size_t inputChannels,
+        size_t filterWidth, size_t filterHeight, size_t numFilters,
+        size_t strideX = 1, size_t strideY = 1,
+        size_t zeroPaddingX = 0, size_t zeroPaddingY = 0
+    ) :
+        // Superclass constructor - inputs, outputs
+        Layer<T>(inputWidth * inputHeight * inputChannels,
+            ((inputWidth  - filterWidth  + 2 * zeroPaddingX) / strideX + 1) *
+            ((inputHeight - filterHeight + 2 * zeroPaddingY) / strideY + 1) *
+            numFilters),
+
+        // Paramaters
+        mInputWidth(inputWidth),       mInputHeight(inputHeight),
+        mInputChannels(inputChannels), mFilterWidth(filterWidth),
+        mFilterHeight(filterHeight),   mNumFilters(numFilters),
+        mStrideX(strideX),             mStrideY(strideY),
+        mZeroPaddingX(zeroPaddingX),   mZeroPaddingY(zeroPaddingY),
+        mOutputWidth(( inputWidth  - filterWidth  + 2 * zeroPaddingX) / strideX + 1),
+        mOutputHeight((inputHeight - filterHeight + 2 * zeroPaddingY) / strideY + 1),
+
+        mInputMatrix(mOutputWidth * mOutputHeight,
+            filterWidth * filterHeight * inputChannels),
+        mIntermediateMatrix(mOutputWidth * mOutputHeight,
+            mFilterWidth * mFilterHeight * mInputChannels)
+    {}
+
+    void forwardSingle(const T* x, T* y) override
+    {
+        // Expand x using the im2Row transformation. 'x' will be transformed
+        // into 'mOutputSize' rows according to the convolution parameters.
+        im2Row(x, mInputWidth, mInputHeight, mInputChannels,
+            mFilterWidth, mFilterHeight,
+            mZeroPaddingX, mZeroPaddingY,
+            mStrideX, mStrideY, mInputMatrix.data());
+
+        // Multiply the weights matrix by the transpose of the input matrix.
+        // y = w * transpose(im2Row(x))
+        mmtMultiply(mParameters, mInputMatrix.data(), y,
+            mNumFilters, mOutputWidth * mOutputHeight,
+            mFilterWidth * mFilterHeight * mInputChannels);
+
+        // Add the bias for each filter
+        const T* biases = mParameters +
+            (mFilterWidth * mFilterHeight * mInputChannels * mNumFilters);
+
+        for (size_t row = 0; row < mNumFilters; ++row)
+        {
+            const T bias = biases[row];
+            for (size_t col = 0; col < mOutputWidth * mOutputHeight; ++col)
+                y[row * mOutputWidth * mOutputHeight + col] += bias;
+        }
+    }
+
+    void backpropInputsSingle(const T* x, const T* y, const T* deltas, T* dest) override
+    {
+        // destination = row2im(deltas^T * weights)
+        // - deltas^T:           outputSize x numFilters
+        // - weights:            numFilters x (filterSize * channels)
+        // - deltas^T * weights: outputSize x (filterSize * channels)
+        // destination:          channels x size
+        mtmMultiply(deltas, mParameters, mIntermediateMatrix.data(),
+            mOutputWidth * mOutputHeight,
+            mFilterWidth * mFilterHeight * mInputChannels, mNumFilters);
+
+        row2Im(mIntermediateMatrix.data(),
+            mFilterWidth, mFilterHeight, mInputChannels,
+            mInputWidth, mInputHeight,
+            mZeroPaddingX, mZeroPaddingY, mStrideX, mStrideY, dest);
+    }
+
+    void backpropParametersSingle(const T* x, const T* deltas, T* dest) override
+    {
+        // We assume that im2Row has already been called using x, and the
+        // results are stored in mInputMatrix.
+
+        // gradient_weights = deltas * im2Row(x)
+        mmMultiply(deltas, mInputMatrix.data(), dest,
+            mNumFilters, mFilterWidth * mFilterHeight * mInputChannels,
+            mOutputWidth * mOutputHeight);
+
+        // gradient_biases = sum_per_row(deltas)
+        static Matrix<T> ones(mOutputWidth * mOutputHeight, 1, T{1});
+        T* biases = dest +
+            mFilterWidth * mFilterHeight * mInputChannels * mNumFilters;
+        mvMultiply(deltas, ones.data(), biases,
+            mNumFilters, mOutputWidth * mOutputHeight);
+    }
+
+    size_t getNumParameters() const override
+    {
+        return (mFilterWidth * mFilterHeight * mInputChannels + 1) * mNumFilters;
+    }
+
+    std::string getName() const
+    {
+        return "2D Convolutional Layer";
+    }
+
+    std::string* getProperties(size_t& numElements) const override
+    {
+        std::string* arr = new std::string[5];
+
+        char buffer[1024];
+        snprintf(buffer, 1024, "(%zux%zux%zu) -> (%zux%zux%zu)",
+            mInputWidth, mInputHeight, mInputChannels,
+            mOutputWidth, mOutputHeight, mNumFilters);
+        arr[0] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s (%zux%zux%zu)", "Filter Size:",
+            mFilterWidth, mFilterHeight, mInputChannels);
+        arr[1] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %zu", "Num Filters:", mNumFilters);
+        arr[2] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s (%zux%zu)", "Stride:", mStrideX, mStrideY);
+        arr[3] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s (%zux%zu)", "Padding:", mZeroPaddingX, mZeroPaddingY);
+        arr[4] = string(buffer);
+
+        numElements = 5;
+        return arr;
+    }
+
+    size_t getInputWidth()     const { return mInputWidth;    }
+    size_t getInputHeight()    const { return mInputHeight;   }
+    size_t getInputChannels()  const { return mInputChannels; }
+
+    size_t getOutputWidth()    const { return mOutputWidth;   }
+    size_t getOutputHeight()   const { return mOutputHeight;  }
+    size_t getOutputChannels() const { return mNumFilters;    }
+
+private:
+    size_t mInputWidth, mInputHeight, mInputChannels;
+    size_t mFilterWidth, mFilterHeight, mNumFilters;
+    size_t mStrideX, mStrideY;
+    size_t mZeroPaddingX, mZeroPaddingY;
+    size_t mOutputWidth, mOutputHeight;
+
+    Matrix<T> mInputMatrix, mIntermediateMatrix;
+};
+
 // // Convolutional layers are often used for image processing. They take as input
 // // a 3D volume of numbers and produce as output another 3D volume. Typically,
 // // the three dimensions will correspond to the width of an image, the height of

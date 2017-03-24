@@ -22,8 +22,6 @@ public:
     // Allows us to use the members in the base class without specifying
     // their complete names
     using Layer<T>::mParameters;
-    using Layer<T>::mInputs;
-    using Layer<T>::mOutputs;
 
     Convolutional1DLayer
     (
@@ -41,7 +39,8 @@ public:
         mNumFilters(numFilters), mStride(stride), mZeroPadding(zeroPadding),
         mOutputSize((inputSize - filterSize + 2 * zeroPadding) / stride + 1),
 
-        mInputMatrix(mOutputSize, filterSize * inputChannels)
+        mInputMatrix(mOutputSize, filterSize * inputChannels),
+        mIntermediateMatrix(mOutputSize, mFilterSize * mInputChannels)
     {}
 
     void forwardSingle(const T* x, T* y) override
@@ -75,11 +74,10 @@ public:
         // - weights:            numFilters x (filterSize * channels)
         // - deltas^T * weights: outputSize x (filterSize * channels)
         // destination:          channels x size
-        static Matrix<T> intermediate(mOutputSize, mFilterSize * mInputChannels);
-        mtmMultiply(deltas, mParameters, intermediate.data(),
+        mtmMultiply(deltas, mParameters, mIntermediateMatrix.data(),
             mOutputSize, mFilterSize * mInputChannels, mNumFilters);
 
-        row2Im(intermediate.data(),
+        row2Im(mIntermediateMatrix.data(),
             mFilterSize, 1, mInputChannels,
             mInputSize, 1,
             mZeroPadding, 0, mStride, 1, dest);
@@ -121,7 +119,8 @@ public:
             mOutputSize, mNumFilters);
         arr[0] = string(buffer);
 
-        snprintf(buffer, 1024, "%-12s %zu", "Filter Size:", mFilterSize);
+        snprintf(buffer, 1024, "%-12s (%zux%zu)", "Filter Size:",
+            mFilterSize, mInputChannels);
         arr[1] = string(buffer);
 
         snprintf(buffer, 1024, "%-12s %zu", "Num Filters:", mNumFilters);
@@ -150,6 +149,7 @@ private:
     size_t mOutputSize;
 
     Matrix<T> mInputMatrix;
+    Matrix<T> mIntermediateMatrix;
 };
 
 }
