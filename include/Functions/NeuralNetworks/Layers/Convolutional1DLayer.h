@@ -67,6 +67,50 @@ public:
         }
     }
 
+    // void forwardBatch(const Matrix<T>& x, Matrix<T>& y) override
+    // {
+    //     const size_t N = x.getRows();
+    //
+    //     // y' = weights * im2col(x)
+    //     // The input matrix is set to a batch size of 1 by default. When using
+    //     // batch operations, we'll need more space. When the matrix is already
+    //     // sized correctly, resizing is a no-op.
+    //     mInputMatrix.resize(mFilterSize * mInputChannels, mOutputSize * N);
+    //     im2col(x.data(), mInputSize, N, mInputChannels, mFilterSize, 1,
+    //         mZeroPadding, 0, mStride, 1, 1, 1, mInputMatrix.data());
+    //
+    //     // Multiply the weights matrix by the input matrix.
+    //     // y = w * im2col(x)
+    //     Matrix<T> yPrime(mNumFilters, mOutputSize * N);
+    //     mmMultiply(mParameters, mInputMatrix.data(), yPrime.data(),
+    //         mNumFilters, mOutputSize * N, mFilterSize * mInputChannels);
+    //
+    //     // Add the bias for each filter
+    //     const T* biases = mParameters +
+    //         (mFilterSize * mInputChannels * mNumFilters);
+    //
+    //     for (size_t row = 0; row < mNumFilters; ++row)
+    //     {
+    //         const T bias = biases[row];
+    //         for (size_t col = 0; col < mOutputSize * N; ++col)
+    //             yPrime(row)[col] += bias;
+    //     }
+    //
+    //     // Reorganize y' -> y such that all the feature maps for one input are
+    //     // located contiguously.
+    //     T* dest = y.data();
+    //     for (size_t input = 0; input < N; ++input)
+    //     {
+    //         const T* src = yPrime.data() + (mOutputSize * input);
+    //         for (size_t i = 0; i < mNumFilters; ++i)
+    //         {
+    //             vCopy(src, dest, mOutputSize);
+    //             src  += mOutputSize * N;
+    //             dest += mOutputSize;
+    //         }
+    //     }
+    // }
+
     void backpropInputsSingle(const T* x, const T* y, const T* deltas, T* dest) override
     {
         // destination = col2im(weights^T * deltas)
