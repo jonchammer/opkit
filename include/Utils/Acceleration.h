@@ -597,6 +597,115 @@ inline void vCopy(const float* x, float* y, const size_t N,
     OPKIT_SCOPY(N, x, xInc, y, yInc);
 }
 
+// Input  - srcWidth x srcHeight x channels image. Channels stored consecutively.
+// Output - (windowWidth * windowHeight) x (numPatches) x channels image.
+//          Channels stored consecutively.
+template <class T>
+void im2col(const T* src,
+    const size_t srcWidth, const size_t srcHeight, const size_t channels,
+    const size_t windowWidth, const size_t windowHeight,
+    const size_t xPad, const size_t yPad,
+    const size_t xStride, const size_t yStride,
+    const size_t xDilation, const size_t yDilation, T* dest)
+{
+    const int outputHeight = (srcHeight + 2 * yPad -
+        (yDilation * (windowHeight - 1) + 1)) / yStride + 1;
+    const int outputWidth = (srcWidth + 2 * xPad -
+        (xDilation * (windowWidth - 1) + 1)) / xStride + 1;
+    const int channelSize = srcHeight * srcWidth;
+
+    // Handle the data for each channel independently
+    for (int channel = channels; channel--; src += channelSize)
+    {
+        // Iterate over the horizontal and vertical windowed regions
+        for (int kernelRow = 0; kernelRow < windowHeight; kernelRow++)
+        {
+            for (int kernelCol = 0; kernelCol < windowWidth; kernelCol++)
+            {
+                // Copy the data inside this window into dest
+                int srcRow = -yPad + kernelRow * yDilation;
+                for (int destRows = outputHeight; destRows; destRows--)
+                {
+                    if (!(srcRow >= 0 && srcRow < srcHeight))
+                    {
+                        for (int destCol = outputWidth; destCol; destCol--)
+                            *(dest++) = T{};
+                    }
+                    else
+                    {
+                        int srcCol = -xPad + kernelCol * xDilation;
+                        for (int destCol = outputWidth; destCol; destCol--)
+                        {
+                            if (srcCol >= 0 && srcCol < srcWidth)
+                                *(dest++) = src[srcRow * srcWidth + srcCol];
+                            else
+                                *(dest++) = T{};
+
+                            srcCol += xStride;
+                        }
+                    }
+                    srcRow += yStride;
+                }
+            }
+        }
+    }
+}
+
+// Input  - (windowWidth * windowHeight) x (numPatches) x channels image.
+//          Channels stored consecutively.
+// Output - srcWidth x srcHeight x channels image. Channels stored consecutively.
+template <class T>
+void col2im(const T* src,
+    const int destWidth, const int destHeight, const int channels,
+    const int windowWidth, const int windowHeight,
+    const int xPad, const int yPad,
+    const int xStride, const int yStride,
+    const int xDilation, const int yDilation,
+    T* dest)
+{
+    std::fill(dest, dest + destHeight * destWidth * channels, T{});
+
+    const int srcHeight = (destHeight + 2 * yPad -
+        (yDilation * (windowHeight - 1) + 1)) / yStride + 1;
+    const int srcWidth = (destWidth + 2 * xPad -
+        (xDilation * (windowWidth - 1) + 1)) / xStride + 1;
+    const int channelSize = destHeight * destWidth;
+
+    // Handle the data for each channel independently
+    for (int channel = channels; channel--; dest += channelSize)
+    {
+        // Iterate over the horizontal and vertical windowed regions
+        for (int kernelRow = 0; kernelRow < windowHeight; kernelRow++)
+        {
+            for (int kernelCol = 0; kernelCol < windowWidth; kernelCol++)
+            {
+                // Add the data inside this column to the appropriate cells
+                // in 'dest'.
+                int srcRow = -yPad + kernelRow * yDilation;
+                for (int destRows = srcHeight; destRows; destRows--)
+                {
+                    if (!(srcRow >= 0 && srcRow < destHeight))
+                        src += srcWidth;
+
+                    else
+                    {
+                        int srcCol = -xPad + kernelCol * xDilation;
+                        for (int destCol = srcWidth; destCol; destCol--)
+                        {
+                            if (srcCol >= 0 && srcCol < destWidth)
+                                dest[srcRow * destWidth + srcCol] += *src;
+
+                            src++;
+                            srcCol += xStride;
+                        }
+                    }
+                    srcRow += yStride;
+                }
+            }
+        }
+    }
+}
+
 // This function is similar to the im2Col function found in Matlab. Given a
 // source tensor of dimensions (srcWidth * srcHeight * channels), this function
 // isolates each (windowWidth * windowHeight * channels) patch and copies it
@@ -675,7 +784,7 @@ void im2Row(const T* src,
 // matrix with dimensions (K * N) x (windowWidth * windowHeight * channels),
 // where:
 // K = The number of patches = NumHorizontalBlocks * NumVerticalBlocks, where:
-//     NumHorizontalBlocks = ((destWidth - windowWidth + 2*xPad) / xStride) + 1
+//     NumHorizontalBlocks = ((srcWidth - windowWidth + 2*xPad) / xStride) + 1
 //     NumVerticalBlocks = ((destHeight - windowHeight + 2*yPad) / yStride) + 1
 // N = windowWidth * windowHeight * channels
 //
@@ -740,7 +849,7 @@ void row2Im(const T* src,
                         {
                             int destIndex = destWidth * (y * channels + c) + x;
                             int srcIndex  = dy * windowWidth + dx;
-                            
+
                             dest[destIndex] += srcStart[srcIndex];
                         }
                     }

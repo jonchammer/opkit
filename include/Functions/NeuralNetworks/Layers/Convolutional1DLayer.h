@@ -27,32 +27,32 @@ public:
     (
         size_t inputSize, size_t inputChannels,
         size_t filterSize, size_t numFilters,
-        size_t stride = 1, size_t zeroPadding = 0
+        size_t zeroPadding = 0, size_t stride = 1
     ) :
         // Superclass constructor - inputs, outputs
         Layer<T>(inputSize * inputChannels,
             ((inputSize - filterSize + 2 * zeroPadding) / stride + 1) * numFilters),
 
         // Paramaters
-        mInputSize(inputSize),
-        mInputChannels(inputChannels), mFilterSize(filterSize),
-        mNumFilters(numFilters), mStride(stride), mZeroPadding(zeroPadding),
+        mInputSize(inputSize), mInputChannels(inputChannels),
+        mFilterSize(filterSize), mNumFilters(numFilters),
+        mZeroPadding(zeroPadding), mStride(stride),
         mOutputSize((inputSize - filterSize + 2 * zeroPadding) / stride + 1),
 
-        mInputMatrix(mOutputSize, filterSize * inputChannels),
-        mIntermediateMatrix(mOutputSize, mFilterSize * mInputChannels)
+        mInputMatrix(filterSize * inputChannels, mOutputSize),
+        mIntermediateMatrix(mFilterSize * mInputChannels, mOutputSize)
     {}
 
     void forwardSingle(const T* x, T* y) override
     {
-        // Expand x using the im2Row transformation. 'x' will be transformed
-        // into 'mOutputSize' rows according to the convolution parameters.
-        im2Row(x, mInputSize, 1, mInputChannels, mFilterSize, 1, mZeroPadding, 0,
-            mStride, 1, mInputMatrix.data());
+        // Expand x using the im2col transformation. 'x' will be transformed
+        // into 'mOutputSize' columns according to the convolution parameters.
+        im2col(x, mInputSize, 1, mInputChannels, mFilterSize, 1, mZeroPadding, 0,
+            mStride, 1, 1, 1, mInputMatrix.data());
 
-        // Multiply the weights matrix by the transpose of the input matrix.
-        // y = w * transpose(im2Row(x))
-        mmtMultiply(mParameters, mInputMatrix.data(), y,
+        // Multiply the weights matrix by the input matrix.
+        // y = w * im2col(x)
+        mmMultiply(mParameters, mInputMatrix.data(), y,
             mNumFilters, mOutputSize, mFilterSize * mInputChannels);
 
         // Add the bias for each filter
@@ -69,27 +69,26 @@ public:
 
     void backpropInputsSingle(const T* x, const T* y, const T* deltas, T* dest) override
     {
-        // destination = row2im(deltas^T * weights)
-        // - deltas^T:           outputSize x numFilters
-        // - weights:            numFilters x (filterSize * channels)
-        // - deltas^T * weights: outputSize x (filterSize * channels)
-        // destination:          channels x size
-        mtmMultiply(deltas, mParameters, mIntermediateMatrix.data(),
-            mOutputSize, mFilterSize * mInputChannels, mNumFilters);
+        // destination = col2im(weights^T * deltas)
+        // - weights^T:          (filterSize * channels) x numFilters
+        // - deltas:             numFilters x outputSize
+        // - weights^T * deltas: (filterSize * channels) x outputSize
+        // destination:          size x channels
+        mtmMultiply(mParameters, deltas, mIntermediateMatrix.data(),
+            mFilterSize * mInputChannels, mOutputSize, mNumFilters);
 
-        row2Im(mIntermediateMatrix.data(),
-            mFilterSize, 1, mInputChannels,
-            mInputSize, 1,
-            mZeroPadding, 0, mStride, 1, dest);
+        col2im(mIntermediateMatrix.data(),
+            mInputSize, 1, mInputChannels, mFilterSize, 1, mZeroPadding, 0,
+            mStride, 1, 1, 1, dest);
     }
 
     void backpropParametersSingle(const T* x, const T* deltas, T* dest) override
     {
-        // We assume that im2Row has already been called using x, and the
-        // results are stored in mInputMatrix.
+        im2col(x, mInputSize, 1, mInputChannels, mFilterSize, 1, mZeroPadding, 0,
+            mStride, 1, 1, 1, mInputMatrix.data());
 
-        // gradient_weights = deltas * im2Row(x)
-        mmMultiply(deltas, mInputMatrix.data(), dest,
+        // gradient_weights = deltas * transpose(im2col(x))
+        mmtMultiply(deltas, mInputMatrix.data(), dest,
             mNumFilters, mFilterSize * mInputChannels, mOutputSize);
 
         // gradient_biases = sum_per_row(deltas)
@@ -126,10 +125,10 @@ public:
         snprintf(buffer, 1024, "%-12s %zu", "Num Filters:", mNumFilters);
         arr[2] = string(buffer);
 
-        snprintf(buffer, 1024, "%-12s %zu", "Stride:", mStride);
+        snprintf(buffer, 1024, "%-12s %zu", "Padding:", mZeroPadding);
         arr[3] = string(buffer);
 
-        snprintf(buffer, 1024, "%-12s %zu", "Padding:", mZeroPadding);
+        snprintf(buffer, 1024, "%-12s %zu", "Stride:", mStride);
         arr[4] = string(buffer);
 
         numElements = 5;
@@ -144,8 +143,8 @@ private:
     size_t mInputChannels;
     size_t mFilterSize;
     size_t mNumFilters;
-    size_t mStride;
     size_t mZeroPadding;
+    size_t mStride;
     size_t mOutputSize;
 
     Matrix<T> mInputMatrix;

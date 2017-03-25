@@ -27,8 +27,8 @@ public:
     (
         size_t inputWidth, size_t inputHeight, size_t inputChannels,
         size_t filterWidth, size_t filterHeight, size_t numFilters,
-        size_t strideX = 1, size_t strideY = 1,
-        size_t zeroPaddingX = 0, size_t zeroPaddingY = 0
+        size_t zeroPaddingX = 0, size_t zeroPaddingY = 0,
+        size_t strideX = 1, size_t strideY = 1
     ) :
         // Superclass constructor - inputs, outputs
         Layer<T>(inputWidth * inputHeight * inputChannels,
@@ -40,29 +40,29 @@ public:
         mInputWidth(inputWidth),       mInputHeight(inputHeight),
         mInputChannels(inputChannels), mFilterWidth(filterWidth),
         mFilterHeight(filterHeight),   mNumFilters(numFilters),
-        mStrideX(strideX),             mStrideY(strideY),
         mZeroPaddingX(zeroPaddingX),   mZeroPaddingY(zeroPaddingY),
+        mStrideX(strideX),             mStrideY(strideY),
         mOutputWidth(( inputWidth  - filterWidth  + 2 * zeroPaddingX) / strideX + 1),
         mOutputHeight((inputHeight - filterHeight + 2 * zeroPaddingY) / strideY + 1),
 
-        mInputMatrix(mOutputWidth * mOutputHeight,
-            filterWidth * filterHeight * inputChannels),
-        mIntermediateMatrix(mOutputWidth * mOutputHeight,
-            mFilterWidth * mFilterHeight * mInputChannels)
+        mInputMatrix(filterWidth * filterHeight * inputChannels,
+            mOutputWidth * mOutputHeight),
+        mIntermediateMatrix(mFilterWidth * mFilterHeight * mInputChannels,
+            mOutputWidth * mOutputHeight)
     {}
 
     void forwardSingle(const T* x, T* y) override
     {
-        // Expand x using the im2Row transformation. 'x' will be transformed
-        // into 'mOutputSize' rows according to the convolution parameters.
-        im2Row(x, mInputWidth, mInputHeight, mInputChannels,
+        // Expand x using the im2col transformation. 'x' will be transformed
+        // into 'mOutputSize' columns according to the convolution parameters.
+        im2col(x, mInputWidth, mInputHeight, mInputChannels,
             mFilterWidth, mFilterHeight,
             mZeroPaddingX, mZeroPaddingY,
-            mStrideX, mStrideY, mInputMatrix.data());
+            mStrideX, mStrideY, 1, 1, mInputMatrix.data());
 
-        // Multiply the weights matrix by the transpose of the input matrix.
-        // y = w * transpose(im2Row(x))
-        mmtMultiply(mParameters, mInputMatrix.data(), y,
+        // Multiply the weights matrix by the input matrix.
+        // y = w * im2col(x)
+        mmMultiply(mParameters, mInputMatrix.data(), y,
             mNumFilters, mOutputWidth * mOutputHeight,
             mFilterWidth * mFilterHeight * mInputChannels);
 
@@ -80,28 +80,30 @@ public:
 
     void backpropInputsSingle(const T* x, const T* y, const T* deltas, T* dest) override
     {
-        // destination = row2im(deltas^T * weights)
-        // - deltas^T:           outputSize x numFilters
-        // - weights:            numFilters x (filterSize * channels)
-        // - deltas^T * weights: outputSize x (filterSize * channels)
-        // destination:          channels x size
-        mtmMultiply(deltas, mParameters, mIntermediateMatrix.data(),
-            mOutputWidth * mOutputHeight,
-            mFilterWidth * mFilterHeight * mInputChannels, mNumFilters);
+        // destination = col2im(weights^T * deltas)
+        // - weights^T:          (filterWidth * filterHeight * channels) x numFilters
+        // - deltas:             numFilters x (outputWidth * outputHeight)
+        // - weights^T * deltas: (filterWidth * filterHeight * channels) x (outputWidth * outputHeight)
+        // destination:          size x channels
+        mtmMultiply(mParameters, deltas, mIntermediateMatrix.data(),
+            mFilterWidth * mFilterHeight * mInputChannels,
+            mOutputWidth * mOutputHeight, mNumFilters);
 
-        row2Im(mIntermediateMatrix.data(),
-            mFilterWidth, mFilterHeight, mInputChannels,
-            mInputWidth, mInputHeight,
-            mZeroPaddingX, mZeroPaddingY, mStrideX, mStrideY, dest);
+        col2im(mIntermediateMatrix.data(),
+            mInputWidth, mInputHeight, mInputChannels,
+            mFilterWidth, mFilterHeight, mZeroPaddingX, mZeroPaddingY,
+            mStrideX, mStrideY, 1, 1, dest);
     }
 
     void backpropParametersSingle(const T* x, const T* deltas, T* dest) override
     {
-        // We assume that im2Row has already been called using x, and the
-        // results are stored in mInputMatrix.
+        im2col(x, mInputWidth, mInputHeight, mInputChannels,
+            mFilterWidth, mFilterHeight,
+            mZeroPaddingX, mZeroPaddingY,
+            mStrideX, mStrideY, 1, 1, mInputMatrix.data());
 
-        // gradient_weights = deltas * im2Row(x)
-        mmMultiply(deltas, mInputMatrix.data(), dest,
+        // gradient_weights = deltas * transpose(im2col(x))
+        mmtMultiply(deltas, mInputMatrix.data(), dest,
             mNumFilters, mFilterWidth * mFilterHeight * mInputChannels,
             mOutputWidth * mOutputHeight);
 
@@ -140,10 +142,10 @@ public:
         snprintf(buffer, 1024, "%-12s %zu", "Num Filters:", mNumFilters);
         arr[2] = string(buffer);
 
-        snprintf(buffer, 1024, "%-12s (%zux%zu)", "Stride:", mStrideX, mStrideY);
+        snprintf(buffer, 1024, "%-12s (%zux%zu)", "Padding:", mZeroPaddingX, mZeroPaddingY);
         arr[3] = string(buffer);
 
-        snprintf(buffer, 1024, "%-12s (%zux%zu)", "Padding:", mZeroPaddingX, mZeroPaddingY);
+        snprintf(buffer, 1024, "%-12s (%zux%zu)", "Stride:", mStrideX, mStrideY);
         arr[4] = string(buffer);
 
         numElements = 5;
@@ -161,8 +163,8 @@ public:
 private:
     size_t mInputWidth, mInputHeight, mInputChannels;
     size_t mFilterWidth, mFilterHeight, mNumFilters;
-    size_t mStrideX, mStrideY;
     size_t mZeroPaddingX, mZeroPaddingY;
+    size_t mStrideX, mStrideY;
     size_t mOutputWidth, mOutputHeight;
 
     Matrix<T> mInputMatrix, mIntermediateMatrix;
