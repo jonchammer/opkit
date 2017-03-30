@@ -144,13 +144,17 @@ public:
         if (M > 0)
         {
             // Compute the matrix of local gradients
-            Matrix<T> localGradients(N, M);
+            mLocalGradients.resize(N, M);
             for (size_t i = 0; i < N; ++i)
-                backpropParametersSingle(x(i), deltas(i), localGradients(i));
+                backpropParametersSingle(x(i), deltas(i), mLocalGradients(i));
 
             // Multiply by the vector [1/N, 1/N, ...] to compute the average
-            Matrix<T> ones(1, N, T{1});
-            mtvMultiply(localGradients.data(), ones.data(), dest, N, M, T{1.0} / N);
+            if (mOnes.getRows() != 1 || mOnes.getCols() != N)
+            {
+                mOnes.resize(1, N);
+                mOnes.fill(T{1});
+            }
+            mtvMultiply(mLocalGradients.data(), mOnes.data(), dest, N, M, T{1.0} / N);
         }
     }
 
@@ -210,6 +214,11 @@ public:
 protected:
     T* mParameters;           // Storage used for the parameters for this layer
     size_t mInputs, mOutputs; // The dimensions of this layer (inputs -> outputs)
+
+private:
+
+    // Private storage for the default implementation of backpropParametersBatch
+    Matrix<T> mLocalGradients, mOnes;
 };
 
 };

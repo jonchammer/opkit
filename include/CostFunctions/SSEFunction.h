@@ -30,7 +30,12 @@ public:
 
     using CostFunction<T, Model>::mBaseFunction;
 
-    SSEFunction(Model& baseFunction) : CostFunction<T, Model>(baseFunction)
+    SSEFunction(Model& baseFunction) :
+        CostFunction<T, Model>(baseFunction),
+        mPrediction(baseFunction.getOutputs()),
+        mError(1, baseFunction.getOutputs()),
+        mBaseJacobianInputs(baseFunction.getOutputs(), baseFunction.getInputs()),
+        mBaseJacobianParameters(baseFunction.getOutputs(), baseFunction.getNumParameters())
     {
         // Do nothing
     }
@@ -39,16 +44,15 @@ public:
     {
         // Initialize variables
         T sum{};
-        static vector<T> prediction(labels.getCols(), T{});
 
         // Calculate the SSE
         for (size_t i = 0; i < features.getRows(); ++i)
         {
-            mBaseFunction.evaluate(features(i), prediction.data());
+            mBaseFunction.evaluate(features(i), mPrediction.data());
 
             for (size_t j = 0; j < labels.getCols(); ++j)
             {
-                T d = labels(i, j) - prediction[j];
+                T d = labels(i, j) - mPrediction[j];
                 sum += (d * d);
             }
         }
@@ -71,10 +75,6 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian(M, N);
-        static vector<T> evaluation(M);
-        static Matrix<T> error(1, M);
-
         // The matrix 'grad' temporarily holds the contents of the gradient
         Matrix<T> grad(gradient.data(), 1, N);
 
@@ -82,15 +82,15 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the inputs
-            mBaseFunction.calculateJacobianInputs(features(i), baseJacobian);
+            mBaseFunction.calculateJacobianInputs(features(i), mBaseJacobianInputs);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation.data());
+            mBaseFunction.evaluate(features(i), mPrediction.data());
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = labels(i, j) - evaluation[j];
+                mError(0, j) = labels(i, j) - mPrediction[j];
 
-            grad += T{-2.0} * error * baseJacobian;
+            grad += T{-2.0} * mError * mBaseJacobianInputs;
         }
 
         // Divide by the batch size to get the average gradient
@@ -112,10 +112,6 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian(M, N);
-        static vector<T> evaluation(M);
-        static Matrix<T> error(1, M);
-
         // The matrix 'grad' temporarily holds the contents of the gradient
         Matrix<T> grad(gradient.data(), 1, N);
 
@@ -123,15 +119,15 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point with
             // respect to the model parameters
-            mBaseFunction.calculateJacobianParameters(features(i), baseJacobian);
+            mBaseFunction.calculateJacobianParameters(features(i), mBaseJacobianParameters);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation.data());
+            mBaseFunction.evaluate(features(i), mPrediction.data());
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = labels(i, j) - evaluation[j];
+                mError(0, j) = labels(i, j) - mPrediction[j];
 
-            grad += T{-2.0} * error * baseJacobian;
+            grad += T{-2.0} * mError * mBaseJacobianParameters;
         }
 
         vScale(gradient.data(), 1.0/rows, N);
@@ -238,6 +234,13 @@ public:
             hessian += T{2.0} * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
+
+private:
+
+    // Temporary storage for the functions above
+    vector<T> mPrediction;
+    Matrix<T> mError;
+    Matrix<T> mBaseJacobianParameters, mBaseJacobianInputs;
 };
 
 // Template specialization for Neural Networks, since there is a much more
@@ -263,7 +266,7 @@ public:
 
         Matrix<T> batchFeatures((T*) features.data(), batchSize, M);
         Matrix<T> batchLabels((T*) labels.data(), batchSize, N);
-        static Matrix<T> predictions(batchSize, N);
+        mPredictions.resize(batchSize, N);
 
         T sum{};
 
@@ -271,7 +274,7 @@ public:
         size_t rows = features.getRows();
         while (rows >= batchSize)
         {
-            sum += evalBatch(batchFeatures, batchLabels, predictions);
+            sum += evalBatch(batchFeatures, batchLabels, mPredictions);
 
             // Move to the next batch
             T* featureData = batchFeatures.data();
@@ -287,9 +290,13 @@ public:
         {
             batchFeatures.reshape(rows, M);
             batchLabels.reshape(rows, N);
-            predictions.reshape(rows, N);
+            mPredictions.reshape(rows, N);
 
-            sum += evalBatch(batchFeatures, batchLabels, predictions);
+            sum += evalBatch(batchFeatures, batchLabels, mPredictions);
+
+            // Revert the changes to mPredictions so we don't accidentally
+            // cause a reallocation.
+            mPredictions.reshape(batchSize, N);
         }
 
         return sum;
@@ -333,8 +340,8 @@ public:
         assert(gradient.size() >= N);
 
         // Forward prop the training data through the network
-        static Matrix<T> evaluation(rows, M);
-        nn.evaluateBatch(features, evaluation);
+        mPredictions.resize(rows, M);
+        nn.evaluateBatch(features, mPredictions);
 
         // Calculate the deltas for the last layer by subtracting the evaluation
         // from the labels.
@@ -342,7 +349,7 @@ public:
         for (size_t i = 0; i < rows; ++i)
         {
             for (size_t j = 0; j < M; ++j)
-                outputDeltas(i, j) = labels(i, j) - evaluation(i, j);
+                outputDeltas(i, j) = labels(i, j) - mPredictions(i, j);
         }
 
         // Propagate the deltas back through the network
@@ -354,13 +361,13 @@ public:
         // averaging the values across columns.
         Layer<T>* front = nn.getLayer(0);
 
-        static Matrix<T> localGradients(rows, N);
+        mLocalGradientsInputs.resize(rows, N);
         front->backpropInputsBatch(features, nn.getActivation(0),
-            nn.getDeltas(0), localGradients);
+            nn.getDeltas(0), mLocalGradientsInputs);
 
         // Average gradients across the columns
         for (size_t i = 0; i < rows; ++i)
-            vAdd(localGradients(i), gradient.data(), N);
+            vAdd(mLocalGradientsInputs(i), gradient.data(), N);
         vScale(gradient.data(), T{-2.0} / rows, N);
     }
 
@@ -376,8 +383,8 @@ public:
         assert(gradient.size() >= N);
 
         // Forward prop the training data through the network
-        static Matrix<T> evaluation(rows, M);
-        nn.evaluateBatch(features, evaluation);
+        mPredictions.resize(rows, M);
+        nn.evaluateBatch(features, mPredictions);
 
         // Calculate the deltas for the last layer by subtracting the evaluation
         // from the labels.
@@ -385,7 +392,7 @@ public:
         for (size_t i = 0; i < rows; ++i)
         {
             for (size_t j = 0; j < M; ++j)
-                outputDeltas(i, j) = labels(i, j) - evaluation(i, j);
+                outputDeltas(i, j) = labels(i, j) - mPredictions(i, j);
         }
 
         // Propagate the deltas back through the network.
@@ -499,6 +506,12 @@ public:
             hessian += T{2.0} * (transpose(jacobian) * jacobian - sumOfLocalHessians);
         }
     }
+
+private:
+
+    // Temporary storage for the functions above
+    Matrix<T> mPredictions;
+    Matrix<T> mLocalGradientsInputs;
 };
 
 };

@@ -155,7 +155,11 @@ public:
     using CostFunction<T, Model>::mBaseFunction;
 
     CrossEntropyFunction(Model& baseFunction) :
-        CostFunction<T, Model>(baseFunction)
+        CostFunction<T, Model>(baseFunction),
+        mPrediction(baseFunction.getOutputs()),
+        mError(1, baseFunction.getOutputs()),
+        mBaseJacobianInputs(baseFunction.getOutputs(), baseFunction.getInputs()),
+        mBaseJacobianParameters(baseFunction.getOutputs(), baseFunction.getNumParameters)
     {
         // Do nothing
     }
@@ -166,14 +170,13 @@ public:
         const T EPSILON = std::numeric_limits<T>::epsilon();
         const size_t N  = features.getRows();
         const size_t M  = labels.getCols();
-        static vector<T> prediction(M);
 
         T sum{};
         for (size_t i = 0; i < N; ++i)
         {
-            mBaseFunction.evaluate(features(i), prediction.data());
+            mBaseFunction.evaluate(features(i), mPrediction.data());
             for (size_t j = 0; j < M; ++j)
-                sum += labels(i, j) * std::log(prediction[j] + EPSILON);
+                sum += labels(i, j) * std::log(mPrediction[j] + EPSILON);
         }
 
         return -sum;
@@ -195,10 +198,6 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian(M, N);
-        static Matrix<T> error(1, M);
-        static vector<T> evaluation(M);
-
         // The matrix 'grad' temporarily holds the contents of the gradient
         Matrix<T> grad(gradient.data(), 1, N);
 
@@ -206,19 +205,19 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point
             // with respect to the inputs
-            mBaseFunction.calculateJacobianInputs(features(i), baseJacobian);
+            mBaseFunction.calculateJacobianInputs(features(i), mBaseJacobianInputs);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation.data());
+            mBaseFunction.evaluate(features(i), mPrediction.data());
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = -labels(i, j) / evaluation[j];
+                mError(0, j) = -labels(i, j) / mPrediction[j];
 
-            grad += error * baseJacobian;
+            grad += mError * mBaseJacobianInputs;
         }
 
         // Divide by the batch size to get the average gradient
-        vScale(gradient.data(), 1.0/rows, N);
+        vScale(gradient.data(), T{1.0} / rows, N);
     }
 
     void calculateGradientParameters(const Matrix<T>& features,
@@ -237,10 +236,6 @@ public:
         // Set the gradient to the zero vector
         std::fill(gradient.begin(), gradient.end(), T{});
 
-        static Matrix<T> baseJacobian;
-        static Matrix<T> error(1, M);
-        static vector<T> evaluation(M);
-
         // The matrix 'grad' temporarily holds the contents of the gradient
         Matrix<T> grad(gradient.data(), 1, N);
 
@@ -248,18 +243,18 @@ public:
         {
             // Calculate the Jacobian matrix of the base function at this point
             // with respect to the model parameters
-            mBaseFunction.calculateJacobianParameters(features(i), baseJacobian);
+            mBaseFunction.calculateJacobianParameters(features(i), mBaseJacobianParameters);
 
             // Calculate the error for this sample
-            mBaseFunction.evaluate(features(i), evaluation.data());
+            mBaseFunction.evaluate(features(i), mPrediction.data());
 
             for (size_t j = 0; j < M; ++j)
-                error(0, j) = -labels(i, j) / evaluation[j];
+                mError(0, j) = -labels(i, j) / mPrediction[j];
 
-            grad += error * baseJacobian;
+            grad += mError * mBaseJacobianParameters;
         }
 
-        vScale(gradient.data(), 1.0/rows, N);
+        vScale(gradient.data(), T{1.0} / rows, N);
     }
 
     void calculateHessianInputs(const Matrix<T>& features,
@@ -275,6 +270,13 @@ public:
         ::calculateHessianParameters(mBaseFunction,
             features, labels, hessian);
     }
+
+private:
+
+    // Temporary storage for the methods above
+    vector<T> mPrediction;
+    Matrix<T> mError;
+    Matrix<T> mBaseJacobianInputs, mBaseJacobianParameters;
 };
 
 // Template specialization for Neural Networks, since there is a much more
@@ -311,7 +313,7 @@ public:
 
         Matrix<T> batchFeatures((T*) features.data(), batchSize, M);
         Matrix<T> batchLabels((T*) labels.data(), batchSize, N);
-        static Matrix<T> predictions(batchSize, N);
+        mPredictions.resize(batchSize, N);
 
         T sum{};
 
@@ -319,7 +321,7 @@ public:
         size_t rows = features.getRows();
         while (rows >= batchSize)
         {
-            sum += evalBatch(batchFeatures, batchLabels, predictions);
+            sum += evalBatch(batchFeatures, batchLabels, mPredictions);
 
             // Move to the next batch
             T* featureData = batchFeatures.data();
@@ -335,9 +337,12 @@ public:
         {
             batchFeatures.reshape(rows, M);
             batchLabels.reshape(rows, N);
-            predictions.reshape(rows, N);
+            mPredictions.reshape(rows, N);
 
-            sum += evalBatch(batchFeatures, batchLabels, predictions);
+            sum += evalBatch(batchFeatures, batchLabels, mPredictions);
+
+            // Revert changes to avoid possible reallocations
+            mPredictions.reshape(batchSize, N);
         }
 
         return sum;
@@ -579,8 +584,11 @@ private:
         }
     };
 
-    // The only piece of data for this class - a pointer to the chosen implementation
+    // A pointer to the chosen implementation
     std::unique_ptr<Imp> mImp;
+
+    // Temporary storage space for evaluate()
+    Matrix<T> mPredictions;
 };
 
 };
