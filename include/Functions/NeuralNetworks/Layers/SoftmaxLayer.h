@@ -24,7 +24,7 @@ public:
 
     // Create a Softmax layer. All we need to know is the dimension.
     SoftmaxLayer(size_t size) :
-        Layer<T>(size, size) {}
+        Layer<T>(size, size), mJacobian(size, size) {}
 
     void forwardSingle(const T* x, T* y) override
     {
@@ -46,8 +46,7 @@ public:
     void backpropInputsSingle(const T* x, const T* y,
         const T* deltas, T* dest) override
     {
-        static Matrix<T> jacobian(mOutputs, mOutputs);
-        T* jacobianData = jacobian.data();
+         T* jacobianData = mJacobian.data();
 
         // Destination = J * deltas, where J = Diag(y) - y*y^T
         // and y is the activation of this layer. We construct J manually by
@@ -69,7 +68,7 @@ public:
         // training label (in one hot representation). This is computationally
         // much easier to calculate and much more numerically stable, so it
         // should be used whenever possible.
-        jacobian.fill(T{});
+        mJacobian.fill(T{});
         outerProduct(y, y, jacobianData, mOutputs, mOutputs, T{-1.0});
 
         size_t index = 0;
@@ -86,6 +85,9 @@ public:
     {
         return "Softmax Layer";
     }
+
+private:
+    Matrix<T> mJacobian;
 };
 
 }

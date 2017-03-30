@@ -26,8 +26,8 @@ endif(CMAKE_ACCELERATION_TYPE STREQUAL "CPU")
 
 # Add compiler flags here (e.g. -O3, -Wall, etc.)
 # This is also needed to use C++11. "-std=c++11"
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Wall -Wextra -g -gdwarf-2 -Wfatal-errors")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -Wall -Wextra -g -Wfatal-errors")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -Wall -Wextra -g -Wfatal-errors")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -Wall -Wextra -Wfatal-errors")
 
 # Set the location of the final executable to be where cmake/make are called
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

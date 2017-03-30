@@ -51,7 +51,7 @@ public:
     {
         fill(val);
     }
-    
+
     Matrix(T* data, const size_t rows, const size_t cols) :
         mData(data), mRows(rows), mCols(cols), mOwnsData(false)
     {}
@@ -86,12 +86,8 @@ public:
     // Destructor
     ~Matrix()
     {
-        // cout << "DESTRUCTOR: " << this << endl;
-        // cin.get();
         if (mOwnsData && mData != nullptr)
         {
-            // cout << "DESTROYING DATA" << endl;
-            // cout.flush();
             delete[] mData;
             mData = nullptr;
         }
@@ -168,7 +164,6 @@ public:
             // Update the state
             if (mOwnsData && ptr != nullptr)
             {
-                // cout << "resize() - DESTROYING DATA" << endl;
                 delete[] ptr;
                 ptr = nullptr;
             }

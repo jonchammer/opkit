@@ -48,7 +48,8 @@ public:
         mInputMatrix(filterWidth * filterHeight * inputChannels,
             mOutputWidth * mOutputHeight),
         mIntermediateMatrix(mFilterWidth * mFilterHeight * mInputChannels,
-            mOutputWidth * mOutputHeight)
+            mOutputWidth * mOutputHeight),
+        mOnes(mOutputWidth * mOutputHeight, 1, T{1})
     {}
 
     void forwardSingle(const T* x, T* y) override
@@ -108,10 +109,9 @@ public:
             mOutputWidth * mOutputHeight);
 
         // gradient_biases = sum_per_row(deltas)
-        static Matrix<T> ones(mOutputWidth * mOutputHeight, 1, T{1});
         T* biases = dest +
             mFilterWidth * mFilterHeight * mInputChannels * mNumFilters;
-        mvMultiply(deltas, ones.data(), biases,
+        mvMultiply(deltas, mOnes.data(), biases,
             mNumFilters, mOutputWidth * mOutputHeight);
     }
 
@@ -167,7 +167,7 @@ private:
     size_t mStrideX, mStrideY;
     size_t mOutputWidth, mOutputHeight;
 
-    Matrix<T> mInputMatrix, mIntermediateMatrix;
+    Matrix<T> mInputMatrix, mIntermediateMatrix, mOnes;
 };
 
 // // Convolutional layers are often used for image processing. They take as input

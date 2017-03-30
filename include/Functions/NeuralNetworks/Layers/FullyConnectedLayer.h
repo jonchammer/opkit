@@ -104,8 +104,12 @@ public:
         // across the columns (or equivalently, by taking the average across the
         // rows in the transpose of the deltas). We implement this by
         // multiplying: deltas^T * the vector [1/N, 1/N, ... ].
-        static Matrix<T> ones(1, N, T{1});
-        mtvMultiply(deltas.data(), ones.data(), dest + mInputs * mOutputs,
+        if (mOnes.getRows() != 1 || mOnes.getCols() != N)
+        {
+            mOnes.resize(1, N);
+            mOnes.fill(T{1});
+        }
+        mtvMultiply(deltas.data(), mOnes.data(), dest + mInputs * mOutputs,
             N, mOutputs, T{1.0} / N);
     }
 
@@ -119,7 +123,11 @@ public:
     {
         return "Fully Connected Layer";
     }
+
+private:
+    Matrix<T> mOnes;
 };
+
 }
 
 #endif

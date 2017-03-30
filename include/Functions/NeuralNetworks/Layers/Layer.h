@@ -144,12 +144,12 @@ public:
         if (M > 0)
         {
             // Compute the matrix of local gradients
-            static Matrix<T> localGradients(N, M);
+            Matrix<T> localGradients(N, M);
             for (size_t i = 0; i < N; ++i)
                 backpropParametersSingle(x(i), deltas(i), localGradients(i));
 
             // Multiply by the vector [1/N, 1/N, ...] to compute the average
-            static Matrix<T> ones(1, N, T{1});
+            Matrix<T> ones(1, N, T{1});
             mtvMultiply(localGradients.data(), ones.data(), dest, N, M, T{1.0} / N);
         }
     }

@@ -40,7 +40,8 @@ public:
         mOutputSize((inputSize - filterSize + 2 * zeroPadding) / stride + 1),
 
         mInputMatrix(filterSize * inputChannels, mOutputSize),
-        mIntermediateMatrix(mFilterSize * mInputChannels, mOutputSize)
+        mIntermediateMatrix(mFilterSize * mInputChannels, mOutputSize),
+        mOnes(mOutputSize, 1, T{1})
     {}
 
     void forwardSingle(const T* x, T* y) override
@@ -171,8 +172,7 @@ public:
             mNumFilters, mFilterSize * mInputChannels, mOutputSize);
 
         // gradient_biases = sum_per_row(deltas)
-        static Matrix<T> ones(mOutputSize, 1, T{1});
-        mvMultiply(deltas, ones.data(),
+        mvMultiply(deltas, mOnes.data(),
             dest + mFilterSize * mInputChannels * mNumFilters,
             mNumFilters, mOutputSize);
     }
@@ -234,6 +234,7 @@ private:
 
     Matrix<T> mInputMatrix;
     Matrix<T> mIntermediateMatrix;
+    Matrix<T> mOnes;
 };
 
 }
