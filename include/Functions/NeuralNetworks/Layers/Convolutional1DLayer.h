@@ -69,45 +69,80 @@ public:
 
     // void forwardBatch(const Matrix<T>& x, Matrix<T>& y) override
     // {
-    //     const size_t N = x.getRows();
+    //     const size_t batchSize = x.getRows();
     //
-    //     // y' = weights * im2col(x)
-    //     // The input matrix is set to a batch size of 1 by default. When using
-    //     // batch operations, we'll need more space. When the matrix is already
-    //     // sized correctly, resizing is a no-op.
-    //     mInputMatrix.resize(mFilterSize * mInputChannels, mOutputSize * N);
-    //     im2col(x.data(), mInputSize, N, mInputChannels, mFilterSize, 1,
-    //         mZeroPadding, 0, mStride, 1, 1, 1, mInputMatrix.data());
+    //     // This does work, but it's more complicated than the other approach,
+    //     // and it's not appreciably faster.
+    //     // mInputMatrix.resize(mFilterSize * mInputChannels, mOutputSize * batchSize);
+    //     // im2col(x.data(), mInputSize, batchSize, mInputChannels, mFilterSize, 1,
+    //     //     mZeroPadding, 0, mStride, 1, 1, 1, mInputMatrix.data());
+    //     //
+    //     // const T* src    = mInputMatrix.data();
+    //     // T* dest         = y.data();
+    //     // const T* biases = mParameters +
+    //     //     (mFilterSize * mInputChannels * mNumFilters);
+    //     //
+    //     // // mmMultiply(mParameters, mInputMatrix.data(), dest,
+    //     // //         mNumFilters, mOutputSize * batchSize, mFilterSize * mInputChannels);
+    //     //
+    //     // for (size_t i = 0; i < batchSize; ++i)
+    //     // {
+    //     //     size_t M       = mNumFilters;
+    //     //     size_t N       = mOutputSize;
+    //     //     size_t K       = mFilterSize * mInputChannels;
+    //     //     float alpha    = 1.0f;
+    //     //     float beta     = 0.0f;
+    //     //     const float* A = mParameters;
+    //     //     const float* B = src;
+    //     //     float* C       = dest;
+    //     //
+    //     //     cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+    //     //         N, M, K,
+    //     //         alpha, B, N * batchSize,
+    //     //         A, K,
+    //     //         beta, C, N);
+    //     //
+    //     //     // Add the bias for each filter
+    //     //     T* cell = dest;
+    //     //     for (size_t row = 0; row < mNumFilters; ++row)
+    //     //     {
+    //     //         const T bias = biases[row];
+    //     //         for (size_t col = 0; col < mOutputSize; ++col)
+    //     //             cell[col] += bias;
+    //     //         cell += mOutputSize;
+    //     //     }
+    //     //
+    //     //     src  += mOutputSize;
+    //     //     dest += mNumFilters * mOutputSize;
+    //     // }
     //
     //     // Multiply the weights matrix by the input matrix.
     //     // y = w * im2col(x)
-    //     Matrix<T> yPrime(mNumFilters, mOutputSize * N);
-    //     mmMultiply(mParameters, mInputMatrix.data(), yPrime.data(),
-    //         mNumFilters, mOutputSize * N, mFilterSize * mInputChannels);
-    //
-    //     // Add the bias for each filter
+    //     const T* src    = x.data();
+    //     T* dest         = y.data();
     //     const T* biases = mParameters +
     //         (mFilterSize * mInputChannels * mNumFilters);
     //
-    //     for (size_t row = 0; row < mNumFilters; ++row)
+    //     for (size_t i = 0; i < batchSize; ++i)
     //     {
-    //         const T bias = biases[row];
-    //         for (size_t col = 0; col < mOutputSize * N; ++col)
-    //             yPrime(row)[col] += bias;
-    //     }
+    //         im2col(src, mInputSize, 1, mInputChannels, mFilterSize, 1,
+    //             mZeroPadding, 0, mStride, 1, 1, 1, mInputMatrix.data());
     //
-    //     // Reorganize y' -> y such that all the feature maps for one input are
-    //     // located contiguously.
-    //     T* dest = y.data();
-    //     for (size_t input = 0; input < N; ++input)
-    //     {
-    //         const T* src = yPrime.data() + (mOutputSize * input);
-    //         for (size_t i = 0; i < mNumFilters; ++i)
+    //         mmMultiply(mParameters, mInputMatrix.data(), dest,
+    //             mNumFilters, mOutputSize, mFilterSize * mInputChannels);
+    //
+    //         // Add the bias for each filter
+    //         T* cell = dest;
+    //         for (size_t row = 0; row < mNumFilters; ++row)
     //         {
-    //             vCopy(src, dest, mOutputSize);
-    //             src  += mOutputSize * N;
-    //             dest += mOutputSize;
+    //             const T bias = biases[row];
+    //             for (size_t col = 0; col < mOutputSize; ++col)
+    //                 cell[col] += bias;
+    //             cell += mOutputSize;
     //         }
+    //
+    //         src  += mInputSize  * mInputChannels;
+    //         dest += mOutputSize * mNumFilters;
     //     }
     // }
 
@@ -141,6 +176,12 @@ public:
             dest + mFilterSize * mInputChannels * mNumFilters,
             mNumFilters, mOutputSize);
     }
+
+    // void backpropParametersBatch(const Matrix<T>& x,
+    //     const Matrix<T>& deltas, T* dest) override
+    // {
+    //
+    // }
 
     size_t getNumParameters() const override
     {

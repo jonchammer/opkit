@@ -16,16 +16,17 @@ using namespace opkit;
 using std::cout;
 using std::endl;
 using std::vector;
+using Type = double;
 
 // Tests forward prop by passing a known input through the network and comparing
 // the result to a known output.
-bool testForwardProp(NeuralNetwork<double>& network, vector<double>& input,
-    vector<double>& trueOutput)
+bool testForwardProp(NeuralNetwork<Type>& network, vector<Type>& input,
+    vector<Type>& trueOutput)
 {
      // Run through the convolution to get output
     cout << "Testing Feedforward." << endl;
-    vector<double> output(network.getOutputs());
-    Convolutional2DLayer<double>* layer  = (Convolutional2DLayer<double>*) network.getLayer(0);
+    vector<Type> output(network.getOutputs());
+    Convolutional2DLayer<Type>* layer  = (Convolutional2DLayer<Type>*) network.getLayer(0);
     size_t numChannels = layer->getOutputChannels();
 
     network.evaluate(input.data(), output.data());
@@ -61,9 +62,9 @@ bool testForwardProp(NeuralNetwork<double>& network, vector<double>& input,
 
 // Test Backprop by calculating the Jacobian using backprop and by using
 // finite differences.
-bool testBackProp(NeuralNetwork<double>& network, vector<double>& input)
+bool testBackProp(NeuralNetwork<Type>& network, vector<Type>& input)
 {
-    vector<double> test =
+    vector<Type> test =
     {
         1, 2, 3, 4, 5,
         6, 7, 8, 9, 10,
@@ -86,7 +87,7 @@ bool testBackProp(NeuralNetwork<double>& network, vector<double>& input)
     std::copy(test.begin(), test.end(), input.begin());
 
     cout << "Testing Backprop." << endl;
-    Matrix<double> jacobian, jacobian2;
+    Matrix<Type> jacobian, jacobian2;
     network.calculateJacobianParameters(input.data(), jacobian);
     network.Function::calculateJacobianParameters(input.data(), jacobian2);
 
@@ -99,8 +100,9 @@ bool testBackProp(NeuralNetwork<double>& network, vector<double>& input)
     {
         for (size_t k = 0; k < jacobian.getCols(); ++k)
         {
-            if (abs(jacobian(j, k) - jacobian2(j, k)) > 0.001)
+            if (abs(jacobian(j, k) - jacobian2(j, k)) > 0.1)
             {
+                cout << j << " " << k << endl;
                 cout << "Backprop - FAIL" << endl;
                 return false;
             }
@@ -123,12 +125,12 @@ int main()
     size_t padding       = 1;
 
     // Create a single convolutional layer
-    Convolutional2DLayer<double> layer(inputWidth, inputHeight, inputChannels,
-        filterSize, filterSize, numFilters, stride, stride, padding, padding);
-    NeuralNetwork<double> network;
+    Convolutional2DLayer<Type> layer(inputWidth, inputHeight, inputChannels,
+        filterSize, filterSize, numFilters, padding, padding, stride, stride);
+    NeuralNetwork<Type> network;
     network.addLayer(&layer, false);
 
-    vector<double> params =
+    vector<Type> params =
     {
         // Weights - k1
         -1, 1, -1, 0, -1, 1, 1, -1, -1,
@@ -146,7 +148,7 @@ int main()
     std::copy(params.begin(), params.end(), network.getParameters().begin());
 
     // Test case
-    vector<double> input =
+    vector<Type> input =
     {
         2, 2, 2, 2, 0,
         0, 0, 2, 2, 1,
@@ -167,7 +169,7 @@ int main()
         2, 2, 2, 2, 1
     };
 
-    vector<double> trueOutput =
+    vector<Type> trueOutput =
     {
         5, -5, 3,
         -1, 0, -3,
