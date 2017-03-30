@@ -262,6 +262,9 @@ private:
     vector<Matrix<T>> mActivations;
     vector<Matrix<T>> mDeltas;
     size_t mMaxBatchSize;
+
+    // Temporary storage space used by calculateJacobianInputs/calculateJacobianParameters
+    vector<T> mPrediction;
 };
 
 template <class T>
@@ -379,12 +382,12 @@ void NeuralNetwork<T>::calculateJacobianParameters(const T* x, Matrix<T>& jacobi
 {
     const size_t N = mParameters.size();
     const size_t M = getOutputs();
-    static vector<T> prediction(M);
+    mPrediction.resize(M);
     jacobian.resize(M, N);
     jacobian.fill(T{});
 
     // 1. Forward propagation
-    evaluate(x, prediction.data());
+    evaluate(x, mPrediction.data());
 
     for (size_t i = 0; i < M; ++i)
     {
@@ -405,12 +408,12 @@ void NeuralNetwork<T>::calculateJacobianInputs(const T* x, Matrix<T>& jacobian)
 {
     const size_t N = getInputs();
     const size_t M = getOutputs();
-    static vector<T> prediction(M);
+    mPrediction.resize(M);
     jacobian.resize(M, N);
     jacobian.fill(T{});
 
     // 1. Forward propagation
-    evaluate(x, prediction.data());
+    evaluate(x, mPrediction.data());
 
     for (size_t i = 0; i < M; ++i)
     {

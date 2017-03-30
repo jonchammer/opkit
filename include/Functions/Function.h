@@ -57,8 +57,8 @@ namespace
         jacobian.resize(M, N);
 
         // Temporary vectors used for calculations
-        static vector<T> derivativePrediction1(M, T{});
-        static vector<T> derivativePrediction2(M, T{});
+        vector<T> derivativePrediction1(M, T{});
+        vector<T> derivativePrediction2(M, T{});
 
         // The Jacobian is calculated one column at a time by changing one
         // parameter and measuring the effect on all M outputs.
@@ -120,10 +120,10 @@ namespace
         hessian.resize(N, N);
 
         // Create the temporary vectors we'll need
-        static vector<T> plusplus(M, T{});
-        static vector<T> plusminus(M, T{});
-        static vector<T> minusplus(M, T{});
-        static vector<T> minusminus(M, T{});
+        vector<T> plusplus(M, T{});
+        vector<T> plusminus(M, T{});
+        vector<T> minusplus(M, T{});
+        vector<T> minusminus(M, T{});
 
         // Using the method of finite differences, each element of the Hessian
         // can be approximated using the following formula:

@@ -38,7 +38,7 @@ public:
         return mIt.hasNext();
     }
 
-    void lock(Matrix<T>*& features, Matrix<T>*& labels)
+    void next(Matrix<T>*& features, Matrix<T>*& labels)
     {
         const size_t M = mFeatures.getCols();
         const size_t N = mLabels.getCols();
@@ -52,11 +52,6 @@ public:
 
         features = &mBatchFeatures;
         labels   = &mBatchLabels;
-    }
-
-    void unlock()
-    {
-        // Do nothing
     }
 
     void reset()
