@@ -35,15 +35,15 @@ public:
     {
         // Initialize variables
         int misclassifications = 0;
-        static vector<T> prediction(labels.getCols(), T{});
-
+        mPrediction.resize(labels.getCols());
+   
         // Calculate the SSE
         for (size_t i = 0; i < features.getRows(); ++i)
         {
-            mBaseFunction.evaluate(features(i), prediction.data());
+            mBaseFunction.evaluate(features(i), mPrediction.data());
 
             // Determine the largest output in the prediction
-            size_t maxIndex = vMaxIndex(prediction.data(), prediction.size());
+            size_t maxIndex = vMaxIndex(mPrediction.data(), mPrediction.size());
 
             // If the max column from the prediction does not coincide with
             // the '1' in the label, we have a misclassification
@@ -53,6 +53,11 @@ public:
 
         return misclassifications;
     }
+    
+private:
+
+    // Temporary storage space for evaluate()
+    vector<T> mPrediction;
 };
 
 // Specialization for Neural Networks. We can evaluate categorical error very
@@ -78,15 +83,15 @@ public:
 
         Matrix<T> batchFeatures((T*) features.data(), batchSize, M);
         Matrix<T> batchLabels((T*) labels.data(), batchSize, N);
-        static Matrix<T> predictions(batchSize, N);
-
+        mPredictions.resize(batchSize, N);
+    
         int misclassifications = 0;
 
         // Calculate the SSE
         size_t rows = features.getRows();
         while (rows >= batchSize)
         {
-            misclassifications += evalBatch(batchFeatures, batchLabels, predictions);
+            misclassifications += evalBatch(batchFeatures, batchLabels, mPredictions);
 
             // Move to the next batch
             T* featureData = batchFeatures.data();
@@ -102,9 +107,13 @@ public:
         {
             batchFeatures.reshape(rows, M);
             batchLabels.reshape(rows, N);
-            predictions.reshape(rows, N);
+            mPredictions.reshape(rows, N);
 
-            misclassifications += evalBatch(batchFeatures, batchLabels, predictions);
+            misclassifications += evalBatch(batchFeatures, batchLabels, mPredictions);
+            
+            // Revert to the original shape so we don't accidentally trigger a
+            // reallocation.
+            mPredictions.reshape(batchSize, N);
         }
 
         return misclassifications;
@@ -135,6 +144,9 @@ private:
 
         return misclassifications;
     }
+    
+    // Temporary storage space for evaluate()
+    Matrix<T> mPredictions;
 };
 
 };

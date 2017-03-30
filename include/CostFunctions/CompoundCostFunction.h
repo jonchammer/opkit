@@ -56,15 +56,15 @@ public:
         const Matrix<T>& labels, vector<T>& gradient)
     {
         const size_t N = gradient.size();
-        static vector<T> localGradient(N);
+        mLocalGradientInputs.resize(N);
         std::fill(gradient.begin(), gradient.end(), T{});
 
         // Calculate each individual gradient and sum them together to generate
         // the final gradient.
         for (CostFunction<T, Model>*& fn : mCostFunctions)
         {
-            fn->calculateGradientInputs(features, labels, localGradient);
-            vAdd(localGradient.data(), gradient.data(), N);
+            fn->calculateGradientInputs(features, labels, mLocalGradientInputs);
+            vAdd(mLocalGradientInputs.data(), gradient.data(), N);
         }
     }
 
@@ -72,15 +72,15 @@ public:
         const Matrix<T>& labels, vector<T>& gradient)
     {
         const size_t N = gradient.size();
-        static vector<T> localGradient(N);
+        mLocalGradientParameters.resize(N);
         std::fill(gradient.begin(), gradient.end(), T{});
 
         // Calculate each individual gradient and sum them together to generate
         // the final gradient.
         for (CostFunction<T, Model>*& fn : mCostFunctions)
         {
-            fn->calculateGradientParameters(features, labels, localGradient);
-            vAdd(localGradient.data(), gradient.data(), N);
+            fn->calculateGradientParameters(features, labels, mLocalGradientParameters);
+            vAdd(mLocalGradientParameters.data(), gradient.data(), N);
         }
     }
 
@@ -89,15 +89,15 @@ public:
     {
         const size_t M = hessian.getRows();
         const size_t N = hessian.getCols();
-        static Matrix<T> localHessian(M, N);
+        mLocalHessianInputs.resize(M, N);
         hessian.fill(T{});
 
         // Calculate each individual gradient and sum them together to generate
         // the final gradient.
         for (CostFunction<T, Model>*& fn : mCostFunctions)
         {
-            fn->calculateHessianInputs(features, labels, localHessian);
-            vAdd(localHessian.data(), hessian.data(), M * N);
+            fn->calculateHessianInputs(features, labels, mLocalHessianInputs);
+            vAdd(mLocalHessianInputs.data(), hessian.data(), M * N);
         }
     }
 
@@ -106,21 +106,27 @@ public:
     {
         const size_t M = hessian.getRows();
         const size_t N = hessian.getCols();
-        static Matrix<T> localHessian(M, N);
+        mLocalHessianParameters.resize(M, N);
         hessian.fill(T{});
 
         // Calculate each individual gradient and sum them together to generate
         // the final gradient.
         for (CostFunction<T, Model>*& fn : mCostFunctions)
         {
-            fn->calculateHessianParameters(features, labels, localHessian);
-            vAdd(localHessian.data(), hessian.data(), M * N);
+            fn->calculateHessianParameters(features, labels, mLocalHessianParameters);
+            vAdd(mLocalHessianParameters.data(), hessian.data(), M * N);
         }
     }
 
 private:
     vector<CostFunction<T, Model>*> mCostFunctions;
     vector<bool> mFunctionOwnership;
+    
+    // Temporary storage space for the calculation methods
+    vector<T> mLocalGradientParameters;
+    vector<T> mLocalGradientInputs;
+    Matrix<T> mLocalHessianParameters;
+    Matrix<T> mLocalHessianInputs;
 };
 
 }
