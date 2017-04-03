@@ -170,19 +170,19 @@ void createNetwork(NeuralNetwork<T>& network)
     // pre->setScaleYRange(0.8, 1.0);
     //
     // network.addLayer(pre);
-    network.addLayer(new FullyConnectedLayer<T>(100, 50));
-    network.addLayer(new ActivationLayer<T>(50, new tanhActivation<T>()));
-    network.addLayer(new FullyConnectedLayer<T>(50, 10));
-    network.addLayer(new SoftmaxLayer<T>(10));
+    // network.addLayer(new FullyConnectedLayer<T>(100, 50));
+    // network.addLayer(new ActivationLayer<T>(50, new tanhActivation<T>()));
+    // network.addLayer(new FullyConnectedLayer<T>(50, 10));
+    // network.addLayer(new SoftmaxLayer<T>(10));
 
-    /*Convolutional1DLayer<T>* l1 = new Convolutional1DLayer<T>(100, 1, 3, 32, 1, 2);
+    Convolutional1DLayer<T>* l1 = new Convolutional1DLayer<T>(100, 1, 3, 32, 1, 2);
     Convolutional1DLayer<T>* l2 = new Convolutional1DLayer<T>(
         l1->getOutputSize(), l1->getOutputChannels(), 5, 64, 0, 1);
 
     network.addLayer(l1);
     network.addLayer(new ActivationLayer<T>(l1->getOutputs(), new tanhActivation<T>()));
     network.addLayer(l2);
-    network.addLayer(new SoftmaxLayer<T>(l2->getOutputs()));*/
+    network.addLayer(new SoftmaxLayer<T>(l2->getOutputs()));
 
     network.print(cout, "");
     network.initializeParameters(rand);

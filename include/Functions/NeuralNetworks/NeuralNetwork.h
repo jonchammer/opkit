@@ -489,9 +489,9 @@ void NeuralNetwork<T>::initializeParameters(Rand& rand)
 template <class T>
 void NeuralNetwork<T>::print(std::ostream& out, const std::string& prefix) const
 {
-    const size_t LINE_LENGTH  = 72;
-    const char* HEADER_STRING = "%s   %4s | %-30s | %-7s | %-7s | %-10s |\n";
-    const char* DATA_STRING   = "%s | %4zu | %-30s | %7zu | %7zu | %10zu |\n";
+    const size_t LINE_LENGTH  = 84;
+    const char* HEADER_STRING = "%s   %4s | %-42s | %-7s | %-7s | %-10s |\n";
+    const char* DATA_STRING   = "%s | %4zu | %-42s | %7zu | %7zu | %10zu |\n";
     const char* MISC_ELEMENT_STRING =
         "%s |      |  - %-27s |         |         |            |\n";
 

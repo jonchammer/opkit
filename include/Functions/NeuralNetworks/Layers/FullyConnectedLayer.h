@@ -79,7 +79,7 @@ public:
         mmMultiply(deltasData, mParameters, destData, N, mInputs, mOutputs);
     }
 
-    void backpropParametersSingle(const T* x, const T* deltas, T* dest) override
+    virtual void backpropParametersSingle(const T* x, const T* deltas, T* dest) override
     {
         // dest_parameters = outer product(deltas, x)
         std::fill(dest, dest + mInputs*mOutputs, T{});
@@ -89,7 +89,7 @@ public:
         vCopy(deltas, dest + (mOutputs * mInputs), mOutputs);
     }
 
-    void backpropParametersBatch(const Matrix<T>& x, const Matrix<T>& deltas,
+    virtual void backpropParametersBatch(const Matrix<T>& x, const Matrix<T>& deltas,
         T* dest) override
     {
         const size_t N = x.getRows();
@@ -119,7 +119,7 @@ public:
         return mInputs * mOutputs + mOutputs;
     }
 
-    std::string getName() const override
+    virtual std::string getName() const override
     {
         return "Fully Connected Layer";
     }

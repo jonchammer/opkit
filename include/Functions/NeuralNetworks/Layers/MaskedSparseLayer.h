@@ -57,7 +57,7 @@ public:
         // is calculated in calcuateGradient(), but there's no need to do any
         // additional work.
         mMask.apply(mParameters);
-        
+
         // y = W * x + b
         mvMultiply(mParameters, x, y, mOutputs, mInputs);
         vAdd(mParameters + (mInputs * mOutputs), y, mOutputs);
@@ -94,6 +94,23 @@ public:
     Bitmask<T>& getMask()
     {
         return mMask;
+    }
+
+    std::string getName() const override
+    {
+        return "Masked Sparse Layer";
+    }
+
+    std::string* getProperties(size_t& numElements) const
+    {
+        std::string* arr = new std::string[1];
+
+        char buffer[1024];
+        snprintf(buffer, 1024, "Num Connections: %zu", mMask.getNumSetCells());
+        arr[0] = string(buffer);
+
+        numElements = 1;
+        return arr;
     }
 
 private:
