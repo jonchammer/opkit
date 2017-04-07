@@ -38,7 +38,8 @@ public:
         mOutputSize((inputSize - filterSize + 2 * zeroPadding) / stride + 1),
         mAlpha(alpha), mBeta(beta),
 
-        mWindowedParameters(mInputSize * mOutputSize)
+        mWindowedParameters(mInputSize * mOutputSize),
+        mShareBiases(true)
     {
         // Determine which cells are part of the windows
         for (size_t i = 0; i < mFilterSize; ++i)
@@ -63,6 +64,7 @@ public:
     void backpropParametersBatch(const Matrix<T>& x, const Matrix<T>& deltas,
         T* dest) override
     {
+        //std::fill(dest, dest + mInputs * mOutputs + mOutputs, T{});
         FullyConnectedLayer<T>::backpropParametersBatch(x, deltas, dest);
 
         // Add regularization constraint to normal gradient
@@ -72,7 +74,7 @@ public:
     void reportStats()
     {
         // Mean of each cell in the kernel
-        vector<T> means(mFilterSize);
+        vector<T> means(mFilterSize + 1);
         for (size_t i = 0; i < mFilterSize; ++i)
         {
             size_t count = 0;
@@ -133,6 +135,22 @@ public:
             }
         }
         std::cout << "Variance (outside) = " << sum / count << std::endl;
+
+        // Mean of bias terms
+        T* biases = mParameters + mOutputSize * mInputSize;
+        for (int y = 0; y < mOutputSize; ++y)
+            means[mFilterSize] += biases[y];
+        T biasMean = means[mFilterSize] / mOutputSize;
+        std::cout << "Mean (bias) = " << biasMean << std::endl;
+
+        // Variance of bias terms
+        sum = T{};
+        for (int y = 0; y < mOutputSize; ++y)
+        {
+            T dx = biases[y] - biasMean;
+            sum += dx * dx;
+        }
+        std::cout << "Variance (bias) = " << sum / mOutputSize << std::endl;
     }
 
     std::string getName() const override
@@ -151,11 +169,12 @@ private:
 
     T mAlpha, mBeta;
     std::vector<bool> mWindowedParameters;
+    bool mShareBiases;
 
     void updateGradient(T* gradient)
     {
         // Calculate the appropriate means
-        vector<T> means(mFilterSize);
+        vector<T> means(mFilterSize + 1);
         for (size_t i = 0; i < mFilterSize; ++i)
         {
             size_t count = 0;
@@ -169,6 +188,14 @@ private:
                 }
             }
             means[i] /= count;
+        }
+
+        if (mShareBiases)
+        {
+            T* biases = mParameters + mOutputSize * mInputSize;
+            for (int y = 0; y < mOutputSize; ++y)
+                means[mFilterSize] += biases[y];
+            means[mFilterSize] /= mOutputSize;
         }
 
         // Update the gradient for the cells in the window
@@ -190,6 +217,15 @@ private:
         {
             if (!mWindowedParameters[i])
                 gradient[i] -= mBeta * sign(mParameters[i]);
+        }
+
+        // Update the gradient for the bias terms
+        if (mShareBiases)
+        {
+            T* biases       = mParameters + mOutputSize * mInputSize;
+            T* biasGradient = gradient + mOutputSize * mInputSize;
+            for (int y = 0; y < mOutputSize; ++y)
+                biasGradient[y] -= mAlpha * (biases[y] - means[mFilterSize]);
         }
     }
 };

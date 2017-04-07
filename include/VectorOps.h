@@ -1,39 +1,36 @@
 #ifndef VECTOR_OPS_H
 #define VECTOR_OPS_H
 
-#include <vector>
-using std::vector;
-
 template <class T>
-T mean(const vector<T>& vec)
+T mean(const T* vec, const size_t length)
 {
     T sum{};
-    for (size_t i = 0; i < vec.size(); ++i)
+    for (size_t i = 0; i < length; ++i)
     {
         sum += vec[i];
     }
-    return sum / vec.size();
+    return sum / length;
 }
 
 template <class T>
-T variance(const vector<T>& vec)
+T variance(const T* vec, const size_t length)
 {
-    T avg = mean(vec);
+    T avg = mean(vec, length);
     T sum{};
-    for (size_t i = 0; i < vec.size(); ++i)
+    for (size_t i = 0; i < length; ++i)
     {
         T temp = vec[i] - avg;
         sum   += temp * temp;
     }
 
-    return sum / vec.size();
+    return sum / length;
 }
 
 template <class T>
-T magnitude(const vector<T>& vec)
+T magnitude(const T* vec, const size_t length)
 {
     T mag = T{};
-    for (size_t i = 0; i < vec.size(); ++i)
+    for (size_t i = 0; i < length; ++i)
     {
         mag += vec[i] * vec[i];
     }
@@ -41,13 +38,50 @@ T magnitude(const vector<T>& vec)
 }
 
 template <class T>
-void normalize(const vector<T>& vec)
+void normalize(const T* vec, const size_t length)
 {
-    T mag = magnitude(vec);
-    for (size_t i = 0; i < vec.size(); ++i)
+    T mag = magnitude(vec, length);
+    for (size_t i = 0; i < length; ++i)
     {
         vec[i] /= mag;
     }
+}
+
+template <class T>
+T min(const T* vec, const size_t length)
+{
+    T m = vec[0];
+    for (size_t i = 1; i < length; ++i)
+    {
+        if (vec[i] < m)
+            m = vec[i];
+    }
+    return m;
+}
+
+template <class T>
+T max(const T* vec, const size_t length)
+{
+    T m = vec[0];
+    for (size_t i = 1; i < length; ++i)
+    {
+        if (vec[i] > m)
+            m = vec[i];
+    }
+    return m;
+}
+
+template <class T>
+T effectiveDensity(const T* vec, const size_t length, const T limit = 1E-3)
+{
+    size_t count = 0;
+    for (size_t i = 0; i < length; ++i)
+    {
+        if (std::abs(vec[i]) > limit)
+            ++count;
+    }
+
+    return T(count) / T(length);
 }
 
 #endif
