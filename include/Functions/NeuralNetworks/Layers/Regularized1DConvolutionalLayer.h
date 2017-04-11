@@ -2,6 +2,7 @@
 #define REGULARIZED_1D_CONVOLUTION_LAYER_H
 
 #include "FullyConnectedLayer.h"
+#include "VectorOps.h"
 
 namespace opkit
 {
@@ -64,8 +65,12 @@ public:
     void backpropParametersBatch(const Matrix<T>& x, const Matrix<T>& deltas,
         T* dest) override
     {
-        //std::fill(dest, dest + mInputs * mOutputs + mOutputs, T{});
+        // std::fill(dest, dest + mInputs * mOutputs + mOutputs, T{});
         FullyConnectedLayer<T>::backpropParametersBatch(x, deltas, dest);
+
+        T gradMagnitude = magnitude(dest, mInputs * mOutputs + mOutputs);
+        if (gradMagnitude != T{})
+            vScale(dest, (T{1.0} - mAlpha - mBeta) / gradMagnitude, mInputs * mOutputs + mOutputs);
 
         // Add regularization constraint to normal gradient
         updateGradient(dest);
@@ -158,6 +163,39 @@ public:
         return "Regularized 1D Convolutional Layer";
     }
 
+    std::string* getProperties(size_t& numElements) const override
+    {
+        std::string* arr = new std::string[7];
+
+        char buffer[1024];
+        snprintf(buffer, 1024, "(%zux%zu) -> (%zux%zu)",
+            mInputSize, 1,
+            mOutputSize, 1);
+        arr[0] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s (%zux%zu)", "Filter Size:",
+            mFilterSize, 1);
+        arr[1] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %zu", "Num Filters:", 1);
+        arr[2] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %zu", "Padding:", mZeroPadding);
+        arr[3] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %zu", "Stride:", mStride);
+        arr[4] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %f", "Alpha:", mAlpha);
+        arr[5] = string(buffer);
+
+        snprintf(buffer, 1024, "%-12s %f", "Beta:", mBeta);
+        arr[6] = string(buffer);
+
+        numElements = 7;
+        return arr;
+    }
+
 private:
     size_t mInputSize;
     //size_t mInputChannels;
@@ -173,8 +211,11 @@ private:
 
     void updateGradient(T* gradient)
     {
+        const size_t N = mInputs * mOutputs + mOutputs;
+
         // Calculate the appropriate means
         vector<T> means(mFilterSize + 1);
+        vector<size_t> counts(mFilterSize);
         for (size_t i = 0; i < mFilterSize; ++i)
         {
             size_t count = 0;
@@ -188,6 +229,7 @@ private:
                 }
             }
             means[i] /= count;
+            counts[i] = count;
         }
 
         if (mShareBiases)
@@ -199,6 +241,7 @@ private:
         }
 
         // Update the gradient for the cells in the window
+        vector<T> windowGradient(N);
         for (size_t i = 0; i < mFilterSize; ++i)
         {
             for (int y = 0; y < mOutputSize; ++y)
@@ -206,27 +249,42 @@ private:
                 int x = mStride * y - mZeroPadding + i;
                 if (x >= 0 && x < mInputSize)
                 {
-                    gradient[y * mInputSize + x] -=
-                        mAlpha * (mParameters[y * mInputSize + x] - means[i]);
+                    windowGradient[y * mInputSize + x]
+                        = (T{2} / T{counts[i]}) * (mParameters[y * mInputSize + x] - means[i]);
                 }
             }
         }
 
+        // Returns the sign of the argument without using a branch
+        auto signFn = [](T& val)
+        {
+            return (T(0) < val) - (val < T(0));
+        };
+
         // Update the gradient for the cells outside the window
+        vector<T> outsideWindowGradient(N);
         for (size_t i = 0; i < mInputSize * mOutputSize; ++i)
         {
             if (!mWindowedParameters[i])
-                gradient[i] -= mBeta * sign(mParameters[i]);
+                outsideWindowGradient[i] = signFn(mParameters[i]);
         }
 
         // Update the gradient for the bias terms
         if (mShareBiases)
         {
             T* biases       = mParameters + mOutputSize * mInputSize;
-            T* biasGradient = gradient + mOutputSize * mInputSize;
+            T* biasGradient = windowGradient.data() + mOutputSize * mInputSize;
             for (int y = 0; y < mOutputSize; ++y)
-                biasGradient[y] -= mAlpha * (biases[y] - means[mFilterSize]);
+                biasGradient[y] = (T{2} / mOutputSize) * (biases[y] - means[mFilterSize]);
         }
+
+        T windowMag        = magnitude(windowGradient.data(), N);
+        T outsideWindowMag = magnitude(outsideWindowGradient.data(), N);
+
+        if (windowMag != T{})
+            vAdd(windowGradient.data(), gradient, N, mAlpha / windowMag);
+        if (outsideWindowMag != T{})
+            vAdd(outsideWindowGradient.data(), gradient, N, mBeta / outsideWindowMag);
     }
 };
 

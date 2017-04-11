@@ -493,7 +493,7 @@ void NeuralNetwork<T>::print(std::ostream& out, const std::string& prefix) const
     const char* HEADER_STRING = "%s   %4s | %-42s | %-7s | %-7s | %-10s |\n";
     const char* DATA_STRING   = "%s | %4zu | %-42s | %7zu | %7zu | %10zu |\n";
     const char* MISC_ELEMENT_STRING =
-        "%s |      |  - %-27s |         |         |            |\n";
+        "%s |      |  - %-39s |         |         |            |\n";
 
     const size_t BUFFER_SIZE = 1024;
     char buffer[BUFFER_SIZE];

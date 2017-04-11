@@ -4,10 +4,13 @@
 #include "CostFunction.h"
 #include "Matrix.h"
 
-// Returns the sign of the value [-1, 0, or 1] without using any branches
-template <typename T> int sign(T val)
+namespace
 {
-    return (T(0) < val) - (val < T(0));
+    // Returns the sign of the value [-1, 0, or 1] without using any branches
+    template <typename T> int sign(T val)
+    {
+        return (T(0) < val) - (val < T(0));
+    }
 }
 
 namespace opkit

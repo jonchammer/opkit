@@ -1,6 +1,8 @@
 #ifndef VECTOR_OPS_H
 #define VECTOR_OPS_H
 
+#include "Acceleration.h"
+
 template <class T>
 T mean(const T* vec, const size_t length)
 {
@@ -38,13 +40,11 @@ T magnitude(const T* vec, const size_t length)
 }
 
 template <class T>
-void normalize(const T* vec, const size_t length)
+void normalize(T* vec, const size_t length)
 {
-    T mag = magnitude(vec, length);
+    T invMag = T{1.0} / magnitude(vec, length);
     for (size_t i = 0; i < length; ++i)
-    {
-        vec[i] /= mag;
-    }
+        vec[i] *= invMag;
 }
 
 template <class T>
