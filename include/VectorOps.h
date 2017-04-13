@@ -3,6 +3,9 @@
 
 #include "Acceleration.h"
 
+namespace opkit
+{
+
 template <class T>
 T mean(const T* vec, const size_t length)
 {
@@ -82,6 +85,8 @@ T effectiveDensity(const T* vec, const size_t length, const T limit = 1E-3)
     }
 
     return T(count) / T(length);
+}
+
 }
 
 #endif

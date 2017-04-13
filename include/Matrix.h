@@ -1,6 +1,7 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include <cassert>
 #include <cstdlib>
 #include <vector>
 #include <initializer_list>
@@ -221,6 +222,17 @@ public:
         std::swap(mRows,     other.mRows);
         std::swap(mCols,     other.mCols);
         std::swap(mOwnsData, other.mOwnsData);
+    }
+
+    // Swaps the contents of the given two rows
+    void swapRows(size_t r1, size_t r2)
+    {
+        assert(r1 < getRows() && r2 < getRows());
+
+        T* ptr1 = (*this)(r1);
+        T* ptr2 = (*this)(r2);
+        for (size_t i = 0; i < mCols; ++i)
+            std::swap(ptr1[i], ptr2[i]);
     }
 
     // Returns the smallest element in the given column.
