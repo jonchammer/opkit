@@ -1,0 +1,298 @@
+#ifndef ACCELERATION_OPEN_BLAS_H
+#define ACCELERATION_OPEN_BLAS_H
+
+#include "Acceleration_CPU.h"
+#include <cblas.h>
+
+namespace opkit
+{
+
+#define USE_ALL_CORES() openblas_set_num_threads(openblas_get_num_procs())
+#define USE_ONE_CORE()  openblas_set_num_threads(1)
+
+template <>
+struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
+{
+    static void mmMultiply(const double* A, const double* B, double* C,
+        const size_t M, const size_t N, const size_t K,
+        const double alpha, const double beta)
+    {
+        USE_ONE_CORE();
+        cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+            N, M, K,
+            alpha, B, N,
+            A, K,
+            beta, C, N);
+    }
+
+    static void mmtMultiply(const double* A, const double* B, double* C,
+        const size_t M, const size_t N, const size_t K,
+        const double alpha, const double beta)
+    {
+        USE_ONE_CORE();
+        cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans,
+            N, M, K,
+            alpha, B, K,
+            A, K,
+            beta, C, N);
+    }
+
+    static void mtmMultiply(const double* A, const double* B, double* C,
+        const size_t M, const size_t N, const size_t K,
+        const double alpha, const double beta)
+    {
+        USE_ONE_CORE();
+        cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+            N, M, K,
+            alpha, B, N,
+            A, M,
+            beta, C, N);
+    }
+
+    static void channeledMMMultiply(const double* A, const double* B, double* C,
+        const size_t M, const size_t N, const size_t K, const size_t numChannels,
+        const double alpha, const double beta)
+    {
+        const size_t A_INC = M * K;
+        const size_t B_INC = K * N;
+        const size_t C_INC = M * N;
+
+        double* a = (double*) A;
+        double* b = (double*) B;
+        double* c = (double*) C;
+
+        for (size_t i = 0; i < numChannels; ++i)
+        {
+            mmMultiply(a, b, c, M, N, K, alpha, beta);
+            a += A_INC;
+            b += B_INC;
+            c += C_INC;
+        }
+    }
+
+    static void mvMultiply(const double* A, const double* x, double* y,
+        const size_t M, const size_t N,
+        const double alpha, const double beta,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_dgemv(CblasColMajor, CblasTrans,
+            N, M,
+            alpha, A, N,
+            x, xInc,
+            beta, y, yInc);
+    }
+
+    static void mtvMultiply(const double* A, const double* x, double* y,
+        const size_t M, const size_t N,
+        const double alpha, const double beta,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_dgemv(CblasColMajor(CblasNoTrans,
+            N, M,
+            alpha, A, N,
+            x, xInc,
+            beta, y, yInc);
+    }
+
+    static void symmetricMvMultiply(const double* A, const double* x, double* y,
+        const size_t N, const double alpha, const double beta,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+
+        // NOTE: Either row-major order or column-major order can be used for
+        // symmetric matrices.
+        cblas_dsymv(CblasColMajor, CblasUpper,
+            N, alpha,
+            A, N,
+            x, xInc,
+            beta, y, yInc);
+    }
+
+    static void outerProduct(const double* x, const double* y, double* A,
+        const size_t M, const size_t N, const double alpha,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_dger(CblasColMajor, N, M,
+            alpha, y, yInc,
+            x, xInc,
+            A, N);
+    }
+
+    static void vAdd(const double* x, double* y,
+        const size_t N, const double alpha,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_daxpy(N, alpha, x, xInc, y, yInc);
+    }
+
+    static void vScale(double* x, const double alpha,
+        const size_t N, const int xInc)
+    {
+        USE_ONE_CORE();
+        cblas_dscal(N, alpha, x, xInc);
+    }
+
+    static size_t vMaxIndex(const double* x, const size_t N, const int xInc)
+    {
+        USE_ONE_CORE();
+        return cblas_idamax(N, x, xInc);
+    }
+
+    static void vCopy(const double* x, double* y, const size_t N,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_dcopy(N, x, xInc, y, yInc);
+    }
+};
+
+template <>
+struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
+{
+    static void mmMultiply(const float* A, const float* B, float* C,
+        const size_t M, const size_t N, const size_t K,
+        const float alpha, const float beta)
+    {
+        USE_ONE_CORE();
+        cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+            N, M, K,
+            alpha, B, N,
+            A, K,
+            beta, C, N);
+    }
+
+    static void mmtMultiply(const float* A, const float* B, float* C,
+        const size_t M, const size_t N, const size_t K,
+        const float alpha, const float beta)
+    {
+        USE_ONE_CORE();
+        cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans,
+            N, M, K,
+            alpha, B, K,
+            A, K,
+            beta, C, N);
+    }
+
+    static void mtmMultiply(const float* A, const float* B, float* C,
+        const size_t M, const size_t N, const size_t K,
+        const float alpha, const float beta)
+    {
+        USE_ONE_CORE();
+        cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans,
+            N, M, K,
+            alpha, B, N,
+            A, M,
+            beta, C, N);
+
+    }
+
+    static void channeledMMMultiply(const float* A, const float* B, float* C,
+        const size_t M, const size_t N, const size_t K, const size_t numChannels,
+        const float alpha, const float beta)
+    {
+        const size_t A_INC = M * K;
+        const size_t B_INC = K * N;
+        const size_t C_INC = M * N;
+
+        float* a = (float*) A;
+        float* b = (float*) B;
+        float* c = (float*) C;
+
+        for (size_t i = 0; i < numChannels; ++i)
+        {
+            mmMultiply(a, b, c, M, N, K, alpha, beta);
+            a += A_INC;
+            b += B_INC;
+            c += C_INC;
+        }
+    }
+
+    static void mvMultiply(const float* A, const float* x, float* y,
+        const size_t M, const size_t N,
+        const float alpha, const float beta,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_sgemv(CblasColMajor, CblasTrans,
+            N, M,
+            alpha, A, N,
+            x, xInc,
+            beta, y, yInc);
+    }
+
+    static void mtvMultiply(const float* A, const float* x, float* y,
+        const size_t M, const size_t N,
+        const float alpha, const float beta,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_sgemv(CblasColMajor, CblasNoTrans,
+            N, M,
+            alpha, A, N,
+            x, xInc,
+            beta, y, yInc);
+    }
+
+    static void symmetricMvMultiply(const float* A, const float* x, float* y,
+        const size_t N, const float alpha, const float beta,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+
+        // NOTE: Either row-major order or column-major order can be used for
+        // symmetric matrices.
+        cblas_ssymv(CblasColMajor, CblasUpper,
+            N, alpha,
+            A, N,
+            x, xInc,
+            beta, y, yInc);
+    }
+
+    static void outerProduct(const float* x, const float* y, float* A,
+        const size_t M, const size_t N, const float alpha,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_sger(CblasColMajor, N, M,
+            alpha, y, yInc,
+            x, xInc,
+            A, N);
+    }
+
+    static void vAdd(const float* x, float* y,
+        const size_t N, const float alpha,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_saxpy(N, alpha, x, xInc, y, yInc);
+    }
+
+    static void vScale(float* x, const float alpha,
+        const size_t N, const int xInc)
+    {
+        USE_ONE_CORE();
+        cblas_sscal(N, alpha, x, xInc);
+    }
+
+    static size_t vMaxIndex(const float* x, const size_t N, const int xInc)
+    {
+        USE_ONE_CORE();
+        return cblas_isamax(N, x, xInc);
+    }
+
+    static void vCopy(const float* x, float* y, const size_t N,
+        const int xInc, const int yInc)
+    {
+        USE_ONE_CORE();
+        cblas_scopy(N, x, xInc, y, yInc);
+    }
+};
+
+}
+
+#endif

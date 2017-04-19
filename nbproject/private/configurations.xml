@@ -4,7 +4,7 @@
     <df root="." name="0">
       <df name="build">
         <df name="CMakeFiles">
-          <df name="3.7.1">
+          <df name="3.5.1">
             <df name="CompilerIdC">
               <in>CMakeCCompilerId.c</in>
             </df>
@@ -13,6 +13,12 @@
             </df>
           </df>
           <df name="CMakeTmp">
+          </df>
+          <df name="opkit.dir">
+            <df name="src">
+              <df name="Functions">
+              </df>
+            </df>
           </df>
           <in>feature_tests.c</in>
           <in>feature_tests.cxx</in>
@@ -23,7 +29,7 @@
       <df name="demos">
         <df name="build">
           <df name="CMakeFiles">
-            <df name="3.7.1">
+            <df name="3.5.1">
               <df name="CompilerIdC">
                 <in>CMakeCCompilerId.c</in>
               </df>
@@ -42,14 +48,14 @@
           </df>
         </df>
         <df name="src">
+          <in>Convolution1DTest.cpp</in>
+          <in>NeuralNetworkTestSuite.cpp</in>
           <in>activationTest.cpp</in>
           <in>finiteDifferencesSSETest.cpp</in>
           <in>finiteDifferencesTest.cpp</in>
           <in>fullyConnectedBackpropTest.cpp</in>
-          <in>heterogeneousLayerBackpropTest.cpp</in>
           <in>irisExample.cpp</in>
           <in>mnistConvolutionExample.cpp</in>
-          <in>multiLayerConvolutionBackpropTest.cpp</in>
           <in>neuralNetworkBatchTest.cpp</in>
           <in>singleLayerConvolutionTest.cpp</in>
           <in>sseNeuralNetworkTest.cpp</in>
@@ -62,6 +68,7 @@
         <df name="CostFunctions">
           <in>CategoricalErrorFunction.h</in>
           <in>CompoundCostFunction.h</in>
+          <in>ConvolutionalRegularizer.h</in>
           <in>CostFunction.h</in>
           <in>CrossEntropyFunction.h</in>
           <in>L1Regularizer.h</in>
@@ -81,12 +88,12 @@
               <in>MaskedSparseLayer.h</in>
               <in>RandomCropLayer.h</in>
               <in>RandomRotationLayer.h</in>
+              <in>Regularized1DConvolutionalLayer.h</in>
               <in>SoftmaxLayer.h</in>
             </df>
             <in>ActivationFunction.h</in>
             <in>NeuralNetwork.h</in>
           </df>
-          <in>CategoricalErrorFunction.h</in>
           <in>CommonFunctions.h</in>
           <in>Function.h</in>
         </df>
@@ -99,9 +106,6 @@
           <in>Optimizer.h</in>
           <in>RMSProp.h</in>
           <in>SimulatedAnnealing.h</in>
-        </df>
-        <df name="Trainers">
-          <in>RMSProp.h</in>
         </df>
         <df name="Utils">
           <in>Acceleration.h</in>
@@ -122,6 +126,10 @@
         <in>SparseMatrixWrapper.h</in>
         <in>Tensor3D.h</in>
         <in>VectorOps.h</in>
+      </df>
+      <df name="src">
+        <df name="Utils">
+        </df>
       </df>
       <in>opkit.h</in>
     </df>
@@ -151,8 +159,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>
@@ -198,8 +204,6 @@
         <gdb_interceptlist>
           <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
         </gdb_interceptlist>
-        <gdb_signals>
-        </gdb_signals>
         <gdb_options>
           <DebugOptions>
           </DebugOptions>
