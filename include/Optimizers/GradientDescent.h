@@ -89,23 +89,19 @@ public:
         T* velocity    = mVelocity.data();
         const size_t N = mVelocity.size();
 
-        // First step for Nesterov momentum.
-        // params -= momentum * velocity
-        vAdd(velocity, params, N, -mMomentum);
-
         // Estimate the complete gradient
         static vector<T> gradient(N);
         function->calculateGradientParameters(features, labels, gradient);
 
-        // Descend the gradient (and apply momentum).
-        // This operation is too complex to be performed using the accelerated
-        // vector operations, so we just use the simple approach.
-        for (size_t i = 0; i < N; ++i)
-        {
-            T temp      = velocity[i] * mMomentum;
-            velocity[i] = temp + mLearningRate * gradient[i];
-            params[i]  += (temp - velocity[i]);
-        }
+        // Apply momentum
+        vScale(velocity, mMomentum, N);
+        vAdd(gradient.data(), velocity, N);
+
+        // Apply Nesterov step
+        vAdd(velocity, gradient.data(), N, mMomentum);
+
+        // Update parameters
+        vAdd(gradient.data(), params, N, -mLearningRate);
     }
 
     // Setters / Getters
