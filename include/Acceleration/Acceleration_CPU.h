@@ -1,6 +1,8 @@
 #ifndef ACCELERATION_CPU_H
 #define ACCELERATION_CPU_H
 
+#include <cassert>
+
 namespace opkit
 {
 
@@ -11,21 +13,63 @@ struct Acceleration_CPU
         const size_t M, const size_t N, const size_t K,
         const T alpha, const T beta)
     {
-        // TODO: Implement
+        size_t cIndex = 0;
+        for(size_t i = 0; i < M; ++i)
+        {
+            size_t aIndex = i * K;
+
+            for(size_t j = 0; j < N; ++j)
+            {
+                T sum = T{};
+                for(int k = 0; k < K; ++k)
+                    sum += A[aIndex + k] * B[k * N + j];
+
+                C[cIndex] = alpha * sum + beta * C[cIndex];
+                cIndex++;
+            }
+        }
     }
 
     static void mmtMultiply(const T* A, const T* B, T* C,
         const size_t M, const size_t N, const size_t K,
         const T alpha, const T beta)
     {
-        // TODO: Implement
+        size_t cIndex = 0;
+        for(size_t i = 0; i < M; ++i)
+        {
+            size_t aIndex = i * K;
+
+            for(size_t j = 0; j < N; ++j)
+            {
+                size_t bIndex = j * K;
+
+                T sum = T{};
+                for(int k = 0; k < K; ++k)
+                    sum += A[aIndex + k] * B[bIndex + k];
+
+                C[cIndex] = alpha * sum + beta * C[cIndex];
+                cIndex++;
+            }
+        }
     }
 
     static void mtmMultiply(const T* A, const T* B, T* C,
         const size_t M, const size_t N, const size_t K,
         const T alpha, const T beta)
     {
-        // TODO: Implement
+        size_t cIndex = 0;
+        for(size_t i = 0; i < M; ++i)
+        {
+            for(size_t j = 0; j < N; ++j)
+            {
+                T sum = T{};
+                for(int k = 0; k < K; ++k)
+                    sum += A[k * M + i] * B[k * N + j];
+
+                C[cIndex] = alpha * sum + beta * C[cIndex];
+                cIndex++;
+            }
+        }
     }
 
     static void channeledMMMultiply(const T* A, const T* B, T* C,
@@ -54,7 +98,22 @@ struct Acceleration_CPU
         const T alpha, const T beta,
         const int xInc, const int yInc)
     {
-        // TODO: Implement
+        int yIndex = 0;
+        for (size_t i = 0; i < M; ++i)
+        {
+            T sum{};
+            size_t aIndex = i * N;
+            int xIndex    = 0;
+
+            for (size_t j = 0; j < N; ++j)
+            {
+                sum    += A[aIndex + j] * x[xIndex];
+                xIndex += xInc;
+            }
+
+            y[yIndex] = alpha * sum + beta * y[yIndex];
+            yIndex   += yInc;
+        }
     }
 
     static void mtvMultiply(const T* A, const T* x, T* y,
@@ -62,21 +121,62 @@ struct Acceleration_CPU
         const T alpha, const T beta,
         const int xInc, const int yInc)
     {
-        // TODO: Implement
+        int yIndex = 0;
+        for (size_t i = 0; i < N; ++i)
+        {
+            T sum{};
+            int xIndex = 0;
+
+            for (size_t j = 0; j < M; ++j)
+            {
+                sum    += A[j * N + i] * x[xIndex];
+                xIndex += xInc;
+            }
+
+            y[yIndex] = alpha * sum + beta * y[yIndex];
+            yIndex   += yInc;
+        }
     }
 
     static void symmetricMvMultiply(const T* A, const T* x, T* y,
         const size_t N, const T alpha, const T beta,
         const int xInc, const int yInc)
     {
-        // TODO: Implement
+        int yIndex = 0;
+        for (size_t i = 0; i < N; ++i)
+        {
+            T sum{};
+            size_t aIndex = i * N;
+            int xIndex    = 0;
+
+            for (size_t j = 0; j < N; ++j)
+            {
+                sum    += A[aIndex + j] * x[xIndex];
+                xIndex += xInc;
+            }
+
+            y[yIndex] = alpha * sum + beta * y[yIndex];
+            yIndex   += yInc;
+        }
     }
 
     static void outerProduct(const T* x, const T* y, T* A,
         const size_t M, const size_t N, const T alpha,
         const int xInc, const int yInc)
     {
-        // TODO: Implement
+        int aIndex = 0;
+        for (size_t i = 0; i < M; ++i)
+        {
+            int xIndex = 0;
+            int yIndex = 0;
+            for (size_t j = 0; j < N; ++j)
+            {
+                A[aIndex] += x[xIndex] * y[yIndex];
+                ++aIndex;
+                yIndex += yInc;
+            }
+            xIndex += xInc;
+        }
     }
 
     static void vAdd(const T* x, T* y,
@@ -106,14 +206,35 @@ struct Acceleration_CPU
 
     static size_t vMaxIndex(const T* x, const size_t N, const int xInc)
     {
-        // TODO: Implement
-        return 0;
+        size_t maxIndex = 0;
+        T max           = x[0];
+        int xIndex      = 0;
+
+        for (size_t i = 0; i < N; ++i)
+        {
+            if (x[xIndex] > max)
+            {
+                maxIndex = xIndex;
+                max      = x[xIndex];
+            }
+            xIndex += xInc;
+        }
+
+        return maxIndex;
     }
 
     static void vCopy(const T* x, T* y, const size_t N,
         const int xInc, const int yInc)
     {
-        // TODO: Implement
+        int xIndex = 0;
+        int yIndex = 0;
+
+        for (size_t i = 0; i < N; ++i)
+        {
+            y[yIndex] = x[xIndex];
+            xIndex += xInc;
+            yIndex += yInc;
+        }
     }
 
     static void im2col(const T* src,
@@ -332,5 +453,7 @@ struct Acceleration_CPU
         }
     }
 };
+
+}
 
 #endif

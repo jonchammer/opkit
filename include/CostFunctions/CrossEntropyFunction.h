@@ -436,7 +436,7 @@ private:
         void calculateGradientInputs(const Matrix<T>& batchFeatures,
             const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
-            NeuralNetwork<T>& nn   = mBaseFunction;
+            NeuralNetwork<T>& nn   = Imp::mBaseFunction;
             const size_t batchSize = batchFeatures.getRows();
             const size_t N         = batchLabels.getCols();
             const size_t M         = batchFeatures.getCols();
@@ -484,7 +484,7 @@ private:
         void calculateGradientParameters(const Matrix<T>& batchFeatures,
             const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
-            NeuralNetwork<T>& nn   = mBaseFunction;
+            NeuralNetwork<T>& nn   = Imp::mBaseFunction;
             const size_t batchSize = batchFeatures.getRows();
             const size_t N         = batchLabels.getCols();
             const size_t M         = nn.getNumParameters();
@@ -531,7 +531,7 @@ private:
         void calculateGradientInputs(const Matrix<T>& batchFeatures,
             const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
-            NeuralNetwork<T>& nn   = mBaseFunction;
+            NeuralNetwork<T>& nn   = Imp::mBaseFunction;
             const size_t batchSize = batchFeatures.getRows();
             const size_t N         = batchLabels.getCols();
             const size_t M         = batchFeatures.getCols();
@@ -568,7 +568,7 @@ private:
         void calculateGradientParameters(const Matrix<T>& batchFeatures,
             const Matrix<T>& batchLabels, vector<T>& gradient) override
         {
-            NeuralNetwork<T>& nn   = mBaseFunction;
+            NeuralNetwork<T>& nn   = Imp::mBaseFunction;
             const size_t batchSize = batchFeatures.getRows();
             const size_t N         = batchLabels.getCols();
             const size_t M         = nn.getNumParameters();

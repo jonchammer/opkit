@@ -7,8 +7,26 @@
 namespace opkit
 {
 
+// For BLAS reference see:
+// https://software.intel.com/sites/default/files/managed/ff/c8/mkl-2017-developer-reference-c_0.pdf
+
+// NOTE: Some BLAS libraries make the assumption that matrices are stored
+// in column-major order. Since our data is actually in row-major order,
+// some sort of conversion would normally have to be applied in order to use
+// those libraries. Helpfully, it is usually possible to perform an
+// alternate computation (e.g. by switching the dimensions and positions of
+// operands) to trick the library into doing the same work, despite the
+// differences in ordering. The accelerated routines that use matrices below
+// make use of these tricks so the underlying BLAS library always believes
+// it is working on data in column-major order. This makes it easier to
+// switch between libraries, since some (e.g. OpenBLAS) do these conversions
+// automatically, but some (e.g. NVBlas) do not.
+
 #define USE_ALL_CORES() openblas_set_num_threads(openblas_get_num_procs())
 #define USE_ONE_CORE()  openblas_set_num_threads(1)
+
+template <class T>
+struct Acceleration_OpenBlas {};
 
 template <>
 struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
@@ -89,7 +107,7 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const int xInc, const int yInc)
     {
         USE_ONE_CORE();
-        cblas_dgemv(CblasColMajor(CblasNoTrans,
+        cblas_dgemv(CblasColMajor, CblasNoTrans,
             N, M,
             alpha, A, N,
             x, xInc,
@@ -188,7 +206,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
             alpha, B, N,
             A, M,
             beta, C, N);
-
     }
 
     static void channeledMMMultiply(const float* A, const float* B, float* C,

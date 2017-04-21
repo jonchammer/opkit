@@ -8,27 +8,32 @@
  #ifndef ACCELERATION_H
  #define ACCELERATION_H
 
+// If user hasn't specified an acceleration framework, use CPU only as the default
+#if !defined OPKIT_CPU_ONLY && !defined OPKIT_OPEN_BLAS && !defined OPKIT_NVBLAS
+    #define OPKIT_CPU_ONLY
+#endif
+
+// Determine which implementation should be used
+#ifdef OPKIT_CPU_ONLY
+    #include "Acceleration_CPU.h"
+    template <class T>
+    using Accelerator = opkit::Acceleration_CPU<T>;
+#endif
+
+#ifdef OPKIT_OPEN_BLAS
+    #include "Acceleration_OpenBlas.h"
+    template <class T>
+    using Accelerator = opkit::Acceleration_OpenBlas<T>;
+#endif
+
+#ifdef OPKIT_NVBLAS
+    #include "Acceleration_NVBlas.h"
+    template <class T>
+    using Accelerator = opkit::Acceleration_NVBlas<T>;
+#endif
+
 namespace opkit
 {
-    // Determine which implementation should be used
-    #ifdef OPKIT_CPU_ONLY
-        #include "Acceleration_CPU.h"
-        template <class T>
-        using Accelerator = Acceleration<T>;
-    #endif
-
-    #ifdef OPKIT_OPEN_BLAS
-        #include "Acceleration_OpenBlas.h"
-        template <class T>
-        using Accelerator = OpenBlas_Acceleration<T>;
-    #endif
-
-    #ifdef OPKIT_NVBLAS
-        #include "Acceleration_NVBlas.h"
-        template <class T>
-        using Accelerator = NVBlas_Acceleration<T>;
-    #endif
-
     // Computes C = alpha * A * B + beta * C, where A is an M x K
     // matrix, B is a K x N matrix, C is an M x N matrix, alpha is
     // a scalar, and beta is a scalar.
@@ -159,7 +164,7 @@ namespace opkit
     template <class T>
     inline size_t vMaxIndex(const T* x, const size_t N, const int xInc = 1)
     {
-        Accelerator<T>::vMaxIndex(x, N, xInc);
+        return Accelerator<T>::vMaxIndex(x, N, xInc);
     }
 
     // Copies the contents of x into y, where x and y are vectors of size N.
@@ -271,166 +276,4 @@ namespace opkit
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// #include <cblas.h>
-//
-// #ifdef OPKIT_NVBLAS
-//
-// #endif
-//
-// namespace opkit
-// {
-//
-// // OpenBlas translation macros. These allow us to convert from one BLAS library's
-// // syntax to another.
-// #ifdef OPENBLAS_CONFIG_H
-//
-//     #define OPKIT_DGEMM(transposeA, transposeB,                                \
-//         M, N, K,                                                               \
-//         alpha, A, ldA,                                                         \
-//         B, ldB, beta,                                                          \
-//         C, ldC)                                                                \
-//         cblas_dgemm(CblasColMajor, transposeA, transposeB, M, N, K, alpha, A,  \
-//             ldA, B, ldB, beta, C, ldC);                                        \
-//
-//     #define OPKIT_SGEMM(transposeA, transposeB,                                \
-//         M, N, K,                                                               \
-//         alpha, A, ldA,                                                         \
-//         B, ldB, beta,                                                          \
-//         C, ldC)                                                                \
-//         cblas_sgemm(CblasColMajor, transposeA, transposeB, M, N, K, alpha, A,  \
-//             ldA, B, ldB, beta, C, ldC);                                        \
-//
-//     #define OPKIT_DGEMV(transposeA,                                            \
-//         M, N,                                                                  \
-//         alpha, A, ldA,                                                         \
-//         x, incX, beta,                                                         \
-//         y, incY)                                                               \
-//         cblas_dgemv(CblasColMajor, transposeA, M, N, alpha, A, ldA, x, incX,   \
-//             beta, y, incY);                                                    \
-//
-//     #define OPKIT_SGEMV(transposeA,                                            \
-//         M, N,                                                                  \
-//         alpha, A, ldA,                                                         \
-//         x, incX, beta,                                                         \
-//         y, incY)                                                               \
-//         cblas_sgemv(CblasColMajor, transposeA, M, N, alpha, A, ldA, x, incX,   \
-//             beta, y, incY);                                                    \
-//
-//     #define OPKIT_DSYMV(upper, N, alpha, A, ldA, x, incX, beta, y, incY)       \
-//         cblas_dsymv(CblasColMajor, upper, N, alpha, A, ldA,                    \
-//             x, incX, beta, y, incY);                                           \
-//
-//     #define OPKIT_SSYMV(upper, N, alpha, A, ldA, x, incX, beta, y, incY)       \
-//         cblas_ssymv(CblasColMajor, upper, N, alpha, A, ldA,                    \
-//             x, incX, beta, y, incY);                                           \
-//
-//     #define OPKIT_DGER(M, N, alpha, x, incX, y, incY, A, ldA)                  \
-//         cblas_dger(CblasColMajor, M, N, alpha, x, incX, y, incY, A, ldA);      \
-//
-//     #define OPKIT_SGER(M, N, alpha, x, incX, y, incY, A, ldA)                  \
-//         cblas_sger(CblasColMajor, M, N, alpha, x, incX, y, incY, A, ldA);      \
-//
-//     #define OPKIT_DAXPY(N, alpha, x, incX, y, incY)                            \
-//         cblas_daxpy(N, alpha, x, incX, y, incY);                               \
-//
-//     #define OPKIT_SAXPY(N, alpha, x, incX, y, incY)                            \
-//         cblas_saxpy(N, alpha, x, incX, y, incY);                               \
-//
-//     #define OPKIT_DSCAL(N, alpha, X, incX) cblas_dscal(N, alpha, X, incX);
-//     #define OPKIT_SSCAL(N, alpha, X, incX) cblas_sscal(N, alpha, X, incX);
-//
-//     #define OPKIT_IDAMAX(N, x, incX) cblas_idamax(N, x, incX);
-//     #define OPKIT_ISAMAX(N, x, incX) cblas_isamax(N, x, incX);
-//
-//     #define OPKIT_DCOPY(N, x, incX, y, incY) cblas_dcopy(N, x, incX, y, incY);
-//     #define OPKIT_SCOPY(N, x, incX, y, incY) cblas_scopy(N, x, incX, y, incY);
-//
-//     // BLAS parameter macros
-//     #define OPKIT_L3_TRANSPOSE CblasTrans
-//     #define OPKIT_L3_NO_TRANSPOSE CblasNoTrans
-//     #define OPKIT_L2_TRANSPOSE CblasTrans
-//     #define OPKIT_L2_NO_TRANSPOSE CblasNoTrans
-//     #define OPKIT_UPPER CblasUpper
-//
-//
-// #endif
-//
-// // NVBlas translation macros
-// // This symbol will be set by the user to indicate that they desire to use a
-// // GPU to accelerate the L3 BLAS operations. The lower level operations will
-// // have to come from another CPU BLAS library.
-// #ifdef OPKIT_NVBLAS
-//
-//     #undef OPKIT_DGEMM
-//     #undef OPKIT_SGEMM
-//     #undef OPKIT_L3_TRANSPOSE
-//     #undef OPKIT_L3_NO_TRANSPOSE
-//
-//     #define OPKIT_DGEMM(transposeA, transposeB,                                \
-//         M, N, K,                                                               \
-//         alpha, A, ldA,                                                         \
-//         B, ldB, beta,                                                          \
-//         C, ldC)                                                                \
-//     {                                                                          \
-//         int m   = (int) M;                                                     \
-//         int n   = (int) N;                                                     \
-//         int k   = (int) K;                                                     \
-//         int lda = (int) ldA;                                                   \
-//         int ldb = (int) ldB;                                                   \
-//         int ldc = (int) ldC;                                                   \
-//         dgemm(transposeA, transposeB, &m, &n, &k, &alpha, A,                   \
-//             &lda, B, &ldb, &beta, C, &ldc);                                    \
-//     }                                                                          \
-//
-//     #define OPKIT_SGEMM(transposeA, transposeB,                                \
-//         M, N, K,                                                               \
-//         alpha, A, ldA,                                                         \
-//         B, ldB, beta,                                                          \
-//         C, ldC)                                                                \
-//     {                                                                          \
-//         int m   = (int) M;                                                     \
-//         int n   = (int) N;                                                     \
-//         int k   = (int) K;                                                     \
-//         int lda = (int) ldA;                                                   \
-//         int ldb = (int) ldB;                                                   \
-//         int ldc = (int) ldC;                                                   \
-//         sgemm(transposeA, transposeB, &m, &n, &k, &alpha, A,                   \
-//             &lda, B, &ldb, &beta, C, &ldc);                                    \
-//     }                                                                          \
-//
-//     #define OPKIT_L3_TRANSPOSE "T"
-//     #define OPKIT_L3_NO_TRANSPOSE "N"
-// #endif
-//
-// // For BLAS reference see:
-// // https://software.intel.com/sites/default/files/managed/ff/c8/mkl-2017-developer-reference-c_0.pdf
-// //
-// // NOTE: Some BLAS libraries make the assumption that matrices are stored
-// // in column-major order. Since our data is actually in row-major order,
-// // some sort of conversion would normally have to be applied in order to use
-// // those libraries. Helpfully, it is usually possible to perform an
-// // alternate computation (e.g. by switching the dimensions and positions of
-// // operands) to trick the library into doing the same work, despite the
-// // differences in ordering. The accelerated routines that use matrices below
-// // make use of these tricks so the underlying BLAS library always believes
-// // it is working on data in column-major order. This makes it easier to
-// // switch between libraries, since some (e.g. OpenBLAS) do these conversions
-// // automatically, but some (e.g. NVBlas) do not.
-// };
-
-
- #endif
+#endif

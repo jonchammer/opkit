@@ -227,7 +227,7 @@ public:
     // Swaps the contents of the given two rows
     void swapRows(size_t r1, size_t r2)
     {
-        assert(r1 < getRows() && r2 < getRows());
+        assert((r1 < getRows() && r2 < getRows()));
 
         T* ptr1 = (*this)(r1);
         T* ptr2 = (*this)(r2);
@@ -460,7 +460,7 @@ struct Multiplication : BinaryOp<Multiplication>
     {
         target.resize(m1.getRows(), m2.getCols());
         mmMultiply(m1.data(), m2.data(), target.data(),
-            target.getRows(), target.getCols(), m1.getCols(), 1.0, 1.0);
+            target.getRows(), target.getCols(), m1.getCols(), T{1.0}, T{1.0});
     }
 };
 

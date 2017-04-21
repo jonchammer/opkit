@@ -60,8 +60,14 @@ include_directories(include/Utils)
 # Create lists of all of the header files and the source files
 file(GLOB_RECURSE HEADERS "include/*.h")
 
+# Make a copy of the original list and remove any headers that shouldn't be automatically included
+set(HEADERS_CPY ${HEADERS})
+list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/Acceleration/Acceleration_CPU.h")
+list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/Acceleration/Acceleration_NVBlas.h")
+list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/Acceleration/Acceleration_OpenBlas.h")
+
 # Generage the master header and include it with the other sources
-createMasterHeader("${HEADERS}" "opkit.h" "OPKIT_H")
+createMasterHeader("${HEADERS_CPY}" "opkit.h" "OPKIT_H")
 set(HEADERS ${HEADERS} "opkit.h")
 
 # Copy all of the .h files to /usr/local/include

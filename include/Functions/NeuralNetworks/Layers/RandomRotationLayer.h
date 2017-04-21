@@ -1,7 +1,6 @@
 #ifndef RANDOM_ROTATION_LAYER_H
 #define RANDOM_ROTATION_LAYER_H
 
-#include <cassert>
 #include <cmath>
 #include "Layer.h"
 

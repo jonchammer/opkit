@@ -6,23 +6,24 @@
 * Extensive support for training and using neural networks
 * Wide support for various optimization techniques (e.g. gradient descent, evolutionary optimization, etc.)
 * Supports CPU & GPU acceleration via BLAS
+* Tested using g++ 5.4 and clang 3.8
 
 ## Installation Instructions
 
-#### Dependencies
-* OpenBlas - opkit requires linking with a BLAS library in order to accelerate
-certain computations (anything that uses "Acceleration.h"). OpenBLAS is
-recommended for Linux-based platforms.
+#### Optional Dependencies
+* OpenBlas - opkit can take advantage of an existing BLAS library in order to
+accelerate certain computations such as matrix multiplications. Doing so tends
+to improve performance fairly dramatically, so it is recommended that such a
+library be linked. OpenBLAS is recommended for Linux-based platforms.
 
 * NVBlas - If you need GPU acceleration, you will also need NVBlas
 (provided by NVidia). This will offload some of the more expensive arithmetic
 instructions onto a local GPU to (ideally) improve performance. See the GPU
 Acceleration section below for more information.
 
-* Cmake - CMake is not strictly required since the library is header-only. It
-is used to automatically generate the master header, ```opkit.h```, and copy
-all the library headers into the default installation directory. If you would
-prefer to take over that process, CMake is not necessary.
+* Cmake - CMake is used to automatically generate the master header, ```opkit.h```,
+and to copy all of the library headers into the default installation directory.
+If you would prefer to take over that process, CMake is not necessary.
 
 On Linux-based platforms, OpenBlas and Cmake can be installed by using apt-get:
 
@@ -56,27 +57,34 @@ C:/Program Files (x86)/optimization_toolkit/include/opkit
 ```
 
 ## Compilation
-This is an example compilation command (using g++):
+This is a minimal example compilation command (using g++):
 
 ```bash
-g++ -std=c++11 -O3 test.cpp -o test -lopenblas
+g++ -std=c++11 -O3 test.cpp -o test
 ```
 
 **NOTE:** This assumes that the header files that comprise the library are in a
 directory accessible by the path. If that is not the case, you will have to
 compile with the -I flag.
 
-**NOTE 2:** It may also be necessary to tell the compiler where to find the BLAS
-headers (again using the -I) flag.
+In order to compile with OpenBlas, the library's header files must be explicitly
+included, the library itself must be linked, and the ```OPKIT_OPEN_BLAS``` compilation
+flag must be set (to inform opkit to use OpenBlas acceleration). This is an
+example compilation command:
+
+```bash
+g++ -std=c++11 -O3 -I /usr/include/openblas -DOPKIT_OPEN_BLAS test.cpp -o test -lopenblas
+```
 
 ## GPU Acceleration
 opkit can take advantage of a local GPU to accelerate certain operations by
-using NVBlas. Doing so is not guaranteed to speed up training, however. Assuming
-NVBlas is already installed, a GPU-accelerated application can be compiled as
-follows:
+using NVBlas, in addition to OpenBlas. Doing so is not guaranteed to speed up
+training, but it likely will if the mathematical operations are sufficiently
+computationally intensive. Assuming NVBlas is already installed, a
+GPU-accelerated application can be compiled as follows:
 
 ```bash
-g++ -O3 -std=c++11 -DOPKIT_NVBLAS test.cpp -o test -lnvblas -lopenblas
+g++ -std=c++11 -O3 -I /usr/include/openblas -DOPKIT_NVBLAS test.cpp -o test -lnvblas -lopenblas
 ```
 
 The variable ```OPKIT_NVBLAS``` is used to tell opkit to make use of NVBlas
