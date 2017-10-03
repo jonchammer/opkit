@@ -37,6 +37,10 @@ public:
         Optimizer<T, Model>(function),
         mLearningRate(DEFAULT_LEARNING_RATE) {}
 
+    SimpleGradientDescent(CostFunction<T, Model>* function, T lr) :
+        Optimizer<T, Model>(function),
+        mLearningRate(lr) {}
+        
     void iterate(const Matrix<T>& features, const Matrix<T>& labels)
     {
         T* params      = function->getParameters().data();

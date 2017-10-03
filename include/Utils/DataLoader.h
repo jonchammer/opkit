@@ -13,6 +13,8 @@
 #include <fstream>
 #include <cstring>
 #include <vector>
+#include <algorithm>
+#include <sstream>
 #include "Dataset.h"
 #include "Matrix.h"
 #include "Error.h"
@@ -20,6 +22,7 @@
 using std::vector;
 using std::ifstream;
 using std::ofstream;
+using std::stringstream;
 using std::string;
 using std::cout;
 using std::endl;
@@ -50,6 +53,53 @@ bool loadArff(const string& filename, Dataset<T>& features,
     {
         return false;
     }
+}
+
+// Loads data from the given .ARFF file into 'features' and 'labels'.
+// The data will be split based on the last 'numLabels' columns. Since CSV files
+// don't natively encode the datatype (either categorical or continous), we
+// assume all columns are continuous. Use the convertColumnToCategorical()
+// function in Dataset to convert the columns that really should be categorical.
+template <class T>
+bool loadCSV(const string& filename, Dataset<T>& features, Dataset<T>& labels,
+    int numLabels)
+{
+    ifstream din(filename);
+    if (!din) return false;
+
+    // Determine the number of columns
+    string line;
+    if (getline(din, line))
+    {
+        int numCols = std::count(line.begin(), line.end(), ',') + 1;
+        features.setSize(0, numCols - numLabels);
+        labels.setSize(0, numLabels);
+
+        // Rewind to the beginning of the file
+        din.seekg(0);
+
+        // Read the data
+        string token;
+        while (din.peek() != EOF)
+        {
+            vector<T>& featureRow = features.newRow();
+            vector<T>& labelRow   = labels.newRow();
+            for (int i = 0; i < features.cols(); ++i)
+            {
+                getline(din, token, ',');
+                featureRow[i] = stof(token);
+            }
+            for (int i = 0; i < numLabels - 1; ++i)
+            {
+                getline(din, token, ',');
+                labelRow[i] = stof(token);
+            }
+            getline(din, token);
+            labelRow[numLabels - 1] = stof(token);
+        }
+    }
+
+    return true;
 }
 
 // Loads data from a plain text file into 'features' and 'labels'.
@@ -253,7 +303,7 @@ void print(const Dataset<T>& features, const Dataset<T>& labels)
 {
     cout << std::fixed << std::showpoint << std::setprecision(6);
 
-    for (size_t row = 0; row < features.rows(); ++row)
+    for (size_t row = 0; row < 5 /*features.rows()*/; ++row)
     {
         const vector<T>& feature = features.row(row);
         const vector<T>& label   = labels.row(row);

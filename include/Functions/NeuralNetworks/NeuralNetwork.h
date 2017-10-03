@@ -11,6 +11,7 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <cassert>
 #include "PrettyPrinter.h"
 #include "Function.h"
 #include "Matrix.h"
@@ -306,6 +307,9 @@ void NeuralNetwork<T>::evaluate(const T* input, T* output)
 template <class T>
 void NeuralNetwork<T>::evaluateBatch(const Matrix<T>& input, Matrix<T>& output)
 {
+    // Ensure the input is of valid dimensions
+    assert(input.getRows() <= mMaxBatchSize);
+
     Matrix<T>* x = (Matrix<T>*) &input;
     Matrix<T>* y = nullptr;
 

@@ -42,7 +42,7 @@ public:
     {}
 
     Matrix(const size_t rows, const size_t cols, std::initializer_list<T> list) :
-        mData(new T[rows * cols]()), mRows(rows), mCols(cols)
+        mData(new T[rows * cols]()), mRows(rows), mCols(cols), mOwnsData(true)
     {
         std::copy(list.begin(), list.end(), mData);
     }
@@ -445,7 +445,7 @@ struct Subtraction : public BinaryOp<Subtraction>
         // y = (y + A) + (-B)
         target.resize(M, N);
         vAdd(m1.data(), target.data(), M * N);
-        vAdd(m2.data(), target.data(), M * N, -1.0);
+        vAdd(m2.data(), target.data(), M * N, T{-1.0});
     }
 };
 

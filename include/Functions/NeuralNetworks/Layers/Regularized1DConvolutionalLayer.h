@@ -32,7 +32,7 @@ public:
         FullyConnectedLayer<T>(inputSize/* * inputChannels*/,
             ((inputSize - filterSize + 2 * zeroPadding) / stride + 1) * numFilters),
 
-        // Paramaters
+        // Parameters
         mInputSize(inputSize),     /*mInputChannels(inputChannels),*/
         mFilterSize(filterSize),   mNumFilters(numFilters),
         mZeroPadding(zeroPadding), mStride(stride),

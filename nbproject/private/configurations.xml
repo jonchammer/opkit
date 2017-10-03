@@ -4,7 +4,7 @@
     <df root="." name="0">
       <df name="build">
         <df name="CMakeFiles">
-          <df name="3.5.1">
+          <df name="3.7.1">
             <df name="CompilerIdC">
               <in>CMakeCCompilerId.c</in>
             </df>
@@ -13,12 +13,6 @@
             </df>
           </df>
           <df name="CMakeTmp">
-          </df>
-          <df name="opkit.dir">
-            <df name="src">
-              <df name="Functions">
-              </df>
-            </df>
           </df>
           <in>feature_tests.c</in>
           <in>feature_tests.cxx</in>
@@ -29,7 +23,7 @@
       <df name="demos">
         <df name="build">
           <df name="CMakeFiles">
-            <df name="3.5.1">
+            <df name="3.7.1">
               <df name="CompilerIdC">
                 <in>CMakeCCompilerId.c</in>
               </df>
@@ -65,6 +59,12 @@
         <in>sseNeuralNetworkTest.cpp</in>
       </df>
       <df name="include">
+        <df name="Acceleration">
+          <in>Acceleration.h</in>
+          <in>Acceleration_CPU.h</in>
+          <in>Acceleration_NVBlas.h</in>
+          <in>Acceleration_OpenBlas.h</in>
+        </df>
         <df name="CostFunctions">
           <in>CategoricalErrorFunction.h</in>
           <in>CompoundCostFunction.h</in>
@@ -108,7 +108,6 @@
           <in>SimulatedAnnealing.h</in>
         </df>
         <df name="Utils">
-          <in>Acceleration.h</in>
           <in>BatchIterator.h</in>
           <in>Bitmask.h</in>
           <in>DataLoader.h</in>
@@ -126,10 +125,6 @@
         <in>SparseMatrixWrapper.h</in>
         <in>Tensor3D.h</in>
         <in>VectorOps.h</in>
-      </df>
-      <df name="src">
-        <df name="Utils">
-        </df>
       </df>
       <in>opkit.h</in>
     </df>
