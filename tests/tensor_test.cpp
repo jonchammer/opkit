@@ -1,55 +1,9 @@
 #include <iostream>
 #include <vector>
-#include "Tensor.h"
+#include "opkit/opkit.h"
 
 using namespace std;
-
-template <class T>
-ostream& operator<<(ostream& out, const Tensor<T>& tensor)
-{
-    switch(tensor.rank())
-    {
-        case 0: cout << T(tensor({})); cout << endl; break;
-
-        case 1:
-        {
-            for (size_t x = 0; x < tensor.shape(0); ++x)
-                out << T(tensor( {x} )) << " ";
-            out << endl;
-            break;
-        }
-
-        case 2:
-        {
-            for (size_t y = 0; y < tensor.shape(0); ++y)
-            {
-                for (size_t x = 0; x < tensor.shape(1); ++x)
-                    out << T(tensor( {y, x} )) << " ";
-                out << endl;
-            }
-            break;
-        }
-
-        case 3:
-        {
-            for (size_t z = 0; z < tensor.shape(0); ++z)
-            {
-                for (size_t y = 0; y < tensor.shape(1); ++y)
-                {
-                    for (size_t x = 0; x < tensor.shape(2); ++x)
-                        out << T(tensor( {z, y, x} )) << " ";
-                    out << endl;
-                }
-                out << endl;
-            }
-            break;
-        }
-
-        default: out << "Unable to print. Rank is too high." << endl;
-    }
-
-    return out;
-}
+using namespace opkit;
 
 template <class Container>
 void printContainer(const Container& container)
@@ -64,7 +18,7 @@ template <class T>
 bool equals(const Tensor<T>& a, const Tensor<T>& b)
 {
     if (a.size() != b.size()) return false;
-    
+
     auto aIt = a.begin();
     auto bIt = b.begin();
     while (aIt != a.end())
@@ -82,10 +36,10 @@ bool t1()
     Storage<double> storage(40);
     for (size_t i = 0; i < storage.size(); ++i)
         storage[i] = i;
-    
+
     Tensor<double> test(storage, {2, 5, 4});
-    Tensor<double> x = test.sub( {{1, 1}, {0, 3}, {2, 3}} );
-    
+    Tensor<double> x = sub(test, {{1, 1}, {0, 3}, {2, 3}} );
+
     Tensor<double> truth(Storage<double>({22, 23, 26, 27, 30, 31, 34, 35}), {1, 4, 2} );
     return equals(x, truth);
 }
@@ -100,7 +54,7 @@ bool t2()
 
 // ----------------------------------------------
 // narrow(1, 1, 2)
-// 1  2 
+// 1  2
 // 8  9
 // 15 16
 
@@ -114,10 +68,10 @@ bool t3()
     Storage<double> storage(40);
     for (size_t i = 0; i < storage.size(); ++i)
         storage[i] = i;
-    
+
     Tensor<double> test(storage, {2, 5, 4});
-    Tensor<double> x = test.select( 2, 1 );
-    
+    Tensor<double> x = select( test, 2, 1 );
+
     Tensor<double> truth(Storage<double>({1, 5, 9, 13, 17, 21, 25, 29, 33, 37}), {2, 5});
     return equals(x, truth);
 }
@@ -128,10 +82,10 @@ bool t4()
     Storage<double> storage(40);
     for (size_t i = 0; i < storage.size(); ++i)
         storage[i] = i;
-    
+
     Tensor<double> test(storage, {2, 5, 4});
-    Tensor<double> x = test.transpose(0, 2);
-    
+    Tensor<double> x = transpose(test, 0, 2);
+
     Storage<double> reference(
     {
         0, 20, 4, 24,  8, 28, 12, 32, 16, 36,
@@ -149,21 +103,21 @@ bool t5()
     Storage<double> storage(40);
     for (size_t i = 0; i < storage.size(); ++i)
         storage[i] = i;
-    
+
     Tensor<double> test(storage, {2, 5, 4});
-    Tensor<double> x = test.permute({2, 0, 1});
-    
+    Tensor<double> x = permute(test, {2, 0, 1});
+
     Storage<double> reference(
     {
          0,  4,  8, 12, 16,
         20, 24, 28, 32, 36,
-        
+
          1,  5,  9, 13, 17,
         21, 25, 29, 33, 37,
-        
+
          2,  6, 10, 14, 18,
         22, 26, 30, 34, 38,
-        
+
          3,  7, 11, 15, 19,
         23, 27, 31, 35, 39
     });
@@ -184,7 +138,7 @@ int main()
         if (test())
             cout << "Test " << i << " passed." << endl;
         else cout << "Test " << i << " failed.   <---" << endl;
-    
+
         ++i;
     }
 

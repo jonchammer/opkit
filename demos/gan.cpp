@@ -6,27 +6,11 @@
 #include <set>
 #include <vector>
 
-#include "tensor/Tensor.h"
-#include "tensor/TensorMath.h"
-#include "tensor/TensorIO.h"
-
-#include "graph/Graph.h"
-#include "graph/GradientValidator.h"
-#include "graph/ops/GraphOps_all.h"
-
-#include "graph/NN.h"
-#include "graph/CostFunctions.h"
-#include "graph/Optimizers.h"
-
-#include "util/DataLoader.h"
-#include "util/Timer.h"
-#include "util/Rand.h"
-#include "util/BatchIterator.h"
-
+#include "opkit/opkit.h"
 #include "Plot.h"
 
 using namespace std;
-using namespace tensorlib;
+using namespace opkit;
 
 template <class T>
 Tensor<T> convertColumnToOneHot(const Tensor<T>& input, const size_t column)

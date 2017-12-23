@@ -1,6 +1,9 @@
 #ifndef TENSOR_OPS_H
 #define TENSOR_OPS_H
 
+#include <chrono>
+#include "util/Rand.h"
+
 namespace opkit
 {
 

@@ -6,6 +6,7 @@
 #include <memory>
 #include <iostream>
 #include "tensor/Tensor.h"
+#include "tensor/TensorOps.h"
 #include "util/ReferenceCount.h"
 
 namespace opkit

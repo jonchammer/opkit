@@ -1,9 +1,9 @@
 #include <iostream>
 #include "il.h"
-#include "tensor/Tensor.h"
+#include "opkit/opkit.h"
 
 using std::string;
-using tensorlib::Tensor;
+using opkit::Tensor;
 
 class Channel
 {

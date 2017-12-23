@@ -1,8 +1,9 @@
 #include <iostream>
 #include <vector>
-#include "Storage.h"
+#include "opkit/opkit.h"
 
 using namespace std;
+using namespace opkit;
 
 template <class T>
 void print(const Storage<T>& storage, ostream& out = cout)
@@ -41,7 +42,7 @@ bool t2()
     if (x.size() != 0 || !x.empty()) return false;
     x.resize(15);
     x.fill(0);
-    
+
     if (x.size() != 15) return false;
 
     return equals(x, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
@@ -55,7 +56,7 @@ bool t3()
 
     Storage<int> y = x.clone<int>();
     if (y.size() != x.size()) return false;
-    
+
     return equals(y, {2, 2, 2, 2, 2, 2, 2, 2, 2, 2});
 }
 
@@ -64,7 +65,7 @@ bool t4()
 {
     Storage<double> x(10);
     Storage<double> y(x, 5);
-    
+
     x.fill(5.0);
     y.fill(2.0);
 
@@ -78,7 +79,7 @@ bool t5()
     Storage<double> x(10);
     Storage<double> y(x, 5);
     Storage<double> z(y, 2, 2);
-    
+
     x.fill(5.0);
     y.fill(2.0);
     z.fill(1.0);
@@ -92,7 +93,7 @@ bool t5()
 bool t6()
 {
     Storage<double> x({1, 2, 3, 4, 5});
-    
+
     vector<int> values({6, 7, 8, 9, 10});
     Storage<int> y(values.begin(), values.end());
 
@@ -107,7 +108,7 @@ int main()
         if (test())
             cout << "Test " << i << " passed." << endl;
         else cout << "Test " << i << " failed.   <---" << endl;
-    
+
         ++i;
     }
 

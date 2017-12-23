@@ -1,19 +1,9 @@
 #include <iostream>
 
-#include "tensor/Tensor.h"
-#include "tensor/TensorMath.h"
-#include "tensor/TensorIO.h"
-
-#include "graph/Graph.h"
-#include "graph/GradientValidator.h"
-#include "graph/ops/GraphOps_all.h"
-
-#include "graph/NN.h"
-#include "graph/CostFunctions.h"
-#include "graph/Optimizers.h"
+#include "opkit/opkit.h"
 
 using namespace std;
-using namespace tensorlib;
+using namespace opkit;
 
 using T = float;
 
