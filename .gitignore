@@ -1,1 +1,4 @@
-opkit.h
+demos/bin/out/*
+tests/bin/out/*
+nbproject
+
