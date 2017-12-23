@@ -1,6 +1,7 @@
 # opkit - A fast, comprehensive C++11 optimization toolkit
 
 ## Important Features
+* Intuitive graph-based API
 * Templated
 * Header-only
 * Extensive support for training and using neural networks
@@ -60,7 +61,7 @@ C:/Program Files (x86)/optimization_toolkit/include/opkit
 This is a minimal example compilation command (using g++):
 
 ```bash
-g++ -std=c++11 -O3 test.cpp -o test
+g++ -std=c++11 test.cpp -o test
 ```
 
 **NOTE:** This assumes that the header files that comprise the library are in a

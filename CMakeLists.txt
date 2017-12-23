@@ -53,18 +53,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Tell the compiler where to find the headers
 include_directories(include)
-include_directories(include/Functions)
-include_directories(include/Trainers)
-include_directories(include/Utils)
+include_directories(include/acceleration)
+include_directories(include/graph)
+include_directories(include/tensor)
+include_directories(include/util)
 
 # Create lists of all of the header files and the source files
 file(GLOB_RECURSE HEADERS "include/*.h")
 
 # Make a copy of the original list and remove any headers that shouldn't be automatically included
 set(HEADERS_CPY ${HEADERS})
-list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/Acceleration/Acceleration_CPU.h")
-list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/Acceleration/Acceleration_NVBlas.h")
-list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/Acceleration/Acceleration_OpenBlas.h")
+list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/accleration/Acceleration_CPU.h")
+list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/acceleration/Acceleration_NVBlas.h")
+list(REMOVE_ITEM HEADERS_CPY "${CMAKE_CURRENT_SOURCE_DIR}/include/acceleration/Acceleration_OpenBlas.h")
 
 # Generage the master header and include it with the other sources
 createMasterHeader("${HEADERS_CPY}" "opkit.h" "OPKIT_H")
