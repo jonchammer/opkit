@@ -8,7 +8,7 @@
 #include "tensor/Tensor.h"
 #include "util/ReferenceCount.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // This file contains the definitions that make up a functional graph. The graph

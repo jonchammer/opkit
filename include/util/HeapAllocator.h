@@ -208,7 +208,7 @@ private:
 
 }
 
-namespace tensorlib
+namespace opkit
 {
 
 // User-facing allocator class. T represents the type of the object being

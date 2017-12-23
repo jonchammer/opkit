@@ -4,7 +4,7 @@
 #include <initializer_list>
 #include "util/ReferenceCount.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // This class represents a 1D array of type T. Unlike a normal

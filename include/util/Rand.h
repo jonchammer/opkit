@@ -4,7 +4,7 @@
 #include <random>
 #include <chrono>
 
-namespace tensorlib
+namespace opkit
 {
 
 // This class should be used to easily generate random numbers.

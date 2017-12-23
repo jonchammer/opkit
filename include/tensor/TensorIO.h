@@ -4,7 +4,7 @@
 #include "tensor/Tensor.h"
 #include "tensor/TensorMath.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // Print the tensor when both the width and the precision are known

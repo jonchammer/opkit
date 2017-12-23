@@ -9,7 +9,7 @@
 #include "graph/GraphSimplifier.h"
 #include "graph/ops/GraphOps_all.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // Calculates the gradients of the given graph with respect to each of the

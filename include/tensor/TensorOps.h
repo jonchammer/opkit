@@ -1,7 +1,7 @@
 #ifndef TENSOR_OPS_H
 #define TENSOR_OPS_H
 
-namespace tensorlib
+namespace opkit
 {
 
 // ------------------------------- Generators ------------------------------- //

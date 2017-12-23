@@ -4,7 +4,7 @@
 #include <algorithm>
 #include "util/Rand.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // This class provides a simple interface for iterating over a set of indices

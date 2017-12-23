@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-namespace tensorlib
+namespace opkit
 {
 
 template <class T>

@@ -4,7 +4,7 @@
 #include "Acceleration_OpenBlas.h"
 #include <nvblas.h>
 
-namespace tensorlib
+namespace opkit
 {
 
 template <class T>

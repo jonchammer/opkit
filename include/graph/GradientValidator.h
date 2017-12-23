@@ -5,7 +5,7 @@
 #include "graph/Gradients.h"
 #include "tensor/Tensor.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // Calculates the gradients of the given graph with respect to each of the given

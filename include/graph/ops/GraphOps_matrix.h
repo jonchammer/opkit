@@ -7,7 +7,7 @@
 #include "graph/ops/GraphOps_core.h"
 #include "tensor/TensorMath.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // This file contains a set of shorthand functions to make manipulating graphs

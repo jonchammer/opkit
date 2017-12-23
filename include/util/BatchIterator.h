@@ -15,7 +15,7 @@
 #include "util/RandomIndexIterator.h"
 using std::vector;
 
-namespace tensorlib
+namespace opkit
 {
 
 template <class T>

@@ -13,7 +13,7 @@
 //
 // auto dydx = simplify(gradient(y, x));
 
-namespace tensorlib
+namespace opkit
 {
 
 // Forward declarations

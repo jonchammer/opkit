@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include "graph/Graph.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // This class represents a mapping between function names (as used in the graph

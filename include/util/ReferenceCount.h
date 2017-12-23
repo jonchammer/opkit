@@ -1,7 +1,7 @@
 #ifndef REFERENCE_COUNT_H
 #define REFERENCE_COUNT_H
 
-namespace tensorlib
+namespace opkit
 {
 
 // See: http://www.aristeia.com/BookErrata/M29Source.html

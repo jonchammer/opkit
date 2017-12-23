@@ -4,7 +4,7 @@
 #include "Acceleration_CPU.h"
 #include <cblas.h>
 
-namespace tensorlib
+namespace opkit
 {
 
 // For BLAS reference see:

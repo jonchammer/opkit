@@ -14,7 +14,7 @@
 #include "util/HeapAllocator.h"
 #include "tensor/Storage.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 using std::vector;

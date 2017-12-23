@@ -5,7 +5,7 @@
 #include "graph/Gradients.h"
 #include "graph/ops/GraphOps_all.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 template <class T>

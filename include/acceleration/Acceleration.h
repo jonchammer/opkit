@@ -19,19 +19,19 @@
 #ifdef OPKIT_CPU_ONLY
     #include "Acceleration_CPU.h"
     template <class T>
-    using Accelerator = tensorlib::Acceleration_CPU<T>;
+    using Accelerator = opkit::Acceleration_CPU<T>;
 #endif
 
 #ifdef OPKIT_OPEN_BLAS
     #include "Acceleration_OpenBlas.h"
     template <class T>
-    using Accelerator = tensorlib::Acceleration_OpenBlas<T>;
+    using Accelerator = opkit::Acceleration_OpenBlas<T>;
 #endif
 
 #ifdef OPKIT_NVBLAS
     #include "Acceleration_NVBlas.h"
     template <class T>
-    using Accelerator = tensorlib::Acceleration_NVBlas<T>;
+    using Accelerator = opkit::Acceleration_NVBlas<T>;
 #endif
 
 namespace detail
@@ -175,7 +175,7 @@ namespace detail
     }
 }
 
-namespace tensorlib
+namespace opkit
 {
     // Computes C = alpha * A * B + beta * C, where A is an M x K
     // matrix, B is a K x N matrix, C is an M x N matrix, alpha is

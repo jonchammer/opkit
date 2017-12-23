@@ -4,7 +4,7 @@
 using namespace std;
 using namespace std::chrono;
 
-namespace tensorlib
+namespace opkit
 {
 
 class Timer

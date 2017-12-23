@@ -6,7 +6,7 @@
 #include "tensor/Tensor.h"
 #include "util/Assert.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // Saves the given tensor to a binary file under the given name. The file can be

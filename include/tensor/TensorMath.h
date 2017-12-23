@@ -10,7 +10,7 @@
 #include "tensor/Tensor.h"
 #include "tensor/TensorOps.h"
 
-namespace tensorlib
+namespace opkit
 {
 
 // ------------------------------- Utilities -------------------------------- //
