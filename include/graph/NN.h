@@ -12,7 +12,7 @@ namespace opkit
 template <class T>
 Graph<T> relu(const Graph<T>& x)
 {
-    return max(x, make_constant<T>("0"));
+    return max(x, 0);
 }
 
 template <class T>
@@ -56,7 +56,7 @@ Graph<T> logistic(const Graph<T>& x)
 template <class T>
 void dSoftplus(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back( (T{1} / (T{1} + exp(-node.getChild(0)))) * delta );
+    gradients.push_back( (1 / (1 + exp(-node.getChild(0)))) * delta );
 }
 
 template <class T>
@@ -79,7 +79,7 @@ template <class T>
 void dBentIdentity(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
     const Graph<T>& x = node.getChild(0);
-    gradients.push_back( (x / (T{2} * sqrt(square(x) + T{1})) + T{1}) * delta );
+    gradients.push_back( (x / (2 * sqrt(square(x) + 1)) + 1) * delta );
 }
 
 template <class T>
@@ -101,7 +101,7 @@ Graph<T> bentIdentity(const Graph<T>& x)
 template <class T>
 Graph<T> softmax(const Graph<T>& x)
 {
-    Graph<T> shape = rank(x) - T{1};
+    Graph<T> shape = rank(x) - 1;
     Graph<T> temp  = exp(x - reduceMax(x, shape));
     return temp / reduceSum(temp, shape);
 }

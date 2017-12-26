@@ -26,7 +26,7 @@ Graph<T> crossEntropy(const Graph<T>& model, const Graph<T>& labels)
 {
     // A very small number is added to the input to prevent log(0) from
     // becomming NaN.
-    Graph<T> axes = rank(labels) - T{1};
+    Graph<T> axes = rank(labels) - 1;
     Graph<T> temp = labels * log(model + std::numeric_limits<T>::epsilon());
     return reduceMean(-reduceSum(temp, axes));
 }
@@ -80,8 +80,7 @@ Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels)
 template <class T>
 Graph<T> sigmoidCrossEntropy(const Graph<T>& model, const Graph<T>& labels)
 {
-    auto zero = make_constant<T>("0", Tensor<T>::fromScalar(0));
-    return max(model, zero) - model * labels + log(T{1} + exp(-abs(model)));
+    return max(model, 0) - model * labels + log(1 + exp(-abs(model)));
 }
 
 // Returns the number of elements that were correctly classified.

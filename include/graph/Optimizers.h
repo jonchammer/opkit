@@ -33,11 +33,11 @@ Graph<T> gradientDescent(
 }
 
 // Helper that is a bit easier to use
-template <class T>
+template <class T, class U>
 Graph<T> gradientDescent(
     const Graph<T>& error,
     std::unordered_set<std::string> targets = {},
-    const T learningRate = 1E-3)
+    const U learningRate = 1E-3)
 {
     auto lr = make_variable<T>("lr", Tensor<T>::fromScalar(learningRate));
     return gradientDescent(error, targets, lr);
@@ -83,12 +83,12 @@ Graph<T> gradientDescentMomentum(
 }
 
 // Helper that is a bit easier to use
-template <class T>
+template <class T, class U>
 Graph<T> gradientDescentMomentum(
     const Graph<T>& error,
     const std::unordered_set<std::string> targets = {},
-    const T learningRate = 1E-3,
-    const T momentum = 1E-3)
+    const U learningRate = 1E-3,
+    const U momentum = 1E-3)
 {
     auto lr  = make_variable<T>("lr",       Tensor<T>::fromScalar(learningRate));
     auto mom = make_variable<T>("momentum", Tensor<T>::fromScalar(momentum));
@@ -134,12 +134,12 @@ Graph<T> adam(const Graph<T>& error,
 
         // Update the biased estimates for the mean and variance of the computed
         // gradient.
-        assignments.emplace_back(assign(mean, beta1 * mean + (T{1} - beta1) * pair.second));
-        assignments.emplace_back(assign(var,  beta2 * var  + (T{1} - beta2) * square(pair.second)));
+        assignments.emplace_back(assign(mean, beta1 * mean + (1 - beta1) * pair.second));
+        assignments.emplace_back(assign(var,  beta2 * var  + (1 - beta2) * square(pair.second)));
 
         // Correct for the bias and compute a unique learning rate for each
         // parameter. Then descend the corrected gradient
-        auto alpha = learningRate * sqrt(T{1} - beta2p) / (T{1} - beta1p);
+        auto alpha = learningRate * sqrt(1 - beta2p) / (1 - beta1p);
         assignments.emplace_back(subFrom(*x, alpha * mean / (sqrt(var) + epsilon)));
 
         // Update beta1p and beta2p
@@ -155,14 +155,14 @@ Graph<T> adam(const Graph<T>& error,
 }
 
 // Helper that is a bit easier to use
-template <class T>
+template <class T, class U>
 Graph<T> adam(
     const Graph<T>& error,
     std::unordered_set<std::string> targets = {},
-    const T learningRate                    = 1E-3,
-    const T beta1                           = 0.9,
-    const T beta2                           = 0.999,
-    const T epsilon                         = std::sqrt(std::numeric_limits<T>::epsilon()))
+    const U learningRate                    = 1E-3,
+    const U beta1                           = 0.9,
+    const U beta2                           = 0.999,
+    const U epsilon                         = std::sqrt(std::numeric_limits<T>::epsilon()))
 {
     auto lr = make_variable<T>("lr",      Tensor<T>::fromScalar(learningRate));
     auto b1 = make_variable<T>("beta1",   Tensor<T>::fromScalar(beta1));
@@ -193,24 +193,17 @@ Graph<T> rmsProp(const Graph<T>& error,
 
         // Create an RMS and velocity vector per optimizable parameter.
         const Tensor<T>& xValue = ((Variable<T>&) x->node()).value();
-        auto rms = make_variable<T>(x->name() + "_rms", onesLike<T>(xValue));
-        auto vel = make_variable<T>(x->name() + "_vel", onesLike<T>(xValue));
+        auto rms = make_variable<T>(x->name() + "_rms",      onesLike<T>(xValue));
+        auto mom = make_variable<T>(x->name() + "_momentum", onesLike<T>(xValue));
 
         vector<Graph<T>> ops;
 
-        // Update the parameters
-        ops.emplace_back(axpy(*x, vel, -momentum));
-
-        // Logically, the RMS update is:
-        // RMS[i] = (1.0 - mDecay) * gradient^2 + mDecay * RMS[i]
-        // This is a reorganization of the same formula that has fewer operations.
-        auto gradSquare = square(pair.second);
-        ops.emplace_back(assign(rms, gradSquare + decay * (rms - gradSquare)));
-
-        // Descend the gradient (and apply momentum)
-        auto temp = momentum * vel;
-        ops.emplace_back(assign(vel, temp + (learningRate / sqrt(rms + epsilon)) * pair.second));
-        ops.emplace_back(addTo(*x, temp - vel));
+        // RMS[i] = decay * RMS[i] + (1.0 - decay) * gradient^2
+        // mom[i] = mom * momentum + learningRate * gradient / sqrt(RMS[i] + epsilon)
+        // x     -= mom
+        ops.emplace_back(assign(rms, decay * rms + (1 - decay) * square(pair.second)));
+        ops.emplace_back(assign(mom, momentum * mom + learningRate * pair.second / sqrt(rms + epsilon)));
+        ops.emplace_back(subFrom(*x, mom));
 
         // Tie the rules together using another list
         updateRules.emplace_back(list(ops));
@@ -221,14 +214,14 @@ Graph<T> rmsProp(const Graph<T>& error,
 }
 
 // Helper that is a bit easier to use
-template <class T>
+template <class T, class U>
 Graph<T> rmsProp(
     const Graph<T>& error,
     std::unordered_set<std::string> targets = {},
-    const T learningRate                    = 1E-4,
-    const T decay                           = 0.9,
-    const T momentum                        = 1E-3,
-    const T epsilon                         = std::sqrt(std::numeric_limits<T>::epsilon()))
+    const U learningRate                    = 1E-4,
+    const U decay                           = 0.9,
+    const U momentum                        = 1E-3,
+    const U epsilon                         = std::sqrt(std::numeric_limits<T>::epsilon()))
 {
     auto lr  = make_variable<T>("lr",       Tensor<T>::fromScalar(learningRate));
     auto dec = make_variable<T>("decay",    Tensor<T>::fromScalar(decay));

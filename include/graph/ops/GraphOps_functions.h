@@ -164,43 +164,43 @@ void dCosh(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& g
 template <class T>
 void dTanh(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((T{1} - square(node)) * delta);
+    gradients.push_back((1 - square(node)) * delta);
 }
 
 template <class T>
 void dAsin(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((T{1} / sqrt(T{1} - square(node.getChild(0)))) * delta);
+    gradients.push_back((1 / sqrt(1 - square(node.getChild(0)))) * delta);
 }
 
 template <class T>
 void dAcos(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((T{-1} / sqrt(T{1} - square(node.getChild(0)))) * delta);
+    gradients.push_back((-1 / sqrt(1 - square(node.getChild(0)))) * delta);
 }
 
 template <class T>
 void dAtan(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((T{1} / T{1} + square(node.getChild(0))) * delta);
+    gradients.push_back((1 / (1 + square(node.getChild(0)))) * delta);
 }
 
 template <class T>
 void dAsinh(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((T{1} / sqrt(square(node.getChild(0)) + T{1})) * delta);
+    gradients.push_back((1 / sqrt(square(node.getChild(0)) + 1)) * delta);
 }
 
 template <class T>
 void dAcosh(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((T{1} / sqrt(square(node.getChild(0)) - T{1})) * delta);
+    gradients.push_back((1 / sqrt(square(node.getChild(0)) - 1)) * delta);
 }
 
 template <class T>
 void dAtanh(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((T{1} / T{1} - square(node.getChild(0))) * delta);
+    gradients.push_back((1 / (1 - square(node.getChild(0)))) * delta);
 }
 
 template <class T>
@@ -213,27 +213,27 @@ template <class T>
 void dExp2(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
     // ln(2) ~= 0.69314...
-    gradients.push_back((node * T{0.6931471805599453}) * delta);
+    gradients.push_back((node * 0.6931471805599453) * delta);
 }
 
 template <class T>
 void dLog(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((T{1} / node.getChild(0)) * delta);
+    gradients.push_back((1 / node.getChild(0)) * delta);
 }
 
 template <class T>
 void dLog10(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
     // ln(10) ~= 2.3025...
-    gradients.push_back((T{1} / (node.getChild(0) * T{2.3025850929940457})) * delta);
+    gradients.push_back((1 / (node.getChild(0) * 2.3025850929940457)) * delta);
 }
 
 template <class T>
 void dLog2(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
     // ln(2) ~= 0.6931471805599453
-    gradients.push_back((T{1} / (node.getChild(0) * T{0.6931471805599453})) * delta);
+    gradients.push_back((1 / (node.getChild(0) * 0.6931471805599453)) * delta);
 }
 
 }

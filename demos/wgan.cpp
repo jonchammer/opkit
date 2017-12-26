@@ -76,8 +76,8 @@ Graph<T> discriminator(const Graph<T>& x,
     return linear(dH1, dW2, dB2);
 }
 
-template <class T>
-Graph<T> clipWeights(const vector<Graph<T>>& nodes, const T min, const T max)
+template <class T, class U>
+Graph<T> clipWeights(const vector<Graph<T>>& nodes, const U min, const U max)
 {
     vector<Graph<T>> rules;
     for (const Graph<T>& elem : nodes)
@@ -138,11 +138,11 @@ int main()
     // WGAN Loss
     auto dLoss = reduceMean(dFake) - reduceMean(dReal); // minimizing -(original loss)
     auto gLoss = -reduceMean(dFake);
-    auto clipD = clipWeights(dVars, T{-0.01}, T{0.01});
+    auto clipD = clipWeights(dVars, -0.01, 0.01);
 
     // Build the update rule
-    auto dSolver = rmsProp(dLoss, dNames, T{1E-4});
-    auto gSolver = rmsProp(gLoss, gNames, T{1E-4});
+    auto dSolver = rmsProp(dLoss, dNames, 1E-4, 0.9, 0.0, 1E-10);
+    auto gSolver = rmsProp(gLoss, gNames, 1E-4, 0.9, 0.0, 1E-10);
 
     Rand rand(42);
     BatchIterator<T> it(trainFeatures, trainLabels, batchSize, rand);

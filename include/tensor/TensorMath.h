@@ -362,12 +362,12 @@ Tensor<T> min(const Tensor<T>& A, const Tensor<T>& B)
 }
 
 // Clips each element of the given tensor to the range [min, max]
-template <class T>
-Tensor<T> clip(const Tensor<T>& A, const T min, const T max)
+template <class T, class U>
+Tensor<T> clip(const Tensor<T>& A, const U min, const U max)
 {
     Tensor<T> res = A.clone();
     for (T& elem : res)
-        elem = std::max(min, std::min(elem, max));
+        elem = std::max(T{min}, std::min(elem, T{max}));
     return res;
 }
 
