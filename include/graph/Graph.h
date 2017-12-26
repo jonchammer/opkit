@@ -58,6 +58,9 @@ private:
     template <class O, class TensorType>
     friend Graph<O> make_constant(const std::string& name, TensorType&& tensor);
 
+    template <class O, class ValueType>
+    friend Graph<O> make_constant(const ValueType constant);
+
     template <class O>
     friend Graph<O> make_constant(const std::string& name);
 
@@ -218,7 +221,15 @@ public:
 template <class T, class TensorType>
 Graph<T> make_constant(const std::string& name, TensorType&& tensor)
 {
-    return Graph<T>(new Constant<T>(name, std::forward<TensorType>(tensor)), Graph<T>::Type::CONSTANT);
+    return Graph<T>(new Constant<T>(name,
+        std::forward<TensorType>(tensor)), Graph<T>::Type::CONSTANT);
+}
+
+template <class T, class ValueType>
+Graph<T> make_constant(const ValueType constant)
+{
+    return Graph<T>(new Constant<T>(std::to_string(constant),
+        Tensor<T>::fromScalar(constant)), Graph<T>::Type::CONSTANT);
 }
 
 template <class T>
@@ -230,7 +241,8 @@ Graph<T> make_constant(const std::string& name)
 template <class T, class TensorType>
 Graph<T> make_variable(const std::string& name, TensorType&& tensor)
 {
-    return Graph<T>(new Variable<T>(name, std::forward<TensorType>(tensor)), Graph<T>::Type::VAR);
+    return Graph<T>(new Variable<T>(name,
+        std::forward<TensorType>(tensor)), Graph<T>::Type::VAR);
 }
 
 template <class T>

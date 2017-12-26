@@ -38,7 +38,7 @@ void dSoftmaxCrossEntropy(const Graph<T>& node, const Graph<T>& delta, std::vect
     Graph<T> labels = node.getChild(1);
 
     gradients.push_back( (y - labels) * delta );
-    gradients.push_back( make_constant<T>("0") );
+    gradients.push_back( make_constant<T>(0) );
 }
 
 // Specialized operation for the softmax -> cross entropy case. This function

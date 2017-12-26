@@ -31,7 +31,7 @@ std::unordered_map<std::string, Graph<T>> gradients(const Graph<T>& node,
     std::queue<Graph<T>> nodeQueue;
     std::queue<Graph<T>> gradQueue;
     nodeQueue.push(node);
-    gradQueue.push(expand(make_constant<T>("1", Tensor<T>::fromScalar(1)), shape(node)));
+    gradQueue.push(expand(make_constant<T>(1), shape(node)));
 
     while (!nodeQueue.empty())
     {

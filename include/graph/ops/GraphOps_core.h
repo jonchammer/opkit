@@ -157,7 +157,7 @@ void dCeil(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& g
 {
     // Technically, the derivative doesn't exist for integers, but it's 0
     // everywhere else.
-    gradients.push_back(make_constant<T>("0"));
+    gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
@@ -165,7 +165,7 @@ void dFloor(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& 
 {
     // Technically, the derivative doesn't exist for integers, but it's 0
     // everywhere else.
-    gradients.push_back(make_constant<T>("0"));
+    gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
@@ -313,7 +313,7 @@ Graph<T> fnName(const Graph<T>& arg, U scalar)                                 \
     {                                                                          \
         return fn(A, B);                                                       \
     }, arg,                                                                    \
-    make_constant<T>(std::to_string(scalar), Tensor<T>::fromScalar(scalar)));  \
+    make_constant<T>(scalar));                                                 \
 }                                                                              \
 
 #define SCALAR_OP_LEFT(fnName, fn, derivFn)                                    \
@@ -327,8 +327,7 @@ Graph<T> fnName(U scalar, const Graph<T>& arg)                                 \
     {                                                                          \
         return fn(A, B);                                                       \
     },                                                                         \
-    make_constant<T>(std::to_string(scalar), Tensor<T>::fromScalar(scalar)),   \
-    arg);                                                                      \
+    make_constant<T>(scalar), arg);                                            \
 }                                                                              \
 
 SCALAR_OP_LEFT(operator+,  add,      dAdd);
@@ -498,7 +497,7 @@ template <class T>
 void dReduceSum(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
     gradients.push_back(expand(delta, shape(node.getChild(0))));
-    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>("0"));
+    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
@@ -506,7 +505,7 @@ void dReduceProduct(const Graph<T>& node, const Graph<T>& delta, std::vector<Gra
 {
     // Broadcasting should make sure delta is the right shape
     gradients.push_back((node / node.getChild(0)) * delta);
-    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>("0"));
+    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
@@ -527,7 +526,7 @@ void dReduceMin(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T
         // divide by the number of duplicates so all min elements share blame.
         Graph<T> indicators = equal(x, node);
         gradients.push_back((indicators / reduceSum(indicators, axes)) * delta);
-        gradients.push_back(make_constant<T>("0"));
+        gradients.push_back(make_constant<T>(0));
     }
 }
 
@@ -549,7 +548,7 @@ void dReduceMax(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T
         // divide by the number of duplicates so all max elements share blame.
         Graph<T> indicators = equal(x, node);
         gradients.push_back((indicators / reduceSum(indicators, axes)) * delta);
-        gradients.push_back(make_constant<T>("0"));
+        gradients.push_back(make_constant<T>(0));
     }
 }
 
@@ -559,7 +558,7 @@ void dReduceMean(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<
     const Graph<T>& x = node.getChild(0);
     Graph<T> factor = size(x) / size(node);
     gradients.push_back(expand(delta / factor, shape(x)));
-    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>("0"));
+    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
