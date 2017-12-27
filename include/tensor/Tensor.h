@@ -80,7 +80,7 @@ public:
     Tensor<T>& operator=(const Tensor<T>& other) = default;
     Tensor<T>& operator=(Tensor<T>&& other)      = default;
 
-    // Create a new rank-0 tensor (scalar) with the given value.
+    // Create a new scalar tensor with the given value.
     template <class U>
     static Tensor<T> fromScalar(const U& scalar)
     {
