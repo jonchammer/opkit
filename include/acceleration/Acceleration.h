@@ -9,6 +9,7 @@
  #define ACCELERATION_H
 
 #include "util/Assert.h"
+#include "util/Instrumentor.h"
 
 // If user hasn't specified an acceleration framework, use CPU only as the default
 #if !defined OPKIT_CPU_ONLY && !defined OPKIT_OPEN_BLAS && !defined OPKIT_NVBLAS
@@ -188,6 +189,9 @@ namespace opkit
         const size_t cStrideX, const size_t cStrideY,
         const T alpha = T{1}, const T beta = T{})
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
+
         if (aStrideX == 1 && bStrideX == 1 && cStrideX == 1 &&
             aStrideY != 0 && bStrideY != 0 && cStrideY != 0)
             Accelerator<T>::mmMultiply(A, B, C, M, N, K, aStrideY, bStrideY, cStrideY, alpha, beta);
@@ -206,6 +210,9 @@ namespace opkit
         const size_t cStrideX, const size_t cStrideY,
         const T alpha = T{1.0}, const T beta = T{0.0})
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
+
         if (aStrideX == 1 && bStrideX == 1 && cStrideX == 1 &&
             aStrideY != 0 && bStrideY != 0 && cStrideY != 0)
             Accelerator<T>::mmtMultiply(A, B, C, M, N, K, aStrideY, bStrideY, cStrideY, alpha, beta);
@@ -224,6 +231,9 @@ namespace opkit
         const size_t cStrideX, const size_t cStrideY,
         const T alpha = T{1.0}, const T beta = T{0.0})
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
+
         if (aStrideX == 1 && bStrideX == 1 && cStrideX == 1 &&
             aStrideY != 0 && bStrideY != 0 && cStrideY != 0)
             Accelerator<T>::mtmMultiply(A, B, C, M, N, K, aStrideY, bStrideY, cStrideY, alpha, beta);
@@ -242,6 +252,8 @@ namespace opkit
         const T alpha = T{1.0}, const T beta = T{0.0},
         const int xInc = 1, const int yInc = 1)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
         Accelerator<T>::mvMultiply(A, x, y, M, N, alpha, beta, xInc, yInc);
     }
 
@@ -256,6 +268,8 @@ namespace opkit
         const T alpha = T{1.0}, const T beta = T{0.0},
         const int xInc = 1, const int yInc = 1)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
         Accelerator<T>::mtvMultiply(A, x, y, M, N, alpha, beta, xInc, yInc);
     }
 
@@ -269,6 +283,8 @@ namespace opkit
         const size_t N, const T alpha = T{1.0}, const T beta = {0.0},
         const int xInc = 1, const int yInc = 1)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY(std::to_string(N) + " x " + std::to_string(N));
         Accelerator<T>::symmetricMvMultiply(A, x, y, N, alpha, beta, xInc, yInc);
     }
 
@@ -284,6 +300,8 @@ namespace opkit
         const size_t M, const size_t N, const T alpha = T{1.0},
         const int xInc = 1, const int yInc = 1)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
         Accelerator<T>::outerProduct(x, y, A, M, N, alpha, xInc, yInc);
     }
 
@@ -296,6 +314,8 @@ namespace opkit
         const size_t N, const T alpha = T{1.0},
         const int xInc = 1, const int yInc = 1)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY("N = " + std::to_string(N));
         Accelerator<T>::vAdd(x, y, N, alpha, xInc, yInc);
     }
 
@@ -305,6 +325,9 @@ namespace opkit
     template <class T>
     inline void vScale(T* x, const T alpha, const size_t N, const int xInc = 1)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY("N = " + std::to_string(N));
+        INSTRUMENT_PROPERTY("a = " + std::to_string(alpha));
         Accelerator<T>::vScale(x, alpha, N, xInc);
     }
 
@@ -314,6 +337,8 @@ namespace opkit
     template <class T>
     inline size_t vMaxIndex(const T* x, const size_t N, const int xInc = 1)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY("N = " + std::to_string(N));
         return Accelerator<T>::vMaxIndex(x, N, xInc);
     }
 
@@ -324,6 +349,8 @@ namespace opkit
     inline void vCopy(const T* x, T* y, const size_t N,
         const int xInc = 1, const int yInc = 1)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY("N = " + std::to_string(N));
         Accelerator<T>::vCopy(x, y, N, xInc, yInc);
     }
 
@@ -337,6 +364,8 @@ namespace opkit
         const size_t cStrideX, const size_t cStrideY,
         const T alpha, const T beta)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
         Accelerator<T>::matrixAdd(A, C, M, N, aStrideX, aStrideY,
             cStrideX, cStrideY, alpha, beta);
     }
@@ -347,6 +376,10 @@ namespace opkit
     inline void axpby(const T* x, T* y, const size_t N, const T alpha,
         const T beta, const size_t xInc, const size_t yInc)
     {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY("N = " + std::to_string(N));
+        INSTRUMENT_PROPERTY("a = " + std::to_string(alpha));
+        INSTRUMENT_PROPERTY("b = " + std::to_string(beta));
         Accelerator<T>::axpby(x, y, N, alpha, beta, xInc, yInc);
     }
 
@@ -361,6 +394,7 @@ namespace opkit
         const size_t xStride, const size_t yStride,
         const size_t xDilation, const size_t yDilation, T* dest)
     {
+        INSTRUMENT();
         Accelerator<T>::im2col(src, srcWidth, srcHeight, channels,
             windowWidth, windowHeight, xPad, yPad, xStride, yStride,
             xDilation, yDilation, dest);
@@ -378,6 +412,7 @@ namespace opkit
         const int xDilation, const int yDilation,
         T* dest)
     {
+        INSTRUMENT();
         Accelerator<T>::col2im(src, destWidth, destHeight, channels,
             windowWidth, windowHeight, xPad, yPad, xStride, yStride,
             xDilation, yDilation, dest);
@@ -409,6 +444,7 @@ namespace opkit
         const size_t xPad, const size_t yPad,
         const size_t xStride, const size_t yStride, T* dest)
     {
+        INSTRUMENT();
         Accelerator<T>::im2Row(src, srcWidth, srcHeight, channels,
             windowWidth, windowHeight, xPad, yPad, xStride, yStride, dest);
     }
@@ -444,6 +480,7 @@ namespace opkit
         const size_t xPad, const size_t yPad,
         const size_t xStride, const size_t yStride, T* dest)
     {
+        INSTRUMENT();
         Accelerator<T>::row2Im(src, windowWidth, windowHeight, channels,
             destWidth, destHeight, xPad, yPad, xStride, yStride, dest);
     }

@@ -1,5 +1,5 @@
 // Comment to disable debug assertions
-#define NDEBUG
+// #define NDEBUG
 
 #include <iostream>
 #include <unordered_map>
@@ -105,7 +105,7 @@ int main()
     Tensor<T>* batchLabels;
 
     Timer t;
-    for (size_t i = 0; i < 10; ++i)
+    for (size_t i = 0; i < 3; ++i)
     {
         // Perform one epoch using batches of the training set
         while (it.hasNext())
@@ -127,6 +127,8 @@ int main()
             T(error.evaluate(true)));
         cout.flush();
     }
+
+    Instrumentor::instance().print();
 
     // vector<Graph<T>> targets({w1, b1});
     // if (validate(error, targets))
