@@ -1,5 +1,5 @@
 // Comment to disable debug assertions
-// #define NDEBUG
+#define NDEBUG
 
 #include <iostream>
 #include <unordered_map>
@@ -56,8 +56,8 @@ int main()
     loadTensorRaw("/home/jhammer/data/mnist/mnist_test_labels_float.raw",    testLabels);
 
     // Perform preprocessing
-    trainFeatures.apply([](const T& x) { return x / T{255}; });
-    testFeatures.apply([](const T& x) { return x / T{255}; });
+    scale(trainFeatures, 1.0 / 255.0);
+    scale(testFeatures,  1.0 / 255.0);
     trainLabels = convertColumnToOneHot(trainLabels, 0);
     testLabels  = convertColumnToOneHot(testLabels, 0);
 
@@ -128,7 +128,7 @@ int main()
         cout.flush();
     }
 
-    Instrumentor::instance().print();
+    //Instrumentor::instance().print();
 
     // vector<Graph<T>> targets({w1, b1});
     // if (validate(error, targets))

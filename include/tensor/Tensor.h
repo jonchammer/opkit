@@ -490,8 +490,17 @@ Tensor<U> Tensor<T>::clone() const
 template <class T>
 Tensor<T>& Tensor<T>::fill(const T& value)
 {
-    for (T& elem : *this)
-        elem = value;
+    // Avoid iterators whenever possible to improve performance
+    if (contiguous())
+    {
+        T* start = mStorage.begin();
+        std::fill(start, start + mNumElements, value);
+    }
+    else
+    {
+        for (T& elem : *this)
+            elem = value;
+    }
 
     return *this;
 }
@@ -500,8 +509,23 @@ template <class T>
 template <class Function>
 Tensor<T>& Tensor<T>::apply(Function&& f)
 {
-    for (T& elem : *this)
-        elem = f(elem);
+    // Avoid iterators whenever possible to improve performance
+    if (contiguous())
+    {
+        T* it  = mStorage.begin();
+        T* end = it + mNumElements;
+        while (it != end)
+        {
+            T& elem = *it;
+            elem    = f(elem);
+            ++it;
+        }
+    }
+    else
+    {
+        for (T& elem : *this)
+            elem = f(elem);
+    }
 
     return *this;
 }
