@@ -196,6 +196,25 @@ struct Acceleration_CPU
         return maxIndex;
     }
 
+    static size_t vMinIndex(const T* x, const size_t N, const int xInc)
+    {
+        size_t minIndex = 0;
+        T min           = x[0];
+        int xIndex      = 0;
+
+        for (size_t i = 0; i < N; ++i)
+        {
+            if (x[xIndex] < min)
+            {
+                minIndex = xIndex;
+                min      = x[xIndex];
+            }
+            xIndex += xInc;
+        }
+
+        return minIndex;
+    }
+
     static void vCopy(const T* x, T* y, const size_t N,
         const int xInc, const int yInc)
     {

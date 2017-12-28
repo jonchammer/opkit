@@ -342,6 +342,17 @@ namespace opkit
         return Accelerator<T>::vMaxIndex(x, N, xInc);
     }
 
+    // Returns the index where the minimum element is found in the vector x of
+    // size N. xInc can be adjusted if the vector is
+    // stored in an interlaced format.
+    template <class T>
+    inline size_t vMinIndex(const T* x, const size_t N, const int xInc = 1)
+    {
+        INSTRUMENT();
+        INSTRUMENT_PROPERTY("N = " + std::to_string(N));
+        return Accelerator<T>::vMinIndex(x, N, xInc);
+    }
+
     // Copies the contents of x into y, where x and y are vectors of size N.
     // xInc and yInc can be adjusted if the vectors are stored in an
     // interlaced format.

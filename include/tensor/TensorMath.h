@@ -10,10 +10,11 @@
 #include "tensor/Tensor.h"
 #include "tensor/TensorOps.h"
 
-namespace opkit
+namespace detail
 {
 
-// ------------------------------- Utilities -------------------------------- //
+using opkit::SmallVector;
+using opkit::Tensor;
 
 // Calculates the broadcast shape between two tensors, similar to NumPy. See:
 // https://docs.scipy.org/doc/numpy-1.13.0/user/basics.broadcasting.html
@@ -61,6 +62,111 @@ SmallVector getBroadcastShape(const Tensor<T>& A, const Tensor<T>& B)
     return res;
 }
 
+// Helper function - Calculates c = f(a, b), where f can be any function
+// and a and b are vectors of the same size.
+//
+// 'f' should have a signature resembling:
+//     T f(const T a, const T b)
+template <class T, class Func>
+void binaryVectorOp(
+    Func&& f,
+    const T* a, const T* b, T* c,
+    const size_t N,
+    const size_t aStride, const size_t bStride)
+{
+    for (size_t x = 0; x < N; ++x)
+    {
+        *c++ = f(*a, *b);
+        a   += aStride;
+        b   += bStride;
+    }
+}
+
+// Helper function - Calculates a op= b, where op can be any function and a and
+// b are vectors of the same size.
+//
+// 'op' should have a signature resembling:
+//     void op(T& res, const T newValue)
+template <class T, class Func>
+void vectorUpdateOp(
+    Func&& f,
+    T* a, const T* b,
+    const size_t N,
+    const size_t aStride, const size_t bStride)
+{
+    for (size_t x = 0; x < N; ++x)
+    {
+        f(*a, *b);
+        a += aStride;
+        b += bStride;
+    }
+}
+
+// Helper function - Calculates c = f(a, b), where f can be any function
+// and a and b are matrices of the same size.
+//
+// 'f' should have a signature resembling:
+//     T f(const T a, const T b)
+template <class T, class Func>
+void binaryMatrixOp(
+    Func&& f,
+    const T* a, const T* b, T* c,
+    const size_t M, const size_t N,
+    const size_t aStrideX, const size_t aStrideY,
+    const size_t bStrideX, const size_t bStrideY)
+{
+    for (size_t y = 0; y < M; ++y)
+    {
+        const T* aRow = a;
+        const T* bRow = b;
+        for (size_t x = 0; x < N; ++x)
+        {
+            *c++  = f(*aRow, *bRow);
+            aRow += aStrideX;
+            bRow += bStrideX;
+        }
+
+        a += aStrideY;
+        b += bStrideY;
+    }
+}
+
+// Helper function - Calculates a op= b, where op can be any function and a and
+// b are matrices of the same size.
+//
+// 'op' should have a signature resembling:
+//     void op(T& res, const T newValue)
+template <class T, class Func>
+void matrixUpdateOp(
+    Func&& f,
+    T* a, const T* b,
+    const size_t M, const size_t N,
+    const size_t aStrideX, const size_t aStrideY,
+    const size_t bStrideX, const size_t bStrideY)
+{
+    for (size_t y = 0; y < M; ++y)
+    {
+              T* aRow = a;
+        const T* bRow = b;
+        for (size_t x = 0; x < N; ++x)
+        {
+            f(*aRow, *bRow);
+            aRow += aStrideX;
+            bRow += bStrideX;
+        }
+
+        a += aStrideY;
+        b += bStrideY;
+    }
+}
+
+}
+
+namespace opkit
+{
+
+// ------------------------------- Utilities -------------------------------- //
+
 // Apply 'f' to every individual element of the input
 template <class T, class Func>
 Tensor<T> elementwiseFunc(const Tensor<T>& arg, Func&& f)
@@ -68,61 +174,6 @@ Tensor<T> elementwiseFunc(const Tensor<T>& arg, Func&& f)
     Tensor<T> res = arg.clone();
     res.apply(std::forward<Func>(f));
     return res;
-}
-
-// Helper function - Applies the given binary operation to two matrices, putting
-// the result in the given contiguous area.
-template <class T, class Func>
-void binaryMatrixOp(
-    Func&& f,
-    const T* aData, const T* bData, T* resData,
-    const size_t M, const size_t N,
-    const size_t aStrideX, const size_t aStrideY,
-    const size_t bStrideX, const size_t bStrideY)
-{
-    for (size_t y = 0; y < M; ++y)
-    {
-        const T* aRow = aData;
-        const T* bRow = bData;
-        for (size_t x = 0; x < N; ++x)
-        {
-            *resData++ = f(*aRow, *bRow);
-            aRow += aStrideX;
-            bRow += bStrideX;
-        }
-
-        aData += aStrideY;
-        bData += bStrideY;
-    }
-}
-
-// Helper function - Calculates y op= x, where op can be any function and x and
-// y are matrices of the same size.
-//
-// 'op' should have a signature resembling:
-//     void op(T& res, const T newValue)
-template <class T, class Func>
-void matrixUpdateOp(
-    Func&& f,
-    const T* xData, T* yData,
-    const size_t M, const size_t N,
-    const size_t xStrideX, const size_t xStrideY,
-    const size_t yStrideX, const size_t yStrideY)
-{
-    for (size_t y = 0; y < M; ++y)
-    {
-        const T* xRow = xData;
-              T* yRow = yData;
-        for (size_t x = 0; x < N; ++x)
-        {
-            f(*yRow, *xRow);
-            xRow += xStrideX;
-            yRow += yStrideX;
-        }
-
-        xData += xStrideY;
-        yData += yStrideY;
-    }
 }
 
 // ------------------------ Broadcasting Binary Ops ------------------------- //
@@ -135,7 +186,7 @@ Tensor<T> broadcastingBinaryOp(const Tensor<T>& A, const Tensor<T>& B, Func f)
     // Try to use broadcasting
     if (A.shape() != B.shape())
     {
-        SmallVector commonShape = getBroadcastShape(A, B);
+        SmallVector commonShape = detail::getBroadcastShape(A, B);
         return broadcastingBinaryOp(expand(A, commonShape.begin(), commonShape.end()),
             expand(B, commonShape.begin(), commonShape.end()), f);
     }
@@ -144,9 +195,9 @@ Tensor<T> broadcastingBinaryOp(const Tensor<T>& A, const Tensor<T>& B, Func f)
     Tensor<T> res(shape.begin(), shape.end());
 
     // Optimization for matrices
-    if (A.rank() == 2 && B.rank() == 2)
+    if (A.rank() == 2 /*&& B.rank() == 2*/)
     {
-        binaryMatrixOp(std::forward<Func>(f),
+        detail::binaryMatrixOp(std::forward<Func>(f),
             A.data(), B.data(), res.data(),
             A.shape(0), A.shape(1),
             A.stride(1), A.stride(0),
@@ -192,40 +243,31 @@ Tensor<T> add(const Tensor<T>& A, const Tensor<T>& B)
     // Try to use broadcasting
     if (A.shape() != B.shape())
     {
-        SmallVector commonShape = getBroadcastShape(A, B);
+        SmallVector commonShape = detail::getBroadcastShape(A, B);
         return add(expand(A, commonShape.begin(), commonShape.end()),
             expand(B, commonShape.begin(), commonShape.end()));
     }
 
     // Apply binary op. We take advantage of the fact that 'res' is guaranteed
     // to be continuous to improve performance a bit.
-    const SmallVector& shape = A.shape();
-    Tensor<T> res(shape.begin(), shape.end());
-    T* resData = res.data();
+    Tensor<T> res = A.clone();
+    T* resData    = res.data();
 
-    if (A.contiguous() && B.contiguous())
-    {
-        vCopy(A.data(), resData, A.size());
+    // Add B
+    if (B.contiguous())
         vAdd(B.data(), resData, A.size());
-    }
-    else if (A.rank() == 2)
+    else if (B.rank() == 2)
     {
-        // Copy A into res
-        T* resDataPtr = resData;
-        for (const T& elem : A)
-            *resDataPtr++ = elem;
-
-        // A += B
         matrixAdd(B.data(), resData, res.shape(0), res.shape(1),
             B.stride(1), B.stride(0), res.stride(1), res.stride(0), T{1}, T{1});
     }
     else
     {
         auto itB = B.begin();
-        for (const T& elem : A)
+        for (size_t i = 0; i < res.size(); ++i)
         {
-            *resData = elem + *itB;
-            ++itB; ++resData;
+            *resData++ += *itB;
+            ++itB;
         }
     }
 
@@ -242,40 +284,31 @@ Tensor<T> sub(const Tensor<T>& A, const Tensor<T>& B)
     // Try to use broadcasting
     if (A.shape() != B.shape())
     {
-        SmallVector commonShape = getBroadcastShape(A, B);
+        SmallVector commonShape = detail::getBroadcastShape(A, B);
         return sub(expand(A, commonShape.begin(), commonShape.end()),
             expand(B, commonShape.begin(), commonShape.end()));
     }
 
     // Apply binary op. We take advantage of the fact that 'res' is guaranteed
     // to be continuous to improve performance a bit.
-    const SmallVector& shape = A.shape();
-    Tensor<T> res(shape.begin(), shape.end());
-    T* resData = res.data();
+    Tensor<T> res = A.clone();
+    T* resData    = res.data();
 
-    if (A.contiguous() && B.contiguous())
-    {
-        vCopy(A.data(), resData, A.size());
+    // Subtract B
+    if (B.contiguous())
         vAdd(B.data(), resData, A.size(), T{-1});
-    }
-    else if (A.rank() == 2)
+    else if (B.rank() == 2)
     {
-        // Copy A into res
-        T* resDataPtr = resData;
-        for (const T& elem : A)
-            *resDataPtr++ = elem;
-
-        // A -= B
         matrixAdd(B.data(), resData, res.shape(0), res.shape(1),
             B.stride(1), B.stride(0), res.stride(1), res.stride(0), T{-1}, T{1});
     }
     else
     {
         auto itB = B.begin();
-        for (const T& elem : A)
+        for (size_t i = 0; i < res.size(); ++i)
         {
-            *resData = elem - *itB;
-            ++itB; ++resData;
+            *resData++ -= *itB;
+            ++itB;
         }
     }
 
@@ -307,8 +340,7 @@ Tensor<T> multiply(const Tensor<T>& A, const Tensor<T>& B)
     {
         const T val   = T(A);
         Tensor<T> res = B.clone();
-        for (T& elem : res)
-            elem *= val;
+        scale(res, val);
         return res;
     }
 
@@ -316,8 +348,7 @@ Tensor<T> multiply(const Tensor<T>& A, const Tensor<T>& B)
     {
         const T val   = T(B);
         Tensor<T> res = A.clone();
-        for (T& elem : res)
-            elem *= val;
+        scale(res, val);
         return res;
     }
 
@@ -343,8 +374,10 @@ Tensor<T> divide(const Tensor<T>& A, const Tensor<T>& B)
     {
         const T val   = T(A);
         Tensor<T> res = B.clone();
-        for (T& elem : res)
-            elem = val / elem;
+        res.apply([&val](const T& x)
+        {
+            return val / x;
+        });
         return res;
     }
 
@@ -352,8 +385,7 @@ Tensor<T> divide(const Tensor<T>& A, const Tensor<T>& B)
     {
         const T val   = T{1} / T(B);
         Tensor<T> res = A.clone();
-        for (T& elem : res)
-            elem *= val;
+        scale(res, val);
         return res;
     }
 
@@ -371,11 +403,10 @@ Tensor<T> max(const Tensor<T>& A, const Tensor<T>& B)
     {
         const T val{A};
         Tensor<T> res = B.clone();
-        for (T& elem : res)
+        res.apply([&val](const T& x)
         {
-            if (val > elem)
-                elem = val;
-        }
+            return std::max(x, val);
+        });
         return res;
     }
 
@@ -383,11 +414,10 @@ Tensor<T> max(const Tensor<T>& A, const Tensor<T>& B)
     {
         const T val{B};
         Tensor<T> res = A.clone();
-        for (T& elem : res)
+        res.apply([&val](const T& x)
         {
-            if (val > elem)
-                elem = val;
-        }
+            return std::max(x, val);
+        });
         return res;
     }
 
@@ -405,11 +435,10 @@ Tensor<T> min(const Tensor<T>& A, const Tensor<T>& B)
     {
         const T val{A};
         Tensor<T> res = B.clone();
-        for (T& elem : res)
+        res.apply([&val](const T& x)
         {
-            if (val < elem)
-                elem = val;
-        }
+            return std::min(x, val);
+        });
         return res;
     }
 
@@ -417,11 +446,10 @@ Tensor<T> min(const Tensor<T>& A, const Tensor<T>& B)
     {
         const T val{B};
         Tensor<T> res = A.clone();
-        for (T& elem : res)
+        res.apply([&val](const T& x)
         {
-            if (val < elem)
-                elem = val;
-        }
+            return std::min(x, val);
+        });
         return res;
     }
 
@@ -431,42 +459,96 @@ Tensor<T> min(const Tensor<T>& A, const Tensor<T>& B)
     });
 }
 
-// Clips each element of the given tensor to the range [min, max]
-template <class T, class U>
-Tensor<T> clip(const Tensor<T>& A, const U min, const U max)
+// ------------------------------- Boolean Ops ------------------------------ //
+
+template <class T>
+Tensor<T> equal(const Tensor<T>& A, const Tensor<T>& B)
 {
-    Tensor<T> res = A.clone();
-    for (T& elem : res)
-        elem = std::max(T{min}, std::min(elem, T{max}));
-    return res;
+    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
+    {
+        return T(a == b);
+    });
+}
+
+template <class T>
+Tensor<T> notEqual(const Tensor<T>& A, const Tensor<T>& B)
+{
+    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
+    {
+        return T(a != b);
+    });
+}
+
+template <class T>
+Tensor<T> greater(const Tensor<T>& A, const Tensor<T>& B)
+{
+    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
+    {
+        return T(a > b);
+    });
+}
+
+template <class T>
+Tensor<T> greaterEqual(const Tensor<T>& A, const Tensor<T>& B)
+{
+    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
+    {
+        return T(a >= b);
+    });
+}
+
+template <class T>
+Tensor<T> less(const Tensor<T>& A, const Tensor<T>& B)
+{
+    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
+    {
+        return T(a < b);
+    });
+}
+
+template <class T>
+Tensor<T> lessEqual(const Tensor<T>& A, const Tensor<T>& B)
+{
+    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
+    {
+        return T(a <= b);
+    });
 }
 
 // ------------------------------- Update Ops ------------------------------- //
-// A += B;
-template <class T>
-void addTo(Tensor<T>& A, const Tensor<T>& B)
+
+// Calculates A op= B, where A, B are tensors with a broadcast shape in common.
+//
+// The signature of 'op' should be resemble the following:
+//     void op(T& a, const T b)
+template <class T, class Func>
+void updateOp(Tensor<T>& A, const Tensor<T>& B, Func&& f)
 {
     // Try to use broadcasting
     if (A.shape() != B.shape())
     {
-        SmallVector commonShape = getBroadcastShape(A, B);
-        ASSERT(commonShape == A.shape(), "addTo: Only B's shape can change.");
-        return addTo(A, expand(B, commonShape.begin(), commonShape.end()));
+        SmallVector commonShape = detail::getBroadcastShape(A, B);
+        ASSERT(commonShape == A.shape(), "updateOp: Only B's shape can change.");
+        updateOp(A, expand(B, commonShape.begin(), commonShape.end()),
+            std::forward<Func>(f));
+        return;
+    }
+
+    // Optimization for vectors
+    if (A.rank() == 1 /*&& B.rank() == 1*/)
+    {
+        detail::vectorUpdateOp(std::forward<Func>(f), A.data(), B.data(),
+            A.shape(0), A.stride(0), B.stride(0));
     }
 
     // Optimization for matrices
-    if (A.rank() == 2 && B.rank() == 2)
+    else if (A.rank() == 2 /*&& B.rank() == 2*/)
     {
-        auto fn = [](T& y, const T& x)
-        {
-            y += x;
-        };
-
-        matrixUpdateOp(fn,
-            B.data(), A.data(),
+        detail::matrixUpdateOp(std::forward<Func>(f),
+            A.data(), B.data(),
             A.shape(0), A.shape(1),
-            B.stride(1), B.stride(0),
-            A.stride(1), A.stride(0));
+            A.stride(1), A.stride(0),
+            B.stride(1), B.stride(0));
     }
 
     // General implementation that will always work
@@ -475,127 +557,50 @@ void addTo(Tensor<T>& A, const Tensor<T>& B)
         auto bIt = B.begin();
         for (T& elem : A)
         {
-            elem += *bIt;
+            f(elem, *bIt);
             ++bIt;
         }
     }
+}
+
+// A += B;
+template <class T>
+void addTo(Tensor<T>& A, const Tensor<T>& B)
+{
+    updateOp(A, B, [](T& y, const T& x)
+    {
+        y += x;
+    });
 }
 
 // A -= B;
 template <class T>
 void subFrom(Tensor<T>& A, const Tensor<T>& B)
 {
-    // Try to use broadcasting
-    if (A.shape() != B.shape())
+    updateOp(A, B, [](T& y, const T& x)
     {
-        SmallVector commonShape = getBroadcastShape(A, B);
-        ASSERT(commonShape == A.shape(), "subFrom: Only B's shape can change.");
-        return subFrom(A, expand(B, commonShape.begin(), commonShape.end()));
-    }
-
-    // Optimization for matrices
-    if (A.rank() == 2 && B.rank() == 2)
-    {
-        auto fn = [](T& y, const T& x)
-        {
-            y -= x;
-        };
-
-        matrixUpdateOp(fn,
-            B.data(), A.data(),
-            A.shape(0), A.shape(1),
-            B.stride(1), B.stride(0),
-            A.stride(1), A.stride(0));
-    }
-
-    // General implementation that will always work
-    else
-    {
-        auto bIt = B.begin();
-        for (T& elem : A)
-        {
-            elem -= *bIt;
-            ++bIt;
-        }
-    }
+        y -= x;
+    });
 }
 
 // A *= B;
 template <class T>
 void multBy(Tensor<T>& A, const Tensor<T>& B)
 {
-    // Try to use broadcasting
-    if (A.shape() != B.shape())
+    updateOp(A, B, [](T& y, const T& x)
     {
-        SmallVector commonShape = getBroadcastShape(A, B);
-        ASSERT(commonShape == A.shape(), "multBy: Only B's shape can change.");
-        return multBy(A, expand(B, commonShape.begin(), commonShape.end()));
-    }
-
-    // Optimization for matrices
-    if (A.rank() == 2 && B.rank() == 2)
-    {
-        auto fn = [](T& y, const T& x)
-        {
-            y *= x;
-        };
-
-        matrixUpdateOp(fn,
-            B.data(), A.data(),
-            A.shape(0), A.shape(1),
-            B.stride(1), B.stride(0),
-            A.stride(1), A.stride(0));
-    }
-
-    // General implementation that will always work
-    else
-    {
-        auto bIt = B.begin();
-        for (T& elem : A)
-        {
-            elem *= *bIt;
-            ++bIt;
-        }
-    }
+        y *= x;
+    });
 }
 
 // A /= B;
 template <class T>
 void divBy(Tensor<T>& A, const Tensor<T>& B)
 {
-    // Try to use broadcasting
-    if (A.shape() != B.shape())
+    updateOp(A, B, [](T& y, const T& x)
     {
-        SmallVector commonShape = getBroadcastShape(A, B);
-        ASSERT(commonShape == A.shape(), "divBy: Only B's shape can change.");
-        return divBy(A, expand(B, commonShape.begin(), commonShape.end()));
-    }
-
-    // Optimization for matrices
-    if (A.rank() == 2 && B.rank() == 2)
-    {
-        auto fn = [](T& y, const T& x)
-        {
-            y /= x;
-        };
-
-        matrixUpdateOp(fn,
-            B.data(), A.data(),
-            A.shape(0), A.shape(1),
-            B.stride(1), B.stride(0),
-            A.stride(1), A.stride(0));
-    }
-
-    // General implementation that will always work
-    else
-    {
-        auto bIt = B.begin();
-        for (T& elem : A)
-        {
-            elem /= *bIt;
-            ++bIt;
-        }
-    }
+        y /= x;
+    });
 }
 
 // y += alpha * x
@@ -622,16 +627,49 @@ void axpy(Tensor<T>& y, const Tensor<T>& x, const Tensor<T>& alpha)
 template <class T, class U>
 void scale(Tensor<T>& x, const U alpha)
 {
+    // Optimization for contiguous tensors
     if (x.contiguous())
         vScale(x.data(), T(alpha), x.size());
-    else
+
+    // Generic implementation
+    else x.apply([&alpha](const T& x)
     {
-        for (T& elem : x)
-            elem *= alpha;
-    }
+        return x * alpha;
+    });
 }
 
-// ---------------------------- Special Products ---------------------------- //
+// ------------------------------ [ Category ]  ----------------------------- //
+
+// Clips each element of the given tensor to the range [min, max]
+template <class T, class U>
+Tensor<T> clip(const Tensor<T>& A, const U min, const U max)
+{
+    Tensor<T> res = A.clone();
+    res.apply([&min, &max](const T& x)
+    {
+        return std::max(T{min}, std::min(x, T{max}));
+    });
+    return res;
+}
+
+// Raises each element of A to the given power.
+template <class T, class U>
+Tensor<T> pow(const Tensor<T>& A, const U& power)
+{
+    Tensor<T> res = A.clone();
+    res.apply([&power](const T& x)
+    {
+        return pow(x, T(power));
+    });
+    return res;
+}
+
+template <class T>
+Tensor<T> pow(const Tensor<T>& A, const Tensor<T>& power)
+{
+    ASSERT(power.size() == 1, "power must be a scalar");
+    return pow(A, T(power));
+}
 
 // Returns the inner product between the two tensors A and B. Both
 // tensors must have the same shape. For vectors, this operation
@@ -653,6 +691,8 @@ Tensor<T> innerProduct(const Tensor<T>& A, const Tensor<T>& B)
 
     return Tensor<T>::fromScalar(sum);
 }
+
+// -------------------------- Vector / Matrix Ops --------------------------- //
 
 // A:      Rank 1, size N
 // B:      Rank 2, size N x M
@@ -748,605 +788,6 @@ Tensor<T> matrixMultiplyT2(const Tensor<T>& A, const Tensor<T>& B)
 
     return res;
 }
-
-// Raises each element of A to the given power.
-template <class T, class U>
-Tensor<T> hadamardPower(const Tensor<T>& A, const U& power)
-{
-    Tensor<T> res = A.clone();
-    res.apply([&power](const T x)
-    {
-        return pow(x, T(power));
-    });
-    return res;
-}
-
-template <class T>
-Tensor<T> hadamardPower(const Tensor<T>& A, const Tensor<T>& power)
-{
-    ASSERT(power.rank() == 0, "power must be a scalar");
-    return hadamardPower(A, T(power));
-}
-
-// -------------------------------- Reduction ------------------------------- //
-
-// Reduces the given tensor according to 'func'. When 'axes' is empty, the
-// reduction is applied across the entire tensor. When non-empty, it lists
-// for which axes the reduction should be performed. The resulting shape will
-// match the original shape, with the exception that all axes listed in 'axes'
-// will have their dimension reduced to 1.
-template <class T, class Fn>
-Tensor<T> reduce(const Tensor<T>& A, Fn&& func, const T& init,
-    const Tensor<T>& axes)
-{
-    ASSERT(axes.size() <= A.rank(), "Too many axes provided.");
-
-    SmallVector resShape(A.shape());
-
-    // When no axes are provided, reduce on the entire tensor. Otherwise, reduce
-    // only on the selected axes.
-    if (axes.size() == 1 && T(axes) == -1.0)
-        std::fill(resShape.begin(), resShape.end(), 1);
-    else
-    {
-        for (const T& elem : axes)
-        {
-            size_t elemIndex = (size_t) elem;
-            ASSERT(elemIndex < A.rank(), "Dimension axis out of bounds.");
-            resShape[elemIndex] = 1;
-        }
-    }
-    return reduceTo(A, std::forward<Fn>(func), init, resShape);
-}
-
-// Reduces 'A' to the given shape rather than specifying which indices to reduce
-// on. Allowable shapes are those for which the dimensions either match exactly
-// to the original shape or are replaced with a 1. Fewer dimensions are allowed,
-// but this function cannot be used to add additional dimensions.
-//
-// Example:
-// A.shape() = [3, 2]
-// reduceTo( [1, 2] )    - OK
-// reduceTo( [3, 1] )    - OK
-// reduceTo( [1, 1] )    - OK
-// reduceTo( [1] )       - OK
-// reduceTo( [2] )       - OK
-// reduceTo( [] )        - OK
-// reduceTo( [1, 3] )    - NOT OK - Dimensions don't match
-// reduceTo( [1, 3, 2] ) - NOT OK - Can't add dimensions
-template <class T, class Fn, class Alloc>
-Tensor<T> reduceTo(const Tensor<T>& A, Fn&& func, const T& init,
-    const std::vector<size_t, Alloc>& resShape)
-{
-    // No reduction to be done if the shape already matches
-    if (resShape == A.shape())
-        return A;
-
-    // Check to ensure the sizes line up correctly
-    #ifndef NDEBUG
-    {
-        const SmallVector& origShape = A.shape();
-        int srcIndex                 = A.rank() - 1;
-        int resIndex                 = resShape.size() - 1;
-        for (; resIndex >= 0 && srcIndex >= 0; --resIndex, --srcIndex)
-        {
-            ASSERT(resShape[resIndex] == origShape[srcIndex] ||
-                resShape[resIndex] == 1,
-                "reduceTo(): Sizes not compatable. " + to_string(origShape) +
-                " -> " + to_string(resShape));
-        }
-        ASSERT(resIndex < 0, "reduceTo() cannot add dimensions. A.shape() = " +
-            to_string(A.shape()) + ", resShape = " + to_string(resShape));
-    }
-    #endif
-
-    // Apply an optimization for 2D tensors
-    if (A.rank() == 2)
-        return reduceTo2D(A, func, init, resShape[0], resShape[1]);
-
-    // Use the more expensive but general routine otherwise
-    else
-    {
-        Tensor<T> res(resShape.begin(), resShape.end());
-        res.fill(init);
-
-        const size_t N               = A.rank();
-        const size_t M               = resShape.size();
-        const size_t offset          = N - M;
-        const SmallVector& aShape    = A.shape();
-        const SmallVector& resStride = res.stride();
-        auto end                     = A.end();
-        SmallVector index(N);
-
-        // All members of A will participate in the reduction
-        for (auto it = A.begin(); it != end; ++it)
-        {
-            // Work out where we are in 'res' based on the current index
-            T* data = res.data();
-            for (size_t i = 0; i < M; ++i)
-            {
-                if (index[offset + i] < resShape[i])
-                    data += index[offset + i] * resStride[i];
-            }
-
-            // Apply the reduction
-            *data = func(*data, *it);
-
-            // Update the index (N-ary counter)
-            int dim = N - 1;
-            index[dim]++;
-            while (dim > 0 && index[dim] >= aShape[dim])
-            {
-                index[dim] = 0;
-                index[dim - 1]++;
-                --dim;
-            }
-        }
-
-        return res;
-    }
-}
-
-// Convenience overload for the graph methods that must work with tensors.
-template <class T, class Fn>
-Tensor<T> reduceTo(const Tensor<T>& A, Fn&& func, const T& init, const Tensor<T> shape)
-{
-    SmallVector resShape(shape.size());
-    auto resIt = resShape.begin();
-    for (const T& elem : shape)
-    {
-        *resIt = (size_t) elem;
-        ++resIt;
-    }
-
-    return reduceTo(A, std::forward<Fn>(func), init, resShape);
-}
-
-// Helper for reduceTo() that uses a routine optimized for reducing matrices.
-template <class T, class Fn>
-Tensor<T> reduceTo2D(const Tensor<T>& A, Fn&& func, const T& init,
-    const size_t M, const size_t N)
-{
-    Tensor<T> res({M, N});
-
-    const size_t xStride = A.stride(1);
-    const size_t yStride = A.stride(0);
-    const size_t width   = A.shape(1);
-    const size_t height  = A.shape(0);
-
-    const T* dataPtr = A.data();
-          T* resPtr  = res.data();
-
-    // Reduce along dimension 0
-    if (M == 1)
-    {
-        res.fill(init);
-        for (size_t y = 0; y < height; ++y)
-        {
-            const T* data = dataPtr;
-            for (size_t x = 0; x < width; ++x)
-            {
-                resPtr[x] = func(resPtr[x], *data);
-                data += xStride;
-            }
-            dataPtr += yStride;
-        }
-    }
-
-    // Reduce along dimension 1
-    else
-    {
-        for (size_t y = 0; y < height; ++y)
-        {
-            const T* data = dataPtr;
-            T val         = init;
-            for (size_t x = 0; x < width; ++x)
-            {
-                val   = func(val, *data);
-                data += xStride;
-            }
-            resPtr[y] = val;
-            dataPtr  += yStride;
-        }
-    }
-    return res;
-}
-
-// Reduces the given tensor using summation.
-template <class T>
-Tensor<T> reduceSum(const Tensor<T>& A)
-{
-    T sum = T{};
-    if (A.contiguous())
-    {
-        const T* aData      = A.data();
-        const size_t length = A.size();
-        for (size_t i = 0; i < length; ++i)
-            sum += aData[i];
-        return Tensor<T>::fromScalar(sum);
-    }
-    else
-    {
-        for (const T& elem : A)
-            sum += elem;
-        return Tensor<T>::fromScalar(sum);
-    }
-}
-
-// Reduces the given tensor using summation.
-template <class T>
-Tensor<T> reduceSum(const Tensor<T>& A, const Tensor<T>& axes)
-{
-    return reduce(A, [](const T& a, const T& b) { return a + b; }, T{}, axes);
-}
-
-// Reduces the given tensor to the given shape using summation. When the desired
-// shape is {1}, the entire tensor is reduced.
-template <class T>
-Tensor<T> reduceSumTo(const Tensor<T>& A, const Tensor<T>& shape)
-{
-    // Catch easy case of complete reduction
-    if (shape.size() == 1 && T(shape) == T{1})
-        return reduceSum(A);
-    else return reduceTo(A, [](const T& a, const T& b) { return a + b; }, T{}, shape);
-}
-
-// Reduces the given tensor using multiplication.
-template <class T>
-Tensor<T> reduceProduct(const Tensor<T>& A)
-{
-    T product = T{1};
-    if (A.contiguous())
-    {
-        const T* aData      = A.data();
-        const size_t length = A.size();
-        for (size_t i = 0; i < length; ++i)
-            product *= aData[i];
-        return Tensor<T>::fromScalar(product);
-    }
-    else
-    {
-        for (const T& elem : A)
-            product *= elem;
-        return Tensor<T>::fromScalar(product);
-    }
-}
-
-// Reduces the given tensor using multiplication.
-template <class T>
-Tensor<T> reduceProduct(const Tensor<T>& A, const Tensor<T>& axes)
-{
-    return reduce(A, [](const T& a, const T& b) { return a * b; }, T{1}, axes);
-}
-
-// Reduces the given tensor to the given shape using multiplication. When the desired
-// shape is {1}, the entire tensor is reduced.
-template <class T>
-Tensor<T> reduceProductTo(const Tensor<T>& A, const Tensor<T>& shape)
-{
-    // Catch easy case of complete reduction
-    if (shape.size() == 1 && T(shape) == T{1})
-        return reduceProduct(A);
-    else return reduceTo(A, [](const T& a, const T& b) { return a * b; }, T{1}, shape);
-}
-
-// Reduces the given tensor using min.
-template <class T>
-Tensor<T> reduceMin(const Tensor<T>& A)
-{
-    T min = std::numeric_limits<T>::max();
-    if (A.contiguous())
-    {
-        const T* aData      = A.data();
-        const size_t length = A.size();
-        for (size_t i = 0; i < length; ++i)
-        {
-            if (aData[i] < min)
-                min = aData[i];
-        }
-        return Tensor<T>::fromScalar(min);
-    }
-    else
-    {
-        for (const T& elem : A)
-        {
-            if (elem < min)
-                min = elem;
-        }
-        return Tensor<T>::fromScalar(min);
-    }
-}
-
-// Reduces the given tensor using min.
-template <class T>
-Tensor<T> reduceMin(const Tensor<T>& A, const Tensor<T>& axes)
-{
-    return reduce(A, [](const T& a, const T& b) { return std::min(a, b); },
-        std::numeric_limits<T>::max(), axes);
-}
-
-// Reduces the given tensor to the given shape using min. When the desired
-// shape is {1}, the entire tensor is reduced.
-template <class T>
-Tensor<T> reduceMinTo(const Tensor<T>& A, const Tensor<T>& shape)
-{
-    // Catch easy case of complete reduction
-    if (shape.size() == 1 && T(shape) == T{1})
-        return reduceMin(A);
-    else return reduceTo(A, [](const T& a, const T& b) { return std::min(a, b); },
-        std::numeric_limits<T>::max(), shape);
-}
-
-// Reduces the given tensor using min.
-template <class T>
-Tensor<T> reduceMax(const Tensor<T>& A)
-{
-    T max = std::numeric_limits<T>::lowest();
-    if (A.contiguous())
-    {
-        const T* aData      = A.data();
-        const size_t length = A.size();
-        for (size_t i = 0; i < length; ++i)
-        {
-            if (aData[i] > max)
-                max = aData[i];
-        }
-        return Tensor<T>::fromScalar(max);
-    }
-    else
-    {
-        for (const T& elem : A)
-        {
-            if (elem > max)
-                max = elem;
-        }
-        return Tensor<T>::fromScalar(max);
-    }
-}
-
-// Reduces the given tensor using max.
-template <class T>
-Tensor<T> reduceMax(const Tensor<T>& A, const Tensor<T>& axes)
-{
-    return reduce(A, [](const T& a, const T& b) { return std::max(a, b); },
-        std::numeric_limits<T>::lowest(), axes);
-}
-
-// Reduces the given tensor to the given shape using max. When the desired
-// shape is {1}, the entire tensor is reduced.
-template <class T>
-Tensor<T> reduceMaxTo(const Tensor<T>& A, const Tensor<T>& shape)
-{
-    // Catch easy case of complete reduction
-    if (shape.size() == 1 && T(shape) == T{1})
-        return reduceMax(A);
-    else return reduceTo(A, [](const T& a, const T& b) { return std::max(a, b); },
-        std::numeric_limits<T>::lowest(), shape);
-}
-
-// Reduces the given tensor using mean.
-template <class T>
-Tensor<T> reduceMean(const Tensor<T>& A)
-{
-    Tensor<T> res = reduceSum(A);
-    res.at({0})  /= A.size();
-    return res;
-}
-
-// Reduces the given tensor using mean.
-template <class T>
-Tensor<T> reduceMean(const Tensor<T>& A, const Tensor<T>& axes)
-{
-    // Calculate the sum reduction
-    Tensor<T> res = reduceSum(A, axes);
-
-    // Divide by the proper constant
-    T constant = 1;
-    if (axes.size() == 1 && T(axes) == -1.0)
-        constant = A.size();
-    else
-    {
-        for (const T& elem : axes)
-            constant *= A.shape(elem);
-    }
-    scale(res, T{1} / constant);
-    return res;
-}
-
-// Reduces the given tensor to the given shape using mean. When the desired
-// shape is empty, the entire tensor is reduced.
-template <class T>
-Tensor<T> reduceMeanTo(const Tensor<T>& A, const Tensor<T>& shape)
-{
-    // Calculate the sum reduction
-    Tensor<T> res = reduceSumTo(A, shape);
-
-    ASSERT(false, "Not implemented");
-    // Divide by the proper constant
-    // T constant = 1;
-    // if (axes.size() == 0)
-    //     constant = A.size();
-    // else
-    // {
-    //     for (auto& elem : axes)
-    //         constant *= A.shape(elem);
-    // }
-    // res.apply([&constant](const T& x) { return x / constant; });
-    return res;
-}
-
-// Calculates the index of the largest value along the given dimension. In the
-// event of a tie, the index of the first of the largest values will be returned.
-template <class T>
-Tensor<T> argmax(const Tensor<T>& A, const size_t dimension)
-{
-    ASSERT(dimension < A.rank(), "Invalid dimension provided.");
-
-    // Calculate the new shape
-    SmallVector resShape(A.shape());
-    resShape[dimension] = 1;
-
-    Tensor<T> res(resShape.begin(), resShape.end());
-    res.fill(T{});
-
-    Tensor<T> max(resShape.begin(), resShape.end());
-    max.fill(std::numeric_limits<T>::lowest());
-
-    size_t N                     = A.rank();
-    const SmallVector& aShape    = A.shape();
-    const SmallVector& resStride = res.stride();
-    auto end                     = A.end();
-    SmallVector index(N);
-
-    // All members of A will participate in the reduction
-    for (auto it = A.begin(); it != end; ++it)
-    {
-        // Work out where we are in 'res' based on the current index
-        T* resData = res.data();
-        for (size_t i = 0; i < N; ++i)
-        {
-            if (index[i] < resShape[i])
-                resData += index[i] * resStride[i];
-        }
-
-        // We should be at the same spot in 'max'
-        T* maxData = max.data() + (resData - res.data());
-
-        // Apply the reduction
-        if (*it > *maxData)
-        {
-            *maxData = *it;
-            *resData = index[dimension];
-        }
-
-        // Update the index (N-ary counter)
-        int dim = N - 1;
-        index[dim]++;
-        while (dim > 0 && index[dim] >= aShape[dim])
-        {
-            index[dim] = 0;
-            index[dim - 1]++;
-            --dim;
-        }
-    }
-
-    return res;
-}
-
-// Calculates the index of the snallest value along the given dimension. In the
-// event of a tie, the index of the first of the smallest values will be returned.
-template <class T>
-Tensor<T> argmin(const Tensor<T>& A, const size_t dimension)
-{
-    ASSERT(dimension < A.rank(), "Invalid dimension provided.");
-
-    // Calculate the new shape
-    SmallVector resShape(A.shape());
-    resShape[dimension] = 1;
-
-    Tensor<T> res(resShape.begin(), resShape.end());
-    res.fill(T{});
-
-    Tensor<T> min(resShape.begin(), resShape.end());
-    min.fill(std::numeric_limits<T>::max());
-
-    size_t N                     = A.rank();
-    const SmallVector& aShape    = A.shape();
-    const SmallVector& resStride = res.stride();
-    auto end                     = A.end();
-    SmallVector index(N);
-
-    // All members of A will participate in the reduction
-    for (auto it = A.begin(); it != end; ++it)
-    {
-        // Work out where we are in 'res' based on the current index
-        T* resData = res.data();
-        for (size_t i = 0; i < N; ++i)
-        {
-            if (index[i] < resShape[i])
-                resData += index[i] * resStride[i];
-        }
-
-        // We should be at the same spot in 'min'
-        T* minData = min.data() + (resData - res.data());
-
-        // Apply the reduction
-        if (*it < *minData)
-        {
-            *minData = *it;
-            *resData = index[dimension];
-        }
-
-        // Update the index (N-ary counter)
-        int dim = N - 1;
-        index[dim]++;
-        while (dim > 0 && index[dim] >= aShape[dim])
-        {
-            index[dim] = 0;
-            index[dim - 1]++;
-            --dim;
-        }
-    }
-
-    return res;
-}
-
-// --------------------------- Boolean Ops --------------------------- //
-
-template <class T>
-Tensor<T> equal(const Tensor<T>& A, const Tensor<T>& B)
-{
-    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
-    {
-        return T(a == b);
-    });
-}
-
-template <class T>
-Tensor<T> notEqual(const Tensor<T>& A, const Tensor<T>& B)
-{
-    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
-    {
-        return T(a != b);
-    });
-}
-
-template <class T>
-Tensor<T> greater(const Tensor<T>& A, const Tensor<T>& B)
-{
-    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
-    {
-        return T(a > b);
-    });
-}
-
-template <class T>
-Tensor<T> greaterEqual(const Tensor<T>& A, const Tensor<T>& B)
-{
-    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
-    {
-        return T(a >= b);
-    });
-}
-
-template <class T>
-Tensor<T> less(const Tensor<T>& A, const Tensor<T>& B)
-{
-    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
-    {
-        return T(a < b);
-    });
-}
-
-template <class T>
-Tensor<T> lessEqual(const Tensor<T>& A, const Tensor<T>& B)
-{
-    return broadcastingBinaryOp(A, B, [](const T& a, const T& b)
-    {
-        return T(a <= b);
-    });
-}
-// --------------------------- [Category] --------------------------- //
 
 // Calculates the L1 norm of the given tensor and returns it in
 // a rank-0 tensor.

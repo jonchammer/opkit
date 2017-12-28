@@ -479,9 +479,17 @@ Tensor<U> Tensor<T>::clone() const
     Storage<U> storage(mNumElements);
 
     // Fill the storage with the elements from this tensor
-    size_t i = 0;
-    for (const T& elem : *this)
-        storage[i++] = U(elem);
+    if (contiguous())
+    {
+        const T* start = mStorage.begin();
+        std::copy(start, start + mNumElements, storage.begin());
+    }
+    else
+    {
+        size_t i = 0;
+        for (const T& elem : *this)
+            storage[i++] = U(elem);
+    }
 
     // Use the source's shape, but let the stride be inferred
     return Tensor<U>(storage, mShape.begin(), mShape.end());
@@ -510,6 +518,8 @@ template <class Function>
 Tensor<T>& Tensor<T>::apply(Function&& f)
 {
     // Avoid iterators whenever possible to improve performance
+
+    // Contiguous array optimization
     if (contiguous())
     {
         T* it  = mStorage.begin();
@@ -521,6 +531,38 @@ Tensor<T>& Tensor<T>::apply(Function&& f)
             ++it;
         }
     }
+
+    // Vector optimization
+    else if (rank() == 1)
+    {
+        const size_t stride = mStride[0];
+        T* it               = mStorage.begin();
+        for (size_t i = 0; i < mNumElements; ++i)
+        {
+            *it = f(*it);
+            it += stride;
+        }
+    }
+
+    // Matrix optimization
+    else if (rank() == 2)
+    {
+        const size_t xStride = mStride[1];
+        const size_t yStride = mStride[0];
+        T* it                = mStorage.begin();
+        for (size_t y = 0; y < mShape[0]; ++y)
+        {
+            T* row = it;
+            for (size_t x = 0; x < mShape[1]; ++x)
+            {
+                *row = f(*row);
+                row += xStride;
+            }
+            it += yStride;
+        }
+    }
+
+    // Generic implementation
     else
     {
         for (T& elem : *this)

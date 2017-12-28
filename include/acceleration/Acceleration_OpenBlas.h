@@ -143,6 +143,29 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         return cblas_idamax(N, x, xInc);
     }
 
+    static size_t vMinIndex(const double* x, const size_t N, const int xInc)
+    {
+        USE_ONE_CORE();
+
+        double* xTemp = (double*) x;
+        for (size_t i = 0; i < N; ++i)
+        {
+            *xTemp = -*xTemp;
+            ++xTemp;
+        }
+
+        size_t ret = cblas_idamax(N, x, xInc);
+
+        xTemp = (double*) x;
+        for (size_t i = 0; i < N; ++i)
+        {
+            *xTemp = -*xTemp;
+            ++xTemp;
+        }
+
+        return ret;
+    }
+
     static void vCopy(const double* x, double* y, const size_t N,
         const int xInc, const int yInc)
     {
@@ -291,6 +314,29 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
     {
         USE_ONE_CORE();
         return cblas_isamax(N, x, xInc);
+    }
+
+    static size_t vMinIndex(const float* x, const size_t N, const int xInc)
+    {
+        USE_ONE_CORE();
+
+        float* xTemp = (float*) x;
+        for (size_t i = 0; i < N; ++i)
+        {
+            *xTemp = -*xTemp;
+            ++xTemp;
+        }
+
+        size_t ret = cblas_isamax(N, x, xInc);
+
+        xTemp = (float*) x;
+        for (size_t i = 0; i < N; ++i)
+        {
+            *xTemp = -*xTemp;
+            ++xTemp;
+        }
+
+        return ret;
     }
 
     static void vCopy(const float* x, float* y, const size_t N,
