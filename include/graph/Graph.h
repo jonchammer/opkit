@@ -162,7 +162,7 @@ public:
     // Evaluate this graph to obtain a result. When 'recalculate' is true, any
     // cached calculations will be discarded. Otherwise, caching will be used
     // as much as possible.
-    Tensor<T> evaluate(const bool recalculate = false)
+    const Tensor<T>& evaluate(const bool recalculate = false)
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
         if (recalculate) mNode->clearCache();
@@ -299,7 +299,7 @@ struct Node : public RCObject
 
     // Evaluate the graph up to this point and return the result.
     virtual void clearCache() {}
-    virtual Tensor<T> evaluate() = 0;
+    virtual const Tensor<T>& evaluate() = 0;
 
     // Certain node types support assignment of a new value
     virtual void assign(const Tensor<T>& newValue)
@@ -368,7 +368,7 @@ public:
     Constant& operator=(Constant&& orig)      = default;
 
     // Node class implementations
-    Tensor<T> evaluate() override
+    const Tensor<T>& evaluate() override
     {
         return mValue;
     }
@@ -467,7 +467,7 @@ public:
         mDependent.clearCache();
     }
 
-    Tensor<T> evaluate() override
+    const Tensor<T>& evaluate() override
     {
         if (!mHasCachedResult)
         {
@@ -556,7 +556,7 @@ public:
         mDependent2.clearCache();
     }
 
-    Tensor<T> evaluate() override
+    const Tensor<T>& evaluate() override
     {
         if (!mHasCachedResult)
         {
@@ -646,7 +646,7 @@ public:
             dep.clearCache();
     }
 
-    Tensor<T> evaluate() override
+    const Tensor<T>& evaluate() override
     {
         // Evaluate each of the list elements
         for (Graph<T>& dependent : mDependents)
@@ -728,7 +728,7 @@ public:
         mValue.clearCache();
     }
 
-    Tensor<T> evaluate() override
+    const Tensor<T>& evaluate() override
     {
         Tensor<T>& value = ((Variable<T>&) mTarget.node()).value();
         mFunc(value, mValue.evaluate());
@@ -817,7 +817,7 @@ public:
         mArg.clearCache();
     }
 
-    Tensor<T> evaluate() override
+    const Tensor<T>& evaluate() override
     {
         Tensor<T>& value = ((Variable<T>&) mTarget.node()).value();
         mFunc(value, mValue.evaluate(), mArg.evaluate());
