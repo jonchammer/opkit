@@ -21,7 +21,7 @@ using std::vector;
 using std::initializer_list;
 using std::pair;
 
- using SmallVector = std::vector<size_t, BufferAllocator<size_t, 2048>>;
+using SmallVector = std::vector<size_t, BufferAllocator<size_t, 2048>>;
 // using SmallVector = std::vector<size_t, HeapAllocator<size_t, 1024>>;
 // using SmallVector = std::vector<size_t>;
 
@@ -193,10 +193,10 @@ public:
     // Returns true when this tensor is fully contiguous
     bool contiguous() const;
 
-    // Resize this tensor, including the underlying storage. The number of elements and
-    // the strides will be calculated automatically, but the desired shape must be
-    // provided. Note that calling this function will break any connections to other
-    // tensors or Storage objects.
+    // Resize this tensor, including the underlying storage. The number of
+    // elements and the strides will be calculated automatically, but the
+    // desired shape must be provided. Note that calling this function will
+    // break any connections to other tensors or Storage objects.
     template <class InputIt>
     void resize(InputIt shapeBegin, InputIt shapeEnd);
     void resize(std::initializer_list<size_t> shape);

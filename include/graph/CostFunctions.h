@@ -61,16 +61,20 @@ Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels)
         divBy(res, reduceSum(res, axes));
 
         // log(e^a / ||e^a|| + epsilon)
-        const T epsilon = std::numeric_limits<T>::epsilon();
-        for (T& elem : res)
-            elem = std::log(elem + epsilon);
+        res.apply([](const T& elem)
+        {
+            return std::log(elem + std::numeric_limits<T>::epsilon());
+        });
 
         // sum(b * log(e^a / ||e^a|| + epsilon))
         res = reduceSum(multiply(b, res), axes);
 
         // negation
-        for (T& elem : res)
-            elem = -elem;
+        res.apply([](const T& elem)
+        {
+            return -elem;
+        });
+
         return res;
     }, model, labels);
 
