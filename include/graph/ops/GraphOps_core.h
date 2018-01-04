@@ -110,9 +110,9 @@ Graph<T> desiredName(const Graph<T>& arg)                                      \
     registerDerivative<T>(#desiredName,                                        \
         [](const Graph<T>& node, const Graph<T>& delta,                        \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
-    return make_unary<T>(#desiredName, [](const Tensor<T>& A)                  \
+    return make_unary<T>(#desiredName, [](Tensor<T>& y, const Tensor<T>& x)    \
     {                                                                          \
-        return elementwiseFunc(A, fn);                                         \
+        return elementwiseFunc(y, x, fn);                                      \
     }, arg);                                                                   \
 }                                                                              \
 
@@ -131,9 +131,9 @@ Graph<T> operator-(const Graph<T>& arg)
         [](const Graph<T>& node, const Graph<T>& delta,
         std::vector<Graph<T>>& gradients) {dNeg(node, delta, gradients);});
 
-    return make_unary<T>("neg", [](const Tensor<T>& A)
+    return make_unary<T>("neg", [](Tensor<T>& y, const Tensor<T>& x)
     {
-        return elementwiseFunc(A, [](const T x) { return -x; });
+        return elementwiseFunc(y, x, [](const T val) { return -val; });
     }, arg);
 }
 
@@ -194,34 +194,34 @@ Graph<T> desiredName(const Graph<T>& A, const Graph<T>& B)                     \
     return make_binary<T>(#desiredName, fn, A, B);                             \
 }                                                                              \
 
-BINARY_OP(operator+, dAdd, [](const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(operator+, dAdd, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return add(A, B);
+    return add_v2(y, A, B);
 });
 
-BINARY_OP(operator-, dSubtract, [](const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(operator-, dSubtract, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return sub(A, B);
+    return sub_v2(y, A, B);
 });
 
-BINARY_OP(operator*, dMultiply, [](const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(operator*, dMultiply, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return multiply(A, B);
+    return multiply_v2(y, A, B);
 });
 
-BINARY_OP(operator/, dDivide, [](const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(operator/, dDivide, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return divide(A, B);
+    return divide_v2(y, A, B);
 });
 
-BINARY_OP(max, dMax, [](const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(max, dMax, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return max(A, B);
+    return max_v2(y, A, B);
 });
 
-BINARY_OP(min, dMin, [](const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(min, dMin, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return min(A, B);
+    return min_v2(y, A, B);
 });
 
 #undef BINARY_OP
@@ -309,9 +309,9 @@ Graph<T> fnName(const Graph<T>& arg, U scalar)                                 \
     registerDerivative<T>(#fnName,                                             \
         [](const Graph<T>& node, const Graph<T>& delta,                        \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
-    return make_binary<T>(#fnName, [](const Tensor<T>& A, const Tensor<T>& B)  \
+    return make_binary<T>(#fnName, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)  \
     {                                                                          \
-        return fn(A, B);                                                       \
+        return fn(y, A, B);                                                    \
     }, arg,                                                                    \
     make_constant<T>(scalar));                                                 \
 }                                                                              \
@@ -323,25 +323,25 @@ Graph<T> fnName(U scalar, const Graph<T>& arg)                                 \
     registerDerivative<T>(#fnName,                                             \
         [](const Graph<T>& node, const Graph<T>& delta,                        \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
-    return make_binary<T>(#fnName, [](const Tensor<T>& A, const Tensor<T>& B)  \
+    return make_binary<T>(#fnName, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)  \
     {                                                                          \
-        return fn(A, B);                                                       \
+        return fn(y, A, B);                                                       \
     },                                                                         \
     make_constant<T>(scalar), arg);                                            \
 }                                                                              \
 
-SCALAR_OP_LEFT(operator+,  add,      dAdd);
-SCALAR_OP_RIGHT(operator+, add,      dAdd);
-SCALAR_OP_LEFT(operator-,  sub,      dSubtract);
-SCALAR_OP_RIGHT(operator-, sub,      dSubtract);
-SCALAR_OP_LEFT(operator*,  multiply, dMultiply);
-SCALAR_OP_RIGHT(operator*, multiply, dMultiply);
-SCALAR_OP_LEFT(operator/,  divide,   dDivide);
-SCALAR_OP_RIGHT(operator/, divide,   dDivide);
-SCALAR_OP_LEFT(max, max, dMax);
-SCALAR_OP_RIGHT(max, max, dMax);
-SCALAR_OP_LEFT(min, min, dMin);
-SCALAR_OP_RIGHT(min, min, dMin);
+SCALAR_OP_LEFT(operator+,  add_v2,      dAdd);
+SCALAR_OP_RIGHT(operator+, add_v2,      dAdd);
+SCALAR_OP_LEFT(operator-,  sub_v2,      dSubtract);
+SCALAR_OP_RIGHT(operator-, sub_v2,      dSubtract);
+SCALAR_OP_LEFT(operator*,  multiply_v2, dMultiply);
+SCALAR_OP_RIGHT(operator*, multiply_v2, dMultiply);
+SCALAR_OP_LEFT(operator/,  divide_v2,   dDivide);
+SCALAR_OP_RIGHT(operator/, divide_v2,   dDivide);
+SCALAR_OP_LEFT(max, max_v2, dMax);
+SCALAR_OP_RIGHT(max, max_v2, dMax);
+SCALAR_OP_LEFT(min, min_v2, dMin);
+SCALAR_OP_RIGHT(min, min_v2, dMin);
 
 #undef SCALAR_OP_LEFT
 #undef SCALAR_OP_RIGHT
@@ -355,34 +355,34 @@ Graph<T> desiredName(const Graph<T>& A, const Graph<T>& B)                     \
     return make_binary<T>(#desiredName, fn, A, B);                             \
 }                                                                              \
 
-CONTROL_OP(equal, [](const Tensor<T>& A, const Tensor<T>& B)
+CONTROL_OP(equal, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return equal(A, B);
+    return equal_v2(y, A, B);
 });
 
-CONTROL_OP(notEqual, [](const Tensor<T>& A, const Tensor<T>& B)
+CONTROL_OP(notEqual, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return notEqual(A, B);
+    return notEqual_v2(y, A, B);
 });
 
-CONTROL_OP(greater, [](const Tensor<T>& A, const Tensor<T>& B)
+CONTROL_OP(greater, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return greater(A, B);
+    return greater_v2(y, A, B);
 });
 
-CONTROL_OP(greaterEqual, [](const Tensor<T>& A, const Tensor<T>& B)
+CONTROL_OP(greaterEqual, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return greaterEqual(A, B);
+    return greaterEqual_v2(y, A, B);
 });
 
-CONTROL_OP(less, [](const Tensor<T>& A, const Tensor<T>& B)
+CONTROL_OP(less, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return less(A, B);
+    return less_v2(y, A, B);
 });
 
-CONTROL_OP(lessEqual, [](const Tensor<T>& A, const Tensor<T>& B)
+CONTROL_OP(lessEqual, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return lessEqual(A, B);
+    return lessEqual_v2(y, A, B);
 });
 
 // -------------------------------------------------------------------------- //
@@ -394,40 +394,42 @@ Graph<T> desiredName(const Graph<T>& A, const Graph<T>& shape)                 \
     return make_binary<T>(#desiredName, fn, A, shape);                         \
 }                                                                              \
 
-SHAPE_OP(reduceSumTo, [](const Tensor<T>& a, const Tensor<T>& shape)
+SHAPE_OP(reduceSumTo, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shape)
 {
-    return reduceSumTo(a, shape);
+    return reduceSumTo_v2(y, a, shape);
 });
-SHAPE_OP(reduceProductTo, [](const Tensor<T>& a, const Tensor<T>& shape)
+SHAPE_OP(reduceProductTo, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shape)
 {
-    return reduceProductTo(a, shape);
+    return reduceProductTo_v2(y, a, shape);
 });
-SHAPE_OP(reduceMinTo, [](const Tensor<T>& a, const Tensor<T>& shape)
+SHAPE_OP(reduceMinTo, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shape)
 {
-    return reduceMinTo(a, shape);
+    return reduceMinTo_v2(y, a, shape);
 });
-SHAPE_OP(reduceMaxTo, [](const Tensor<T>& a, const Tensor<T>& shape)
+SHAPE_OP(reduceMaxTo, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shape)
 {
-    return reduceMaxTo(a, shape);
-});
-
-SHAPE_OP(expand, [](const Tensor<T>& a, const Tensor<T>& shape)
-{
-    vector<T> shapeVec(shape.begin(), shape.end());
-    return expand(a, shapeVec.begin(), shapeVec.end());
+    return reduceMaxTo_v2(y, a, shape);
 });
 
-SHAPE_OP(expandIfSmaller, [](const Tensor<T>& a, const Tensor<T>& shape)
+SHAPE_OP(expand, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shape)
 {
     vector<T> shapeVec(shape.begin(), shape.end());
-    return expandIfSmaller(a, shapeVec.begin(), shapeVec.end());
+    Tensor<T> res = expand(a, shapeVec.begin(), shapeVec.end());
+    res.copy(y);
+});
+
+SHAPE_OP(expandIfSmaller, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shape)
+{
+    vector<T> shapeVec(shape.begin(), shape.end());
+    Tensor<T> res = expandIfSmaller(a, shapeVec.begin(), shapeVec.end());
+    res.copy(y);
 });
 
 #undef SHAPE_OP
 
 // -------------------------------------------------------------------------- //
 
-// Shorthand for creating a unary function graph node
+// Shorthand for creating a reduction function graph node
 #define REDUCE_OP(desiredName, derivFn, fn)                                    \
 template <class T>                                                             \
 Graph<T> desiredName(const Graph<T>& A, const Graph<T>& axes)                  \
@@ -448,49 +450,49 @@ Graph<T> desiredName(const Graph<T>& A)                                        \
     return make_unary<T>(#desiredName, fn, A);                                 \
 }                                                                              \
 
-REDUCE_OP(reduceSum, dReduceSum, [](const Tensor<T>& A, const Tensor<T>& B)
+REDUCE_OP(reduceSum, dReduceSum, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return reduceSum(A, B);
+    return reduceSum_v2(y, A, B);
 });
-REDUCE_OP_SIMPLE(reduceSum, dReduceSum, [](const Tensor<T>& A)
+REDUCE_OP_SIMPLE(reduceSum, dReduceSum, [](Tensor<T>& y, const Tensor<T>& x)
 {
-    return reduceSum(A);
-});
-
-REDUCE_OP(reduceProduct, dReduceProduct, [](const Tensor<T>& A, const Tensor<T>& B)
-{
-    return reduceProduct(A, B);
-});
-REDUCE_OP_SIMPLE(reduceProduct, dReduceProduct, [](const Tensor<T>& A)
-{
-    return reduceProduct(A);
+    return reduceSum_v2(y, x);
 });
 
-REDUCE_OP(reduceMin, dReduceMin, [](const Tensor<T>& A, const Tensor<T>& B)
+REDUCE_OP(reduceProduct, dReduceProduct, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return reduceMin(A, B);
+    return reduceProduct_v2(y, A, B);
 });
-REDUCE_OP_SIMPLE(reduceMin, dReduceMin, [](const Tensor<T>& A)
+REDUCE_OP_SIMPLE(reduceProduct, dReduceProduct, [](Tensor<T>& y, const Tensor<T>& x)
 {
-    return reduceMin(A);
-});
-
-REDUCE_OP(reduceMax, dReduceMax, [](const Tensor<T>& A, const Tensor<T>& B)
-{
-    return reduceMax(A, B);
-});
-REDUCE_OP_SIMPLE(reduceMax, dReduceMax, [](const Tensor<T>& A)
-{
-    return reduceMax(A);
+    return reduceProduct_v2(y, x);
 });
 
-REDUCE_OP(reduceMean, dReduceMean, [](const Tensor<T>& A, const Tensor<T>& B)
+REDUCE_OP(reduceMin, dReduceMin, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return reduceMean(A, B);
+    return reduceMin_v2(y, A, B);
 });
-REDUCE_OP_SIMPLE(reduceMean, dReduceMean, [](const Tensor<T>& A)
+REDUCE_OP_SIMPLE(reduceMin, dReduceMin, [](Tensor<T>& y, const Tensor<T>& x)
 {
-    return reduceMean(A);
+    return reduceMin_v2(y, x);
+});
+
+REDUCE_OP(reduceMax, dReduceMax, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    return reduceMax_v2(y, A, B);
+});
+REDUCE_OP_SIMPLE(reduceMax, dReduceMax, [](Tensor<T>& y, const Tensor<T>& x)
+{
+    return reduceMax_v2(y, x);
+});
+
+REDUCE_OP(reduceMean, dReduceMean, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    return reduceMean_v2(y, A, B);
+});
+REDUCE_OP_SIMPLE(reduceMean, dReduceMean, [](Tensor<T>& y, const Tensor<T>& x)
+{
+    return reduceMean_v2(y, x);
 });
 
 template <class T>
@@ -564,24 +566,24 @@ void dReduceMean(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<
 template <class T>
 Graph<T> argmax(const Graph<T>& node, const size_t dimension)
 {
-    return make_binary<T>("argmax", [](const Tensor<T>& A, const Tensor<T>& dim)
+    return make_binary<T>("argmax", [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& dim)
     {
         ASSERT(dim.size() == 1, "Dimension must be a single number.");
         ASSERT(T(dim) >= T{}, "Dimension must be non-negative.");
 
-        return argmax(A, size_t(T(dim)));
+        return argmax_v2(y, A, size_t(T(dim)));
     }, node, make_constant<T>("d", Tensor<T>::fromScalar(dimension)));
 }
 
 template <class T>
 Graph<T> argmin(const Graph<T>& node, const size_t dimension)
 {
-    return make_binary<T>("argmin", [](const Tensor<T>& A, const Tensor<T>& dim)
+    return make_binary<T>("argmin", [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& dim)
     {
         ASSERT(dim.size() == 1, "Dimension must be a single number.");
         ASSERT(T(dim) >= T{}, "Dimension must be non-negative.");
 
-        return argmin(A, size_t(T(dim)));
+        return argmin_v2(y, A, size_t(T(dim)));
     }, node, make_constant<T>("d", Tensor<T>::fromScalar(dimension)));
 }
 
@@ -591,14 +593,14 @@ template <class T>
 Graph<T> shape(const Graph<T>& A)
 {
     registerNonDifferentiable<T>("shape");
-    return make_unary<T>("shape", [](const Tensor<T>& A)
+    return make_unary<T>("shape", [](Tensor<T>& y, const Tensor<T>& A)
     {
         const size_t rank = A.rank();
-        Storage<T> storage(rank);
+        y.resize({rank});
+
+        Storage<T>& storage = y.storage();
         for (size_t i = 0; i < rank; ++i)
             storage[i] = T(A.shape(i));
-
-        return Tensor<T>(storage, {rank});
     }, A);
 }
 
@@ -606,9 +608,10 @@ template <class T>
 Graph<T> shape(const Graph<T>& A, size_t index)
 {
     registerNonDifferentiable<T>("shape");
-    return make_unary<T>("shape", [index](const Tensor<T>& A)
+    return make_unary<T>("shape", [index](Tensor<T>& y, const Tensor<T>& A)
     {
-        return Tensor<T>::fromScalar(A.shape(index));
+        y.resize({1});
+        y = A.shape(index);
     }, A);
 }
 
@@ -616,9 +619,10 @@ template <class T>
 Graph<T> rank(const Graph<T>& A)
 {
     registerNonDifferentiable<T>("rank");
-    return make_unary<T>("rank", [](const Tensor<T>& A)
+    return make_unary<T>("rank", [](Tensor<T>& y, const Tensor<T>& A)
     {
-        return Tensor<T>::fromScalar(T(A.rank()));
+        y.resize({1});
+        y = A.rank();
     }, A);
 }
 
@@ -626,9 +630,10 @@ template <class T>
 Graph<T> size(const Graph<T>& A)
 {
     registerNonDifferentiable<T>("size");
-    return make_unary<T>("size", [](const Tensor<T>& A)
+    return make_unary<T>("size", [](Tensor<T>& y, const Tensor<T>& A)
     {
-        return Tensor<T>::fromScalar(A.size());
+        y.resize({1});
+        y = A.size();
     }, A);
 }
 
@@ -717,9 +722,9 @@ template <class T, class U>
 Graph<T> clip(const Graph<T>& x, const U min, const U max)
 {
     registerNonDifferentiable<T>("clip");
-    return make_unary<T>("clip", [min, max](const Tensor<T>& A)
+    return make_unary<T>("clip", [min, max](Tensor<T>& y, const Tensor<T>& A)
     {
-        return clip(A, min, max);
+        return clip_v2(y, A, min, max);
     }, x);
 }
 

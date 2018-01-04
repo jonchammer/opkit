@@ -23,9 +23,9 @@ void dLogistic(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>
     // NOTE: For some reason, the simple formulation commented out below fails
     // to calculate the correct answer, but making a new node does seem to work
     // correctly. TODO: Work out why.
-    auto deriv = make_unary<T>("dLogistic", [](const Tensor<T>& A)
+    auto deriv = make_unary<T>("dLogistic", [](Tensor<T>& y, const Tensor<T>& A)
     {
-        return elementwiseFunc(A, [](const T x)
+        return elementwiseFunc(y, A, [](const T x)
         {
             return x * (1 - x);
         });
@@ -44,9 +44,9 @@ Graph<T> logistic(const Graph<T>& x)
         [](const Graph<T>& node, const Graph<T>& delta,
         std::vector<Graph<T>>& gradients) {dLogistic(node, delta, gradients);});
 
-    return make_unary<T>("logistic", [](const Tensor<T>& A)
+    return make_unary<T>("logistic", [](Tensor<T>& y, const Tensor<T>& A)
     {
-        return elementwiseFunc(A, [](const T x)
+        return elementwiseFunc(y, A, [](const T x)
         {
             return T{1} / (T{1} + std::exp(-x));
         });
@@ -66,9 +66,9 @@ Graph<T> softplus(const Graph<T>& x)
         [](const Graph<T>& node, const Graph<T>& delta,
         std::vector<Graph<T>>& gradients) {dSoftplus(node, delta, gradients);});
 
-    return make_unary<T>("softplus", [](const Tensor<T>& A)
+    return make_unary<T>("softplus", [](Tensor<T>& y, const Tensor<T>& A)
     {
-        return elementwiseFunc(A, [](const T x)
+        return elementwiseFunc(y, A, [](const T x)
         {
             return std::log(T{1} + std::exp(x));
         });
@@ -89,9 +89,9 @@ Graph<T> bentIdentity(const Graph<T>& x)
         [](const Graph<T>& node, const Graph<T>& delta,
         std::vector<Graph<T>>& gradients) {dBentIdentity(node, delta, gradients);});
 
-    return make_unary<T>("bentIdentity", [](const Tensor<T>& A)
+    return make_unary<T>("bentIdentity", [](Tensor<T>& y, const Tensor<T>& A)
     {
-        return elementwiseFunc(A, [](const T x)
+        return elementwiseFunc(y, A, [](const T x)
         {
             return T{0.5} * (std::sqrt(x * x + T{1}) - T{1}) + x;
         });

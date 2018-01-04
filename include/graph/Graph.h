@@ -435,7 +435,7 @@ class UnaryFunction : public Node<T>
 {
 private:
     std::string mName;
-    std::function<Tensor<T>(const Tensor<T>& x)> mFunc;
+    std::function<void(Tensor<T>& y, const Tensor<T>& x)> mFunc;
     Graph<T> mDependent;
 
     Tensor<T> mCachedResult;
@@ -471,7 +471,7 @@ public:
     {
         if (!mHasCachedResult)
         {
-            mCachedResult    = mFunc(mDependent.evaluate());
+            mFunc(mCachedResult, mDependent.evaluate());
             mHasCachedResult = true;
         }
 
@@ -512,7 +512,7 @@ public:
     }
 
     // Unary function-specific operations
-    std::function<Tensor<T>(const Tensor<T>& x)> getFunction() const { return mFunc; }
+    std::function<void(Tensor<T>& y, const Tensor<T>& x)> getFunction() const { return mFunc; }
 };
 
 // A graph node that has exactly two single dependents (e.g. addition)
@@ -521,7 +521,7 @@ class BinaryFunction : public Node<T>
 {
 private:
     std::string mName;
-    std::function<Tensor<T>(const Tensor<T>& x1, const Tensor<T>& x2)> mFunc;
+    std::function<void(Tensor<T>& y, const Tensor<T>& x1, const Tensor<T>& x2)> mFunc;
     Graph<T> mDependent1;
     Graph<T> mDependent2;
 
@@ -560,7 +560,7 @@ public:
     {
         if (!mHasCachedResult)
         {
-            mCachedResult    = mFunc(mDependent1.evaluate(), mDependent2.evaluate());
+            mFunc(mCachedResult, mDependent1.evaluate(), mDependent2.evaluate());
             mHasCachedResult = true;
         }
 
@@ -607,7 +607,7 @@ public:
     }
 
     // Getters
-    std::function<Tensor<T>(const Tensor<T>& x1, const Tensor<T>& x2)> getFunction() const
+    std::function<void(Tensor<T>& y, const Tensor<T>& x1, const Tensor<T>& x2)> getFunction() const
     {
         return mFunc;
     }

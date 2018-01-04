@@ -180,6 +180,15 @@ public:
     template <class U = T>
     Tensor<U> clone() const;
 
+    // Copy the contents of this tensor into 'other', possibly resizing
+    // it if necessary.
+    //
+    // NOTE: It is the user's responsibility to ensure that 'other' does not
+    // share its data with another Tensor. If it does, it is possible for the
+    // other Tensor to be modified inadvertently.
+    template <class U = T>
+    void copy(Tensor<U>& other) const;
+
     // Copy the given value into every cell of the Tensor.
     // Returns *this so operations may be chained if desired.
     Tensor<T>& fill(const T& value);
@@ -239,6 +248,19 @@ SmallVector calculateOptimalStride(const SmallVector& shape)
         multiplier  *= (*shapeIt);
     }
     return res;
+}
+
+void calculateOptimalStride(SmallVector& res, const SmallVector& shape)
+{
+    res.resize(shape.size());
+    size_t multiplier = 1;
+    size_t index      = shape.size() - 1;
+
+    for (auto shapeIt = shape.rbegin(); shapeIt != shape.rend(); ++shapeIt)
+    {
+        res[index--] = multiplier;
+        multiplier  *= (*shapeIt);
+    }
 }
 
 size_t countElements(const SmallVector& shape)
@@ -493,6 +515,33 @@ Tensor<U> Tensor<T>::clone() const
 
     // Use the source's shape, but let the stride be inferred
     return Tensor<U>(storage, mShape.begin(), mShape.end());
+}
+
+template <class T>
+template <class U>
+void Tensor<T>::copy(Tensor<U>& other) const
+{
+    // 1. Resize other's storage (if necessary)
+    if (other.mStorage.size() < mNumElements)
+        other.mStorage.resize(mNumElements);
+
+    // 2. Copy the data from our storage to other's storage
+    if (contiguous())
+    {
+        const T* start = mStorage.begin();
+        std::copy(start, start + mNumElements, other.mStorage.begin());
+    }
+    else
+    {
+        size_t i = 0;
+        for (const T& elem : *this)
+            other.mStorage[i++] = U(elem);
+    }
+
+    // 3. Update other's meta data
+    other.mShape.assign(mShape.begin(), mShape.end());
+    calculateOptimalStride(other.mStride, other.mShape);
+    other.mNumElements = mNumElements;
 }
 
 template <class T>

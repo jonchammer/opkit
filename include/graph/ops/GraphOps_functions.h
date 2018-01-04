@@ -80,9 +80,9 @@ Graph<T> desiredName(const Graph<T>& arg)                                      \
     registerDerivative<T>(#desiredName,                                        \
         [](const Graph<T>& node, const Graph<T>& delta,                        \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
-    return make_unary<T>(#desiredName, [](const Tensor<T>& A)                  \
+    return make_unary<T>(#desiredName, [](Tensor<T>& y, const Tensor<T>& A)    \
     {                                                                          \
-        return elementwiseFunc(A, fn);                                         \
+        return elementwiseFunc(y, A, fn);                                      \
     }, arg);                                                                   \
 }                                                                              \
 

@@ -176,6 +176,13 @@ Tensor<T> elementwiseFunc(const Tensor<T>& arg, Func&& f)
     return res;
 }
 
+template <class T, class Func>
+void elementwiseFunc(Tensor<T>& res, const Tensor<T>& arg, Func&& f)
+{
+    arg.copy(res);
+    res.apply(std::forward<Func>(f));
+}
+
 // ------------------------ Broadcasting Binary Ops ------------------------- //
 
 // Elementwise binary function that supports broadcasting so the sizes don't
@@ -819,6 +826,512 @@ Tensor<T> matrixTranspose(const Tensor<T>& A)
 {
     ASSERT(A.rank() == 2, "A must be a matrix");
     return transpose(A, 0, 1);
+}
+
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
+
+// ------------------------ Broadcasting Binary Ops ------------------------- //
+
+// Elementwise binary function that supports broadcasting so the sizes don't
+// have to line up exactly.
+template <class T, class Func>
+void broadcastingBinaryOp(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B, Func f)
+{
+    // Try to use broadcasting
+    if (A.shape() != B.shape())
+    {
+        SmallVector commonShape = detail::getBroadcastShape(A, B);
+        return broadcastingBinaryOp(res, expand(A, commonShape.begin(), commonShape.end()),
+            expand(B, commonShape.begin(), commonShape.end()), f);
+    }
+
+    const SmallVector& shape = A.shape();
+    res.resize(shape.begin(), shape.end());
+
+    // Optimization for matrices
+    if (A.rank() == 2 /*&& B.rank() == 2*/)
+    {
+        detail::binaryMatrixOp(std::forward<Func>(f),
+            A.data(), B.data(), res.data(),
+            A.shape(0), A.shape(1),
+            A.stride(1), A.stride(0),
+            B.stride(1), B.stride(0));
+    }
+
+    // Slower path that will work in general
+    else
+    {
+        // Apply binary op. We take advantage of the fact that 'res' is guaranteed
+        // to be continuous to improve performance a bit.
+        T* resData = res.data();
+        auto itB   = B.begin();
+
+        for (const T& elem : A)
+        {
+            *resData = f(elem, *itB);
+            ++itB; ++resData;
+        }
+    }
+}
+
+// Adds two tensors together. If the two tensors have the same shape, the
+// addition is performed elementwise, as expected. If the two tensors DO NOT
+// have the same shape, broadcasting will be attempted to see if the two tensors
+// can possibly be coerced into having a common shape.
+//
+// For example,
+// [ 1 2 3 ]
+// [ 4 5 6 ] + [ x y z ]
+// [ 7 8 9 ]
+//
+// will be added as:
+//
+// [ 1 2 3 ] + [ x y z ]
+// [ 4 5 6 ] + [ x y z ]
+// [ 7 8 9 ] + [ x y z ]
+template <class T>
+void add_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Try to use broadcasting
+    if (A.shape() != B.shape())
+    {
+        SmallVector commonShape = detail::getBroadcastShape(A, B);
+        return add_v2(res, expand(A, commonShape.begin(), commonShape.end()),
+            expand(B, commonShape.begin(), commonShape.end()));
+    }
+
+    // Apply binary op. We take advantage of the fact that 'res' is guaranteed
+    // to be continuous to improve performance a bit.
+    A.copy(res);
+    T* resData = res.data();
+
+    // Add B
+    if (B.contiguous())
+        vAdd(B.data(), resData, A.size());
+    else if (B.rank() == 2)
+    {
+        matrixAdd(B.data(), resData, res.shape(0), res.shape(1),
+            B.stride(1), B.stride(0), res.stride(1), res.stride(0), T{1}, T{1});
+    }
+    else
+    {
+        auto itB = B.begin();
+        for (size_t i = 0; i < res.size(); ++i)
+        {
+            *resData++ += *itB;
+            ++itB;
+        }
+    }
+}
+
+// Subtracts B from A. If the two tensors have the same shape, the
+// subtraction is performed elementwise, as expected. If the two tensors DO NOT
+// have the same shape, broadcasting will be attempted to see if the two tensors
+// can possibly be coerced into having a common shape, as with add().
+template <class T>
+void sub_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Try to use broadcasting
+    if (A.shape() != B.shape())
+    {
+        SmallVector commonShape = detail::getBroadcastShape(A, B);
+        return sub_v2(res, expand(A, commonShape.begin(), commonShape.end()),
+            expand(B, commonShape.begin(), commonShape.end()));
+    }
+
+    // Apply binary op. We take advantage of the fact that 'res' is guaranteed
+    // to be continuous to improve performance a bit.
+    A.copy(res);
+    T* resData = res.data();
+
+    // Subtract B
+    if (B.contiguous())
+        vAdd(B.data(), resData, A.size(), T{-1});
+    else if (B.rank() == 2)
+    {
+        matrixAdd(B.data(), resData, res.shape(0), res.shape(1),
+            B.stride(1), B.stride(0), res.stride(1), res.stride(0), T{-1}, T{1});
+    }
+    else
+    {
+        auto itB = B.begin();
+        for (size_t i = 0; i < res.size(); ++i)
+        {
+            *resData++ -= *itB;
+            ++itB;
+        }
+    }
+}
+
+// Multiplies A and B. If the two tensors have the same shape, the
+// multiplication is performed elementwise, as expected. If the two tensors DO NOT
+// have the same shape, broadcasting will be attempted to see if the two tensors
+// can possibly be coerced into having a common shape, as with add().
+//
+// NOTE: The broadcasting behavior means that this function is capable of
+// calculating scalar products natively.
+//
+// NOTE: Outer products between two vectors can be calculated in concert with
+// the expand() function. Ex: A, shape = [M], B, shape = [N]
+//   Tensor<T> result = multiply( A.expand( { M, 1 } ), B );
+//
+// NOTE: In theory, multiply() can be used to implement an inner product as
+// well, using something like this:
+//   Tensor<T> innerProduct = reduceSum( multiply( A, B ) );
+// Since we have a dedicated innerProduct() function, however, there is little
+// need to use a more complicated procedure.
+template <class T>
+void multiply_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Handle easy cases first
+    if (A.size() == 1)
+    {
+        const T val   = T(A);
+        B.copy(res);
+        scale(res, val);
+    }
+
+    else if (B.size() == 1)
+    {
+        const T val   = T(B);
+        A.copy(res);
+        scale(res, val);
+    }
+
+    else broadcastingBinaryOp(res, A, B, [](const T& a, const T& b)
+    {
+        return a * b;
+    });
+}
+
+// Divides A and B. If the two tensors have the same shape, the
+// division is performed elementwise, as expected. If the two tensors DO NOT
+// have the same shape, broadcasting will be attempted to see if the two tensors
+// can possibly be coerced into having a common shape, as with add().
+//
+// NOTE: The native / operator is used for calculations, so if T is an integral
+// type, integer division will be used. If T is a floating point type, floating
+// point division will be used.
+template <class T>
+void divide_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Handle easy cases first
+    if (A.size() == 1)
+    {
+        const T val   = T(A);
+        B.copy(res);
+        res.apply([&val](const T& x)
+        {
+            return val / x;
+        });
+    }
+
+    else if (B.size() == 1)
+    {
+        const T val   = T{1} / T(B);
+        A.copy(res);
+        scale(res, val);
+    }
+
+    else broadcastingBinaryOp(res, A, B, [](const T& a, const T& b)
+    {
+        return a / b;
+    });
+}
+
+template <class T>
+void max_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Handle easy cases first
+    if (A.size() == 1)
+    {
+        const T val{A};
+        B.copy(res);
+        res.apply([&val](const T& x)
+        {
+            return std::max(x, val);
+        });
+    }
+
+    else if (B.size() == 1)
+    {
+        const T val{B};
+        A.copy(res);
+        res.apply([&val](const T& x)
+        {
+            return std::max(x, val);
+        });
+    }
+
+    else broadcastingBinaryOp(res, A, B, [](const T& a, const T& b)
+    {
+        return std::max(a, b);
+    });
+}
+
+template <class T>
+void min_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Handle easy cases first
+    if (A.size() == 1)
+    {
+        const T val{A};
+        B.copy(res);
+        res.apply([&val](const T& x)
+        {
+            return std::min(x, val);
+        });
+    }
+
+    else if (B.size() == 1)
+    {
+        const T val{B};
+        A.copy(res);
+        res.apply([&val](const T& x)
+        {
+            return std::min(x, val);
+        });
+    }
+
+    else broadcastingBinaryOp(res, A, B, [](const T& a, const T& b)
+    {
+        return std::min(a, b);
+    });
+}
+
+// ------------------------------- Boolean Ops ------------------------------ //
+
+template <class T>
+void equal_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    broadcastingBinaryOp(y, A, B, [](const T& a, const T& b)
+    {
+        return T(a == b);
+    });
+}
+
+template <class T>
+void notEqual_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    broadcastingBinaryOp(y, A, B, [](const T& a, const T& b)
+    {
+        return T(a != b);
+    });
+}
+
+template <class T>
+void greater_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    broadcastingBinaryOp(y, A, B, [](const T& a, const T& b)
+    {
+        return T(a > b);
+    });
+}
+
+template <class T>
+void greaterEqual_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    broadcastingBinaryOp(y, A, B, [](const T& a, const T& b)
+    {
+        return T(a >= b);
+    });
+}
+
+template <class T>
+void less_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    broadcastingBinaryOp(y, A, B, [](const T& a, const T& b)
+    {
+        return T(a < b);
+    });
+}
+
+template <class T>
+void lessEqual_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    broadcastingBinaryOp(y, A, B, [](const T& a, const T& b)
+    {
+        return T(a <= b);
+    });
+}
+
+// ------------------------------ [ Category ]  ----------------------------- //
+
+// Clips each element of the given tensor to the range [min, max]
+template <class T, class U>
+void clip_v2(Tensor<T>& y, const Tensor<T>& A, const U min, const U max)
+{
+    A.copy(y);
+    y.apply([&min, &max](const T& x)
+    {
+        return std::max(T{min}, std::min(x, T{max}));
+    });
+}
+
+// Raises each element of A to the given power.
+template <class T, class U>
+void pow_v2(Tensor<T>& res, const Tensor<T>& A, const U& power)
+{
+    A.copy(res);
+    res.apply([&power](const T& x)
+    {
+        return pow(x, T(power));
+    });
+}
+
+template <class T>
+void pow_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& power)
+{
+    ASSERT(power.size() == 1, "power must be a scalar");
+    pow_v2(y, A, T(power));
+}
+
+// Returns the inner product between the two tensors A and B. Both
+// tensors must have the same shape. For vectors, this operation
+// is usually called a dot product, and for matrices, it's a
+// Frobenius inner product. In all cases, the result is a single
+// scalar.
+template <class T>
+void innerProduct_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    ASSERT(A.shape() == B.shape(), "Shapes must match");
+
+    T sum{};
+    auto itB = B.begin();
+    for (const T& elem : A)
+    {
+        sum += elem * *itB;
+        ++itB;
+    }
+
+    y.resize({1});
+    y = sum;
+}
+
+// -------------------------- Vector / Matrix Ops --------------------------- //
+
+// A:      Rank 1, size N
+// B:      Rank 2, size N x M
+// Result: Rank 1, size N
+template <class T>
+void vectorMatrixMultiply_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // TODO Implement
+    ASSERT(false, "Not implemented");
+}
+
+// A:      Rank 2, size M x N,
+// B:      Rank 1, size N
+// Result: Rank 1, size M
+template <class T>
+void matrixVectorMultiply_v2(Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // TODO Implement
+    ASSERT(false, "Not implemented");
+}
+
+// Multiplies two tensors together. Both have a rank of exactly 2.
+//
+// TODO: Support multiplications like: [a, b, m, k] x [a, b, k, n] => [a, b, m, n]
+// for tensors with larger ranks.
+template <class T>
+void matrixMultiply_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Check size constraints
+    ASSERT(A.rank() == 2 && B.rank() == 2, "A, B must be matrices. shape(A) = " +
+        to_string(A.shape()) + ", shape(B) = " + to_string(B.shape()));
+    ASSERT(A.shape(1) == B.shape(0), "A.cols() must == B.rows(). " +
+        to_string(A.shape()) + " vs. " + to_string(B.shape()));
+
+    const size_t M = A.shape(0);
+    const size_t N = B.shape(1);
+    const size_t K = A.shape(1);
+
+    res.resize({M, N});
+    res.fill(T{0});
+    mmMultiply(A.data(), B.data(), res.data(), M, N, K, A.stride(1), A.stride(0),
+        B.stride(1), B.stride(0), res.stride(1), res.stride(0));
+}
+
+// Multiplies two tensors together. Both have a rank of exactly 2.
+// The first matrix is assumed to be transposed.
+//
+// TODO: Support multiplications like: [a, b, m, k] x [a, b, k, n] => [a, b, m, n]
+// for tensors with larger ranks.
+template <class T>
+void matrixMultiplyT1_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Check size constraints
+    ASSERT(A.rank() == 2 && B.rank() == 2, "A, B must be matrices");
+    ASSERT(A.shape(0) == B.shape(0), "A.cols() must == B.rows(). " +
+        to_string(A.shape()) + " vs. " + to_string(B.shape()));
+
+    const size_t M = A.shape(1);
+    const size_t N = B.shape(1);
+    const size_t K = A.shape(0);
+
+    res.resize({M, N});
+    res.fill(T{0});
+    mtmMultiply(A.data(), B.data(), res.data(), M, N, K, A.stride(1), A.stride(0),
+        B.stride(1), B.stride(0), res.stride(1), res.stride(0));
+}
+
+// Multiplies two tensors together. Both have a rank of exactly 2.
+// The second matrix is assumed to be transposed.
+//
+// TODO: Support multiplications like: [a, b, m, k] x [a, b, k, n] => [a, b, m, n]
+// for tensors with larger ranks.
+template <class T>
+void matrixMultiplyT2_v2(Tensor<T>& res, const Tensor<T>& A, const Tensor<T>& B)
+{
+    // Check size constraints
+    ASSERT(A.rank() == 2 && B.rank() == 2, "A, B must be matrices");
+    ASSERT(A.shape(1) == B.shape(1), "A.cols() must == B.rows(). " +
+        to_string(A.shape()) + " vs. " + to_string(B.shape()));
+
+    const size_t M = A.shape(0);
+    const size_t N = B.shape(0);
+    const size_t K = A.shape(1);
+
+    res.resize({M, N});
+    res.fill(T{0});
+    mmtMultiply(A.data(), B.data(), res.data(), M, N, K, A.stride(1), A.stride(0),
+        B.stride(1), B.stride(0), res.stride(1), res.stride(0));
+}
+
+// Calculates the L1 norm of the given tensor and returns it in
+// a rank-0 tensor.
+template <class T>
+void l1Norm_v2(Tensor<T>& y, const Tensor<T>& A)
+{
+    T sum{};
+    for (const T& elem : A)
+        sum += abs(elem);
+
+    y.resize({1});
+    y = sqrt(sum);
+}
+
+// Calculates the L2 norm of the given tensor and returns it in
+// a rank-0 tensor.
+template <class T>
+void l2Norm_v2(Tensor<T>& y, const Tensor<T>& A)
+{
+    T sum{};
+    for (const T& elem : A)
+        sum += elem * elem;
+
+    y.resize({1});
+    y = sqrt(sum);
+}
+
+// Returns the transpose of the given matrix
+template <class T>
+void matrixTranspose_v2(Tensor<T>& y, const Tensor<T>& A)
+{
+    ASSERT(A.rank() == 2, "A must be a matrix");
+    return transpose_v2(y, A, 0, 1);
 }
 
 }
