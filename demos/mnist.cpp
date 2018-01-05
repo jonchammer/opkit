@@ -58,8 +58,6 @@ int main()
     // Perform preprocessing
     scale(trainFeatures, 1.0 / 255.0);
     scale(testFeatures,  1.0 / 255.0);
-    trainLabels = convertColumnToOneHot(trainLabels, 0);
-    testLabels  = convertColumnToOneHot(testLabels, 0);
 
     cout << "\% Train features: " << trainFeatures.shape() << endl;
     cout << "\% Train labels:   " << trainLabels.shape()   << endl;
@@ -75,8 +73,8 @@ int main()
 
     // Build the graph with error functions
     auto y     = linear(x1, w1, b1);
-    auto error = softmaxCrossEntropy(y, y1);
-    auto miss  = missCount(y, y1, false);
+    auto error = softmaxCrossEntropy(y, y1, true);
+    auto miss  = missCount(y, y1, true);
 
     // Build the update rule
     auto update = gradientDescent(error, {"w1", "b1"}, T{0.1});

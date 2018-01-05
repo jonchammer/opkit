@@ -183,6 +183,17 @@ void elementwiseFunc(Tensor<T>& res, const Tensor<T>& arg, Func&& f)
     res.apply(std::forward<Func>(f));
 }
 
+// Faster approximation of e^x when precision isn't as important
+template <class T>
+T fastExp(T x)
+{
+    x = 1.0 + x / 1024.0;
+    x *= x; x *= x; x *= x; x *= x;
+    x *= x; x *= x; x *= x; x *= x;
+    x *= x; x *= x;
+    return x;
+}
+
 // ------------------------ Broadcasting Binary Ops ------------------------- //
 
 // Elementwise binary function that supports broadcasting so the sizes don't

@@ -217,12 +217,12 @@ public:
     const T*          data()    const { return mStorage.data(); }
 
     // Getters
-    size_t      shape(const size_t dim)  const { return mShape[dim];     }
-    SmallVector shape()                  const { return mShape;          }
-    size_t      rank()                   const { return mShape.size();   }
-    size_t      stride(const size_t dim) const { return mStride[dim];    }
-    SmallVector stride()                 const { return mStride;         }
-    size_t      size()                   const { return mNumElements;    }
+    size_t             shape(const size_t dim)  const { return mShape[dim];    }
+    const SmallVector& shape()                  const { return mShape;         }
+    size_t             rank()                   const { return mShape.size();  }
+    size_t             stride(const size_t dim) const { return mStride[dim];   }
+    const SmallVector& stride()                 const { return mStride;        }
+    size_t             size()                   const { return mNumElements;   }
 
 private:
     SmallVector mShape;
@@ -521,27 +521,30 @@ template <class T>
 template <class U>
 void Tensor<T>::copy(Tensor<U>& other) const
 {
-    // 1. Resize other's storage (if necessary)
+    // 1. Resize 'other''s storage (if necessary)
     if (other.mStorage.size() < mNumElements)
         other.mStorage.resize(mNumElements);
 
-    // 2. Copy the data from our storage to other's storage
+    // 2. Copy the data and metadata to 'other'
     if (contiguous())
     {
         const T* start = mStorage.begin();
         std::copy(start, start + mNumElements, other.mStorage.begin());
+
+        other.mShape.assign(mShape.begin(), mShape.end());
+        other.mStride.assign(mStride.begin(), mStride.end());
+        other.mNumElements = mNumElements;
     }
     else
     {
         size_t i = 0;
         for (const T& elem : *this)
             other.mStorage[i++] = U(elem);
-    }
 
-    // 3. Update other's meta data
-    other.mShape.assign(mShape.begin(), mShape.end());
-    calculateOptimalStride(other.mStride, other.mShape);
-    other.mNumElements = mNumElements;
+        other.mShape.assign(mShape.begin(), mShape.end());
+        calculateOptimalStride(other.mStride, other.mShape);
+        other.mNumElements = mNumElements;
+    }
 }
 
 template <class T>

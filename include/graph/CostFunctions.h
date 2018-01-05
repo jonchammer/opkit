@@ -1,8 +1,81 @@
 #ifndef COST_FUNCTIONS_H
 #define COST_FUNCTIONS_H
 
+#include <vector>
 #include "graph/Graph.h"
 #include "graph/ops/GraphOps_all.h"
+#include "tensor/TensorMath.h"
+
+namespace detail
+{
+
+template <class T>
+void softmaxCrossEntropyOneHot(Tensor<T>& res, const Tensor<T>& model, const Tensor<T>& labels)
+{
+    ASSERT(model.rank() == 2 && labels.rank() == 2, "Ranks must be 2.");
+    ASSERT(model.shape(0) == labels.shape(0), "Batch sizes must match.");
+    ASSERT(labels.shape(1) == 1, "Labels must be one-hot encoded.");
+
+    const size_t M             = model.shape(0);
+    const size_t N             = model.shape(1);
+    const size_t modelStrideX  = model.stride(1);
+    const size_t modelStrideY  = model.stride(0);
+    const size_t labelsStrideY = labels.stride(0);
+
+    res.resize({M, 1});
+
+    const T* modelData  = model.data();
+    const T* labelsData = labels.data();
+          T* resData    = res.data();
+
+    for (size_t y = 0; y < M; ++y)
+    {
+        const T* modelRow  = modelData;
+        const T* labelsRow = labelsData;
+
+        // Calculate the value for this row. The original formula has been
+        // rearranged a bit to remove redundant or unnecessary computations.
+        T sum = T{};
+        for (size_t x = 0; x < N; ++x)
+        {
+            sum      += opkit::fastExp(*modelRow);
+            modelRow += modelStrideX;
+        }
+        sum        = std::log(sum + std::numeric_limits<T>::epsilon());
+        resData[y] = sum - *(modelData + ((size_t) *labelsRow) * modelStrideX);
+
+        // Move on to the next row
+        modelData  += modelStrideY;
+        labelsData += labelsStrideY;
+    }
+}
+
+template <class T>
+void softmaxCrossEntropySlow(Tensor<T>& res, const Tensor<T>& model, const Tensor<T>& labels)
+{
+    std::vector<size_t> axes({labels.rank() - 1});
+
+    // e^a / ||e^a||
+    elementwiseFunc(res, model, [](const T x) { return opkit::fastExp(x); });
+    divBy(res, reduceSum(res, axes));
+
+    // log(e^a / ||e^a|| + epsilon)
+    res.apply([](const T& elem)
+    {
+        return std::log(elem + std::numeric_limits<T>::epsilon());
+    });
+
+    // sum(b * log(e^a / ||e^a|| + epsilon))
+    reduceSum(res, multiply(labels, res), axes);
+
+    // negation
+    res.apply([](const T& elem)
+    {
+        return -elem;
+    });
+}
+
+}
 
 namespace opkit
 {
@@ -32,7 +105,28 @@ Graph<T> crossEntropy(const Graph<T>& model, const Graph<T>& labels)
 }
 
 template <class T>
-void dSoftmaxCrossEntropy(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dSoftmaxCrossEntropyFast(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+{
+    Graph<T> y      = softmax(node.getChild(0));
+    Graph<T> labels = node.getChild(1);
+
+    auto op = make_binary<T>("softmaxEmbeddingOp",
+    [](Tensor<T>& res, const Tensor<T>& model, const Tensor<T>& label)
+    {
+        model.copy(res);
+        for (size_t y = 0; y < model.shape(0); ++y)
+        {
+            size_t index = label.at({y, 0});
+            res.at({y, index}) -= T{1};
+        }
+    }, y, labels);
+
+    gradients.push_back( op * delta );
+    gradients.push_back( make_constant<T>(0) );
+}
+
+template <class T>
+void dSoftmaxCrossEntropySlow(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
 {
     Graph<T> y      = softmax(node.getChild(0));
     Graph<T> labels = node.getChild(1);
@@ -45,40 +139,42 @@ void dSoftmaxCrossEntropy(const Graph<T>& node, const Graph<T>& delta, std::vect
 // is more numerically stable than using crossEntropy(softmax(model)), so it
 // should be used whenever possible.
 template <class T>
-Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels)
+Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels, bool oneHotLabels = false)
 {
-    registerDerivative<T>("softmaxCrossEntropy",
-        [](const Graph<T>& node, const Graph<T>& delta,
-        std::vector<Graph<T>>& gradients) {dSoftmaxCrossEntropy(node, delta, gradients);});
-
-    // TODO: Add some Tensor operators so this looks less evil.
-    Graph<T> temp = make_binary<T>("softmaxCrossEntropy", [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& b)
+    if (oneHotLabels)
     {
-        vector<size_t> axes({b.rank() - 1});
-
-        // e^a / ||e^a||
-        elementwiseFunc(y, a, [](const T x) { return std::exp(x); });
-        divBy(y, reduceSum(y, axes));
-
-        // log(e^a / ||e^a|| + epsilon)
-        y.apply([](const T& elem)
+        registerDerivative<T>("softmaxCrossEntropyFast",
+        [](const Graph<T>& node, const Graph<T>& delta,
+            std::vector<Graph<T>>& gradients)
         {
-            return std::log(elem + std::numeric_limits<T>::epsilon());
+            dSoftmaxCrossEntropyFast(node, delta, gradients);
         });
 
-        // sum(b * log(e^a / ||e^a|| + epsilon))
-        reduceSum(y, multiply(b, y), axes);
-
-        // negation
-        y.apply([](const T& elem)
+        Graph<T> temp = make_binary<T>("softmaxCrossEntropyFast",
+        [](Tensor<T>& res, const Tensor<T>& a, const Tensor<T>& b)
         {
-            return -elem;
+            detail::softmaxCrossEntropyOneHot(res, a, b);
+        }, model, labels);
+
+        return reduceMean(temp);
+    }
+
+    else
+    {
+        registerDerivative<T>("softmaxCrossEntropySlow",
+        [](const Graph<T>& node, const Graph<T>& delta,
+            std::vector<Graph<T>>& gradients)
+        {
+            dSoftmaxCrossEntropySlow(node, delta, gradients);
         });
 
-        return y;
-    }, model, labels);
-
-    return reduceMean(temp);
+        Graph<T> temp = make_binary<T>("softmaxCrossEntropySlow",
+        [](Tensor<T>& res, const Tensor<T>& a, const Tensor<T>& b)
+        {
+            detail::softmaxCrossEntropySlow(res, a, b);
+        }, model, labels);
+        return reduceMean(temp);
+    }
 }
 
 template <class T>
