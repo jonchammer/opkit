@@ -56,22 +56,22 @@ Graph<T> desiredName(const Graph<T>& A, const Graph<T>& B)                     \
 
 BINARY_OP(matrixMultiply, dMatrixMultiply, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return matrixMultiply_v2(y, A, B);
+    return matrixMultiply(y, A, B);
 });
 
 BINARY_OP(matrixMultiplyT1, dMatrixMultiplyT1, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return matrixMultiplyT1_v2(y, A, B);
+    return matrixMultiplyT1(y, A, B);
 });
 
 BINARY_OP(matrixMultiplyT2, dMatrixMultiplyT2, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return matrixMultiplyT2_v2(y, A, B);
+    return matrixMultiplyT2(y, A, B);
 });
 
 BINARY_OP(innerProduct, dInnerProduct, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
-    return innerProduct_v2(y, A, B);
+    return innerProduct(y, A, B);
 });
 
 #undef BINARY_OP

@@ -54,7 +54,7 @@ Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels)
     // TODO: Add some Tensor operators so this looks less evil.
     Graph<T> temp = make_binary<T>("softmaxCrossEntropy", [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& b)
     {
-        Tensor<T> axes = Tensor<T>::fromScalar(b.rank() - 1);
+        vector<size_t> axes({b.rank() - 1});
 
         // e^a / ||e^a||
         elementwiseFunc(y, a, [](const T x) { return std::exp(x); });
@@ -67,7 +67,7 @@ Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels)
         });
 
         // sum(b * log(e^a / ||e^a|| + epsilon))
-        reduceSum_v2(y, multiply(b, y), axes);
+        reduceSum(y, multiply(b, y), axes);
 
         // negation
         y.apply([](const T& elem)

@@ -41,10 +41,10 @@ bool validate(Graph<T>& root, std::vector<Graph<T>>& targets, const double thres
         {
             T orig       = elem;
             elem         = orig + DELTA;
-            Tensor<T> f1 = root.evaluate(true);
+            Tensor<T> f1 = root.evaluate(true).clone();
 
             elem         = orig - DELTA;
-            Tensor<T> f2 = root.evaluate(true);
+            Tensor<T> f2 = root.evaluate(true).clone();
             elem         = orig;
 
             // Calculate the derivative by subtracting the two estimates, dividing
