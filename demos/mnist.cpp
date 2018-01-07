@@ -79,6 +79,7 @@ int main()
     // Build the update rule
     auto update = gradientDescent(error, {"w1", "b1"}, T{0.1});
 
+    // Print the header line
     printf("@RELATION network_training\n");
     printf("@ATTRIBUTE Epoch real\n");
     printf("@ATTRIBUTE Cumulative_Time_Seconds real\n");
@@ -92,8 +93,8 @@ int main()
     printf("%5d, %8.2f, %5.0f, %8.4f\n",
         0,
         0.0,
-        T(miss.evaluate(true)),
-        T(error.evaluate(true)));
+        T(miss()),
+        T(error()));
     cout.flush();
 
     Rand rand(42);
@@ -111,7 +112,7 @@ int main()
             it.next(batchFeatures, batchLabels);
             x1.assign(*batchFeatures);
             y1.assign(*batchLabels);
-            update.evaluate(true);
+            update();
         }
         it.reset();
 
@@ -121,12 +122,12 @@ int main()
         printf("%5zu, %8.2f, %5.0f, %8.4f\n",
             (i + 1),
             t.getElapsedTimeSeconds(),
-            T(miss.evaluate(true)),
-            T(error.evaluate(true)));
+            T(miss()),
+            T(error()));
         cout.flush();
     }
 
-    //Instrumentor::instance().print();
+    // Instrumentor::instance().print();
 
     // vector<Graph<T>> targets({w1, b1});
     // if (validate(error, targets))

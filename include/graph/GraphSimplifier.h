@@ -18,11 +18,11 @@ namespace opkit
 
 // Forward declarations
 template <class T>
-Graph<T> simplify(const Graph<T>& root);
+Graph<T> simplify(Graph<T> root);
 
 // Performs simplification for all unary functions.
 template <class T>
-Graph<T> simplifyUnary(const Graph<T>& root)
+Graph<T> simplifyUnary(Graph<T> root)
 {
     Graph<T> c1 = simplify(root.getChild(0));
 
@@ -34,7 +34,7 @@ Graph<T> simplifyUnary(const Graph<T>& root)
 }
 
 template <class T>
-bool simplifyMatrixMultiply(const Graph<T>& c1, const Graph<T>& c2, Graph<T>& res)
+bool simplifyMatrixMultiply(Graph<T> c1, Graph<T> c2, Graph<T> res)
 {
     // 0 * x = 0
     // 1 * x = x
@@ -77,7 +77,7 @@ bool simplifyMatrixMultiply(const Graph<T>& c1, const Graph<T>& c2, Graph<T>& re
 }
 
 template <class T>
-bool simplifyMultiplication(const Graph<T>& c1, const Graph<T>& c2, Graph<T>& res)
+bool simplifyMultiplication(Graph<T> c1, Graph<T> c2, Graph<T> res)
 {
     // 0 * x = 0
     // 1 * x = x
@@ -120,7 +120,7 @@ bool simplifyMultiplication(const Graph<T>& c1, const Graph<T>& c2, Graph<T>& re
     // expand(1, x) * y = expandIfSmaller(y, x)
     if (c1.name() == "expand")
     {
-        const Graph<T>& expandC1 = c1.getChild(0);
+        Graph<T> expandC1 = c1.getChild(0);
         if (expandC1.type() == Graph<T>::Type::CONSTANT)
         {
             const Constant<T> constant = (const Constant<T>&) expandC1.node();
@@ -135,7 +135,7 @@ bool simplifyMultiplication(const Graph<T>& c1, const Graph<T>& c2, Graph<T>& re
     // y * expand(1, x) = expandIfSmaller(y, x)
     if (c2.name() == "expand")
     {
-        const Graph<T>& expandC2 = c2.getChild(0);
+        Graph<T> expandC2 = c2.getChild(0);
         if (expandC2.type() == Graph<T>::Type::CONSTANT)
         {
             const Constant<T> constant = (const Constant<T>&) expandC2.node();
@@ -150,7 +150,7 @@ bool simplifyMultiplication(const Graph<T>& c1, const Graph<T>& c2, Graph<T>& re
 }
 
 template <class T>
-bool simplifyAddition(const Graph<T>& c1, const Graph<T>& c2, Graph<T>& res)
+bool simplifyAddition(Graph<T> c1, Graph<T> c2, Graph<T> res)
 {
     // 0 + x = 0
     if (c1.type() == Graph<T>::Type::CONSTANT)
@@ -178,7 +178,7 @@ bool simplifyAddition(const Graph<T>& c1, const Graph<T>& c2, Graph<T>& res)
 
 // Performs simplification for all binary functions.
 template <class T>
-Graph<T> simplifyBinary(const Graph<T>& root)
+Graph<T> simplifyBinary(Graph<T> root)
 {
     Graph<T> c1 = simplify(root.getChild(0));
     Graph<T> c2 = simplify(root.getChild(1));
@@ -215,7 +215,7 @@ Graph<T> simplifyBinary(const Graph<T>& root)
 
 // Performs simplification for lists.
 template <class T>
-Graph<T> simplifyList(const Graph<T>& root)
+Graph<T> simplifyList(Graph<T> root)
 {
     std::vector<Graph<T>> children;
     for (size_t i = 0; i < root.getNumChildren(); ++i)
@@ -225,7 +225,7 @@ Graph<T> simplifyList(const Graph<T>& root)
 
 // Performs simplification for updates.
 template <class T>
-Graph<T> simplifyUpdate(const Graph<T>& root)
+Graph<T> simplifyUpdate(Graph<T> root)
 {
     Graph<T> simplifiedValue = simplify(root.getChild(1));
     return (simplifiedValue == root.getChild(1)) ? root :
@@ -234,7 +234,7 @@ Graph<T> simplifyUpdate(const Graph<T>& root)
 
 // Performs simplification for updates with arguments
 template <class T>
-Graph<T> simplifyUpdateArg(const Graph<T>& root)
+Graph<T> simplifyUpdateArg(Graph<T> root)
 {
     Graph<T> simplifiedValue = simplify(root.getChild(1));
     Graph<T> simplifiedArg   = simplify(root.getChild(2));
@@ -246,7 +246,7 @@ Graph<T> simplifyUpdateArg(const Graph<T>& root)
 
 // Performs simplification for all graphs.
 template <class T>
-Graph<T> simplify(const Graph<T>& root)
+Graph<T> simplify(Graph<T> root)
 {
     switch (root.type())
     {

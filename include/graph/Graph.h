@@ -51,48 +51,16 @@ private:
     RCPtr<Node<T>> mNode; // Pointer to the actual node.
     Type mType;           // Type of the actual node.
 
-    // Construct a graph node with the proper data and type
-    explicit Graph(Node<T>* ptr, Type type) : mNode(ptr), mType(type) {}
-
-    // Allow only these functions to use the private constructor.
-    template <class O, class TensorType>
-    friend Graph<O> make_constant(const std::string& name, TensorType&& tensor);
-
-    template <class O, class ValueType>
-    friend Graph<O> make_constant(const ValueType constant);
-
-    template <class O>
-    friend Graph<O> make_constant(const std::string& name);
-
-    template <class O, class TensorType>
-    friend Graph<O> make_variable(const std::string& name, TensorType&& tensor);
-
-    template <class O>
-    friend Graph<O> make_variable(const std::string& name);
-
-    template <class O, class Func, class GraphType>
-    friend Graph<O> make_unary(const std::string& name, Func&& func, GraphType&& dependent);
-
-    template <class O, class Func, class GraphType1, class GraphType2>
-    friend Graph<O> make_binary(const std::string& name, Func&& func, GraphType1&& dependent1, GraphType2&& dependent2);
-
-    template <class O, class VecType>
-    friend Graph<O> make_list(VecType&& dependents);
-
-    template <class O, class Func, class GraphType1, class GraphType2>
-    friend Graph<O> make_update(const std::string& name, Func&& func, GraphType1&& target, GraphType2&& value);
-
-    template <class O, class Func, class TargetType, class ValueType, class ArgType>
-    friend Graph<O> make_update(const std::string& name, Func&& func, TargetType&& target, ValueType&& value, ArgType&& arg);
-
 public:
-    // Normal constructors
-    Graph() :
-        mNode(nullptr), mType(INVALID)
-    {}
 
+    // Construct a graph node with the proper data and type
+    // Should only be used for low-level routines (e.g. make_constant())
+    Graph(Node<T>* ptr, Type type) : mNode(ptr), mType(type) {}
+
+    // Normal constructors
+    Graph() : mNode(nullptr), mType(INVALID) {}
     Graph(const Graph<T>& orig) = default;
-    Graph(Graph<T>&& orig) = default;
+    Graph(Graph<T>&& orig)      = default;
 
     // Assignment operators
     Graph<T>& operator=(const Graph<T>& rhs) = default;
@@ -100,32 +68,44 @@ public:
 
     // Creates a new graph node that performs the same task as 'unary', with a
     // different child element.
-    Graph<T> copyUnary(const Graph<T>& child) const
+    Graph<T> copyUnary(Graph<T> child) const
     {
         auto fn = ((UnaryFunction<T>&)(*mNode)).getFunction();
-        return Graph<T>(new UnaryFunction<T>(name(), fn, child), UNARY);
+        Graph<T> res(new UnaryFunction<T>(name(), fn, child), UNARY);
+        child.addParent(res);
+        return res;
     }
 
     // Creates a new graph node that performs the same task as 'binary', with
     // different child elements.
-    Graph<T> copyBinary(const Graph<T>& child1, const Graph<T>& child2) const
+    Graph<T> copyBinary(Graph<T> child1, Graph<T> child2) const
     {
         auto fn = ((BinaryFunction<T>&)(*mNode)).getFunction();
-        return Graph<T>(new BinaryFunction<T>(name(), fn, child1, child2), BINARY);
+        Graph<T> res(new BinaryFunction<T>(name(), fn, child1, child2), BINARY);
+        child1.addParent(res);
+        child2.addParent(res);
+        return res;
     }
 
     // Creates a new graph node that performs the same task as this update rule,
     // with different child elements
-    Graph<T> copyUpdate(const Graph<T>& target, const Graph<T>& value) const
+    Graph<T> copyUpdate(Graph<T> target, Graph<T> value) const
     {
         auto fn = ((UpdateNode<T>&)(*mNode)).getFunction();
-        return Graph<T>(new UpdateNode<T>(name(), fn, target, value), UPDATE);
+        Graph<T> res(new UpdateNode<T>(name(), fn, target, value), UPDATE);
+        target.addParent(res);
+        value.addParent(res);
+        return res;
     }
 
-    Graph<T> copyUpdate(const Graph<T>& target, const Graph<T>& value, const Graph<T>& arg) const
+    Graph<T> copyUpdate(Graph<T> target, Graph<T> value, Graph<T> arg) const
     {
         auto fn = ((UpdateNodeArg<T>&)(*mNode)).getFunction();
-        return Graph<T>(new UpdateNodeArg<T>(name(), fn, target, value, arg), UPDATE_ARG);
+        Graph<T> res(new UpdateNodeArg<T>(name(), fn, target, value, arg), UPDATE_ARG);
+        target.addParent(res);
+        value.addParent(res);
+        arg.addParent(res);
+        return res;
     }
 
     // Comparison operators
@@ -138,6 +118,15 @@ public:
         return !(*this == other);
     }
 
+    // Called during graph creation - not part of the public API
+    void addParent(const Graph<T>& parent)
+    {
+        ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
+        mNode->addParent(parent);
+    }
+
+    // Locate a node with the given name in the dependencies for this node
+    // (children nodes only). If a child cannot be found, nullptr is returned.
     const Graph<T>* find(const std::string& name) const
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
@@ -153,29 +142,24 @@ public:
         }
     }
 
-    void clearCache()
+    // Evaluate this graph to obtain a result.
+    const Tensor<T>& operator()()
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
-        mNode->clearCache();
+        return mNode->operator()();
     }
 
-    // Evaluate this graph to obtain a result. When 'recalculate' is true, any
-    // cached calculations will be discarded. Otherwise, caching will be used
-    // as much as possible.
-    const Tensor<T>& evaluate(const bool recalculate = false)
-    {
-        ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
-        if (recalculate) mNode->clearCache();
-        return mNode->evaluate();
-    }
-
+    // For variables only - Assign a new value to this node. Note that this
+    // operation invalidates part of the graph. Any node that depends on this
+    // one will have its cache cleared.
     void assign(const Tensor<T>& newValue)
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
         mNode->assign(newValue);
+        mNode->invalidateAll();
     }
 
-    // Each graph node has either 0, 1, or 2 children depending on its type.
+    // Each graph node has either 0 or more children depending on its type.
     // This function allows one to traverse the graph backwards to find those
     // children.
     const Graph<T>& getChild(const size_t index) const
@@ -212,12 +196,13 @@ public:
 
     // Graph-specific operations. Note that clients should avoid using these
     // as much as possible.
-    Type type() const           { return mType;  }
-    Node<T>& node()             { return *mNode; }
-    const Node<T>& node() const { return *mNode; }
-    Node<T>* ptr() const { return mNode.operator->(); }
+    Type type()           const { return mType;              }
+    Node<T>& node()             { return *mNode;             }
+    const Node<T>& node() const { return *mNode;             }
+    Node<T>* ptr()        const { return mNode.operator->(); }
 };
 
+// Functions that should be used to create graphs of different types by the user
 template <class T, class TensorType>
 Graph<T> make_constant(const std::string& name, TensorType&& tensor)
 {
@@ -251,42 +236,62 @@ Graph<T> make_variable(const std::string& name)
     return Graph<T>(new Variable<T>(name), Graph<T>::Type::VAR);
 }
 
-template <class T, class Func, class GraphType>
-Graph<T> make_unary(const std::string& name, Func&& func, GraphType&& dependent)
+template <class T, class Func>
+Graph<T> make_unary(const std::string& name, Func&& func, Graph<T> dependent)
 {
-    return Graph<T>(new UnaryFunction<T>(name, std::forward<Func>(func),
-        std::forward<GraphType>(dependent)), Graph<T>::Type::UNARY);
+    Graph<T> res(new UnaryFunction<T>(name, std::forward<Func>(func),
+        dependent), Graph<T>::Type::UNARY);
+
+    dependent.addParent(res);
+    return res;
 }
 
-template <class T, class Func, class GraphType1, class GraphType2>
-Graph<T> make_binary(const std::string& name, Func&& func, GraphType1&& dependent1, GraphType2&& dependent2)
+template <class T, class Func>
+Graph<T> make_binary(const std::string& name, Func&& func,
+    Graph<T> dependent1, Graph<T> dependent2)
 {
-    return Graph<T>(new BinaryFunction<T>(name, std::forward<Func>(func),
-        std::forward<GraphType1>(dependent1), std::forward<GraphType2>(dependent2)),
-        Graph<T>::Type::BINARY);
+    Graph<T> res(new BinaryFunction<T>(name, std::forward<Func>(func),
+        dependent1, dependent2), Graph<T>::Type::BINARY);
+
+    dependent1.addParent(res);
+    dependent2.addParent(res);
+    return res;
 }
 
 template <class T, class VecType>
 Graph<T> make_list(VecType&& dependents)
 {
-    return Graph<T>(new ListNode<T>("list", std::forward<VecType>(dependents)), Graph<T>::Type::LIST);
+    Graph<T> res(new ListNode<T>("list", std::forward<VecType>(dependents)),
+        Graph<T>::Type::LIST);
+
+    for (auto& elem : dependents)
+        elem.addParent(res);
+    return res;
 }
 
-template <class T, class Func, class GraphType1, class GraphType2>
-Graph<T> make_update(const std::string& name, Func&& func, GraphType1&& target, GraphType2&& value)
+template <class T, class Func>
+Graph<T> make_update(const std::string& name, Func&& func,
+    Graph<T> target, Graph<T> value)
 {
-    return Graph<T>(new UpdateNode<T>(name, std::forward<Func>(func),
-        std::forward<GraphType1>(target), std::forward<GraphType2>(value)),
-        Graph<T>::Type::UPDATE);
+    Graph<T> res(new UpdateNode<T>(name, std::forward<Func>(func),
+        target, value), Graph<T>::Type::UPDATE);
+
+    target.addParent(res);
+    value.addParent(res);
+    return res;
 }
 
-template <class T, class Func, class TargetType, class ValueType, class ArgType>
-Graph<T> make_update(const std::string& name, Func&& func, TargetType&& target, ValueType&& value, ArgType&& arg)
+template <class T, class Func>
+Graph<T> make_update(const std::string& name, Func&& func,
+    Graph<T> target, Graph<T> value, Graph<T> arg)
 {
-    return Graph<T>(new UpdateNodeArg<T>(name, std::forward<Func>(func),
-        std::forward<TargetType>(target), std::forward<ValueType>(value),
-        std::forward<ArgType>(arg)),
-        Graph<T>::Type::UPDATE_ARG);
+    Graph<T> res(new UpdateNodeArg<T>(name, std::forward<Func>(func),
+        target, value, arg), Graph<T>::Type::UPDATE_ARG);
+
+    target.addParent(res);
+    value.addParent(res);
+    arg.addParent(res);
+    return res;
 }
 
 // ----------------------------- Implementation ----------------------------- //
@@ -295,11 +300,32 @@ Graph<T> make_update(const std::string& name, Func&& func, TargetType&& target, 
 template <class T>
 struct Node : public RCObject
 {
+
+// ---------------------- Begin Invalidation framework ---------------------- //
+private:
+    std::vector<Graph<T>> parents;
+
+public:
+
+    void addParent(const Graph<T>& parent)
+    {
+        parents.push_back(parent);
+    }
+
+    void invalidateAll()
+    {
+        invalidate();
+        for (auto& elem : parents)
+            elem.node().invalidateAll();
+    }
+// ----------------------- End Invalidation framework ----------------------- //
+
     virtual ~Node() {}
 
+    virtual void invalidate() {}
+
     // Evaluate the graph up to this point and return the result.
-    virtual void clearCache() {}
-    virtual const Tensor<T>& evaluate() = 0;
+    virtual const Tensor<T>& operator()() = 0;
 
     // Certain node types support assignment of a new value
     virtual void assign(const Tensor<T>& newValue)
@@ -368,7 +394,7 @@ public:
     Constant& operator=(Constant&& orig)      = default;
 
     // Node class implementations
-    const Tensor<T>& evaluate() override
+    const Tensor<T>& operator()() override
     {
         return mValue;
     }
@@ -461,17 +487,16 @@ public:
     UnaryFunction& operator=(UnaryFunction&& orig)      = default;
 
     // Node class implementations
-    void clearCache() override
+    void invalidate() override
     {
         mHasCachedResult = false;
-        mDependent.clearCache();
     }
 
-    const Tensor<T>& evaluate() override
+    const Tensor<T>& operator()() override
     {
         if (!mHasCachedResult)
         {
-            mFunc(mCachedResult, mDependent.evaluate());
+            mFunc(mCachedResult, mDependent());
             mHasCachedResult = true;
         }
 
@@ -512,7 +537,8 @@ public:
     }
 
     // Unary function-specific operations
-    std::function<void(Tensor<T>& y, const Tensor<T>& x)> getFunction() const { return mFunc; }
+    std::function<void(Tensor<T>& y, const Tensor<T>& x)>
+    getFunction() const { return mFunc; }
 };
 
 // A graph node that has exactly two single dependents (e.g. addition)
@@ -536,7 +562,9 @@ public:
 
     // Additional constructors
     template <class Func, class GraphType1, class GraphType2>
-    BinaryFunction(const std::string& name, Func&& f, GraphType1&& dependent1, GraphType2&& dependent2):
+    BinaryFunction(const std::string& name, Func&& f,
+        GraphType1&& dependent1, GraphType2&& dependent2) :
+
         mName(name),
         mFunc(std::forward<Func>(f)),
         mDependent1(std::forward<GraphType1>(dependent1)),
@@ -549,18 +577,16 @@ public:
     BinaryFunction& operator=(BinaryFunction<T>&& orig)      = default;
 
     // Node class implementations
-    void clearCache() override
+    void invalidate() override
     {
         mHasCachedResult = false;
-        mDependent1.clearCache();
-        mDependent2.clearCache();
     }
 
-    const Tensor<T>& evaluate() override
+    const Tensor<T>& operator()() override
     {
         if (!mHasCachedResult)
         {
-            mFunc(mCachedResult, mDependent1.evaluate(), mDependent2.evaluate());
+            mFunc(mCachedResult, mDependent1(), mDependent2());
             mHasCachedResult = true;
         }
 
@@ -607,7 +633,8 @@ public:
     }
 
     // Getters
-    std::function<void(Tensor<T>& y, const Tensor<T>& x1, const Tensor<T>& x2)> getFunction() const
+    std::function<void(Tensor<T>& y, const Tensor<T>& x1, const Tensor<T>& x2)>
+    getFunction() const
     {
         return mFunc;
     }
@@ -640,20 +667,14 @@ public:
     ListNode& operator=(ListNode<T>&& orig)      = default;
 
     // Node class implementations
-    void clearCache() override
-    {
-        for (Graph<T>& dep : mDependents)
-            dep.clearCache();
-    }
-
-    const Tensor<T>& evaluate() override
+    const Tensor<T>& operator()() override
     {
         // Evaluate each of the list elements
         for (Graph<T>& dependent : mDependents)
-            dependent.evaluate();
+            dependent();
 
         // Return the result of the last one, which should be cached.
-        return mDependents.back().evaluate();
+        return mDependents.back()();
     }
 
     const Graph<T>& getChild(const size_t index) const override
@@ -722,16 +743,11 @@ public:
     UpdateNode& operator=(const UpdateNode<T>& orig) = default;
     UpdateNode& operator=(UpdateNode<T>&& orig)      = default;
 
-    // Node class implementations
-    void clearCache() override
-    {
-        mValue.clearCache();
-    }
-
-    const Tensor<T>& evaluate() override
+    const Tensor<T>& operator()() override
     {
         Tensor<T>& value = ((Variable<T>&) mTarget.node()).value();
-        mFunc(value, mValue.evaluate());
+        mFunc(value, mValue());
+        // mTarget.node().invalidateAll();
         return value;
     }
 
@@ -810,17 +826,11 @@ public:
     UpdateNodeArg& operator=(const UpdateNodeArg<T>& orig) = default;
     UpdateNodeArg& operator=(UpdateNodeArg<T>&& orig)      = default;
 
-    // Node class implementations
-    void clearCache() override
-    {
-        mValue.clearCache();
-        mArg.clearCache();
-    }
-
-    const Tensor<T>& evaluate() override
+    const Tensor<T>& operator()() override
     {
         Tensor<T>& value = ((Variable<T>&) mTarget.node()).value();
-        mFunc(value, mValue.evaluate(), mArg.evaluate());
+        mFunc(value, mValue(), mArg());
+        // mTarget.node().invalidateAll();
         return value;
     }
 

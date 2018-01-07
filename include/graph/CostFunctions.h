@@ -81,13 +81,13 @@ namespace opkit
 {
 
 template <class T>
-Graph<T> sse(const Graph<T>& model, const Graph<T>& labels)
+Graph<T> sse(Graph<T> model, Graph<T> labels)
 {
     return reduceSum(square(model - labels));
 }
 
 template <class T>
-Graph<T> mse(const Graph<T>& model, const Graph<T>& labels)
+Graph<T> mse(Graph<T> model, Graph<T> labels)
 {
     return reduceMean(square(model - labels));
 }
@@ -95,7 +95,7 @@ Graph<T> mse(const Graph<T>& model, const Graph<T>& labels)
 // General purpose cross-entropy. It doesn't matter what comes before this node
 // in the graph, but the user must ensure that the input is > 0 for all values.
 template <class T>
-Graph<T> crossEntropy(const Graph<T>& model, const Graph<T>& labels)
+Graph<T> crossEntropy(Graph<T> model, Graph<T> labels)
 {
     // A very small number is added to the input to prevent log(0) from
     // becomming NaN.
@@ -105,7 +105,7 @@ Graph<T> crossEntropy(const Graph<T>& model, const Graph<T>& labels)
 }
 
 template <class T>
-void dSoftmaxCrossEntropyFast(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dSoftmaxCrossEntropyFast(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     Graph<T> y      = softmax(node.getChild(0));
     Graph<T> labels = node.getChild(1);
@@ -126,7 +126,7 @@ void dSoftmaxCrossEntropyFast(const Graph<T>& node, const Graph<T>& delta, std::
 }
 
 template <class T>
-void dSoftmaxCrossEntropySlow(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dSoftmaxCrossEntropySlow(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     Graph<T> y      = softmax(node.getChild(0));
     Graph<T> labels = node.getChild(1);
@@ -139,12 +139,12 @@ void dSoftmaxCrossEntropySlow(const Graph<T>& node, const Graph<T>& delta, std::
 // is more numerically stable than using crossEntropy(softmax(model)), so it
 // should be used whenever possible.
 template <class T>
-Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels, bool oneHotLabels = false)
+Graph<T> softmaxCrossEntropy(Graph<T> model, Graph<T> labels, bool oneHotLabels = false)
 {
     if (oneHotLabels)
     {
         registerDerivative<T>("softmaxCrossEntropyFast",
-        [](const Graph<T>& node, const Graph<T>& delta,
+        [](Graph<T> node, Graph<T> delta,
             std::vector<Graph<T>>& gradients)
         {
             dSoftmaxCrossEntropyFast(node, delta, gradients);
@@ -162,7 +162,7 @@ Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels, bool
     else
     {
         registerDerivative<T>("softmaxCrossEntropySlow",
-        [](const Graph<T>& node, const Graph<T>& delta,
+        [](Graph<T> node, Graph<T> delta,
             std::vector<Graph<T>>& gradients)
         {
             dSoftmaxCrossEntropySlow(node, delta, gradients);
@@ -178,14 +178,14 @@ Graph<T> softmaxCrossEntropy(const Graph<T>& model, const Graph<T>& labels, bool
 }
 
 template <class T>
-Graph<T> sigmoidCrossEntropy(const Graph<T>& model, const Graph<T>& labels)
+Graph<T> sigmoidCrossEntropy(Graph<T> model, Graph<T> labels)
 {
     return max(model, 0) - model * labels + log(1 + exp(-abs(model)));
 }
 
 // Returns the number of elements that were correctly classified.
 template <class T>
-Graph<T> correctCount(const Graph<T>& model, const Graph<T>& labels, bool oneHotLabels = false)
+Graph<T> correctCount(Graph<T> model, Graph<T> labels, bool oneHotLabels = false)
 {
     if (oneHotLabels)
         return reduceSum(equal(argmax(model, 1), labels));
@@ -194,7 +194,7 @@ Graph<T> correctCount(const Graph<T>& model, const Graph<T>& labels, bool oneHot
 
 // Returns the percentage of elements that were classified correctly.
 template <class T>
-Graph<T> accuracy(const Graph<T>& model, const Graph<T>& labels, bool oneHotLabels = false)
+Graph<T> accuracy(Graph<T> model, Graph<T> labels, bool oneHotLabels = false)
 {
     if (oneHotLabels)
         return reduceMean(equal(argmax(model, 1), labels));
@@ -203,7 +203,7 @@ Graph<T> accuracy(const Graph<T>& model, const Graph<T>& labels, bool oneHotLabe
 
 // Returns the raw number of misclassifications
 template <class T>
-Graph<T> missCount(const Graph<T>& model, const Graph<T>& labels, bool oneHotLabels = false)
+Graph<T> missCount(Graph<T> model, Graph<T> labels, bool oneHotLabels = false)
 {
     if (oneHotLabels)
         return reduceSum(notEqual(argmax(model, 1), labels));
@@ -212,7 +212,7 @@ Graph<T> missCount(const Graph<T>& model, const Graph<T>& labels, bool oneHotLab
 
 // Returns the average number of misclassifications. This should always be [0, 1].
 template <class T>
-Graph<T> missRate(const Graph<T>& model, const Graph<T>& labels, bool oneHotLabels = false)
+Graph<T> missRate(Graph<T> model, Graph<T> labels, bool oneHotLabels = false)
 {
     if (oneHotLabels)
         return reduceMean(notEqual(argmax(model, 1), labels));

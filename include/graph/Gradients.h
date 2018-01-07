@@ -17,7 +17,7 @@ namespace opkit
 // the corresponding graph that will calculate the gradient. If the targets set
 // is empty, all gradients with respect to all variables will be returned.
 template <class T>
-std::unordered_map<std::string, Graph<T>> gradients(const Graph<T>& node,
+std::unordered_map<std::string, Graph<T>> gradients(Graph<T> node,
     std::unordered_set<std::string> targets = {})
 {
     // Reference to the singleton derivative map

@@ -190,7 +190,7 @@ namespace opkit
         const T alpha = T{1}, const T beta = T{})
     {
         INSTRUMENT();
-        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(K) + " x " + std::to_string(N));
 
         if (aStrideX == 1 && bStrideX == 1 && cStrideX == 1 &&
             aStrideY != 0 && bStrideY != 0 && cStrideY != 0)
@@ -211,7 +211,7 @@ namespace opkit
         const T alpha = T{1.0}, const T beta = T{0.0})
     {
         INSTRUMENT();
-        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(K) + " x " + std::to_string(N));
 
         if (aStrideX == 1 && bStrideX == 1 && cStrideX == 1 &&
             aStrideY != 0 && bStrideY != 0 && cStrideY != 0)
@@ -232,7 +232,7 @@ namespace opkit
         const T alpha = T{1.0}, const T beta = T{0.0})
     {
         INSTRUMENT();
-        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(N));
+        INSTRUMENT_PROPERTY(std::to_string(M) + " x " + std::to_string(K) + " x " + std::to_string(N));
 
         if (aStrideX == 1 && bStrideX == 1 && cStrideX == 1 &&
             aStrideY != 0 && bStrideY != 0 && cStrideY != 0)

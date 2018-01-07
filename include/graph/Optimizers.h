@@ -10,9 +10,9 @@ namespace opkit
 
 template <class T>
 Graph<T> gradientDescent(
-    const Graph<T>& error,
+    Graph<T> error,
     const std::unordered_set<std::string>& targets,
-    const Graph<T>& lr)
+    Graph<T> lr)
 {
     // Calculate the gradient graphs for each of the targets
     auto grads = gradients(error, targets);
@@ -35,7 +35,7 @@ Graph<T> gradientDescent(
 // Helper that is a bit easier to use
 template <class T, class U>
 Graph<T> gradientDescent(
-    const Graph<T>& error,
+    Graph<T> error,
     std::unordered_set<std::string> targets = {},
     const U learningRate = 1E-3)
 {
@@ -45,10 +45,10 @@ Graph<T> gradientDescent(
 
 template <class T>
 Graph<T> gradientDescentMomentum(
-    const Graph<T>& error,
+    Graph<T> error,
     const std::unordered_set<std::string>& targets,
-    const Graph<T>& lr,
-    const Graph<T>& momentum)
+    Graph<T> lr,
+    Graph<T> momentum)
 {
     // Calculate the gradient graphs for each of the targets
     auto grads = gradients(error, targets);
@@ -85,7 +85,7 @@ Graph<T> gradientDescentMomentum(
 // Helper that is a bit easier to use
 template <class T, class U>
 Graph<T> gradientDescentMomentum(
-    const Graph<T>& error,
+    Graph<T> error,
     const std::unordered_set<std::string> targets = {},
     const U learningRate = 1E-3,
     const U momentum = 1E-3)
@@ -96,12 +96,12 @@ Graph<T> gradientDescentMomentum(
 }
 
 template <class T>
-Graph<T> adam(const Graph<T>& error,
+Graph<T> adam(Graph<T> error,
     const std::unordered_set<std::string>& targets,
-    const Graph<T>& learningRate,
-    const Graph<T>& beta1,
-    const Graph<T>& beta2,
-    const Graph<T>& epsilon)
+    Graph<T> learningRate,
+    Graph<T> beta1,
+    Graph<T> beta2,
+    Graph<T> epsilon)
 {
     // Calculate the gradient graphs for each of the targets
     auto grads = gradients(error, targets);
@@ -157,7 +157,7 @@ Graph<T> adam(const Graph<T>& error,
 // Helper that is a bit easier to use
 template <class T, class U>
 Graph<T> adam(
-    const Graph<T>& error,
+    Graph<T> error,
     std::unordered_set<std::string> targets = {},
     const U learningRate                    = 1E-3,
     const U beta1                           = 0.9,
@@ -173,12 +173,12 @@ Graph<T> adam(
 }
 
 template <class T>
-Graph<T> rmsProp(const Graph<T>& error,
+Graph<T> rmsProp(Graph<T> error,
     const std::unordered_set<std::string>& targets,
-    const Graph<T>& learningRate,
-    const Graph<T>& decay,
-    const Graph<T>& momentum,
-    const Graph<T>& epsilon)
+    Graph<T> learningRate,
+    Graph<T> decay,
+    Graph<T> momentum,
+    Graph<T> epsilon)
 {
     // Calculate the gradient graphs for each of the targets
     auto grads = gradients(error, targets);
@@ -216,7 +216,7 @@ Graph<T> rmsProp(const Graph<T>& error,
 // Helper that is a bit easier to use
 template <class T, class U>
 Graph<T> rmsProp(
-    const Graph<T>& error,
+    Graph<T> error,
     std::unordered_set<std::string> targets = {},
     const U learningRate                    = 1E-4,
     const U decay                           = 0.9,

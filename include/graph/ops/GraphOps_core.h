@@ -17,67 +17,66 @@ namespace opkit
 
 // -------------------------------------------------------------------------- //
 // Forward declarations
-template <class T> Graph<T> sqrt(const Graph<T>&);
-template <class T> Graph<T> abs(const Graph<T>&);
-template <class T> Graph<T> ceil(const Graph<T>&);
-template <class T> Graph<T> floor(const Graph<T>&);
-template <class T> Graph<T> square(const Graph<T>&);
-template <class T> Graph<T> operator-(const Graph<T>&);
+template <class T> Graph<T> sqrt(Graph<T>);
+template <class T> Graph<T> abs(Graph<T>);
+template <class T> Graph<T> ceil(Graph<T>);
+template <class T> Graph<T> floor(Graph<T>);
+template <class T> Graph<T> square(Graph<T>);
+template <class T> Graph<T> operator-(Graph<T>);
 
-template <class T> Graph<T> operator+(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> operator-(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> operator*(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> operator/(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> max(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> min(const Graph<T>&, const Graph<T>&);
+template <class T> Graph<T> operator+(Graph<T>, Graph<T>);
+template <class T> Graph<T> operator-(Graph<T>, Graph<T>);
+template <class T> Graph<T> operator*(Graph<T>, Graph<T>);
+template <class T> Graph<T> operator/(Graph<T>, Graph<T>);
+template <class T> Graph<T> max(Graph<T>, Graph<T>);
+template <class T> Graph<T> min(Graph<T>, Graph<T>);
 
-template <class T, class U> Graph<T> operator+(const Graph<T>&, U);
-template <class T, class U> Graph<T> operator+(U, const Graph<T>&);
-template <class T, class U> Graph<T> operator-(const Graph<T>&, U);
-template <class T, class U> Graph<T> operator-(U, const Graph<T>&);
-template <class T, class U> Graph<T> operator*(const Graph<T>&, U);
-template <class T, class U> Graph<T> operator*(U, const Graph<T>&);
-template <class T, class U> Graph<T> operator/(const Graph<T>&, U);
-template <class T, class U> Graph<T> operator/(U, const Graph<T>&);
-template <class T, class U> Graph<T> max(const Graph<T>&, U);
-template <class T, class U> Graph<T> max(U, const Graph<T>&);
-template <class T, class U> Graph<T> min(const Graph<T>&, U);
-template <class T, class U> Graph<T> min(U, const Graph<T>&);
+template <class T, class U> Graph<T> operator+(Graph<T>, U);
+template <class T, class U> Graph<T> operator+(U, Graph<T>);
+template <class T, class U> Graph<T> operator-(Graph<T>, U);
+template <class T, class U> Graph<T> operator-(U, Graph<T>);
+template <class T, class U> Graph<T> operator*(Graph<T>, U);
+template <class T, class U> Graph<T> operator*(U, Graph<T>);
+template <class T, class U> Graph<T> operator/(Graph<T>, U);
+template <class T, class U> Graph<T> operator/(U, Graph<T>);
+template <class T, class U> Graph<T> max(Graph<T>, U);
+template <class T, class U> Graph<T> max(U, Graph<T>);
+template <class T, class U> Graph<T> min(Graph<T>, U);
+template <class T, class U> Graph<T> min(U, Graph<T>);
 
-template <class T> Graph<T> reduceSumTo(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> reduceProductTo(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> reduceMinTo(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> reduceMaxTo(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> expand(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> expandIfSmaller(const Graph<T>&, const Graph<T>&);
+template <class T> Graph<T> reduceSumTo(Graph<T>, Graph<T>);
+template <class T> Graph<T> reduceProductTo(Graph<T>, Graph<T>);
+template <class T> Graph<T> reduceMinTo(Graph<T>, Graph<T>);
+template <class T> Graph<T> reduceMaxTo(Graph<T>, Graph<T>);
+template <class T> Graph<T> expand(Graph<T>, Graph<T>);
+template <class T> Graph<T> expandIfSmaller(Graph<T>, Graph<T>);
 
-template <class T> Graph<T> reduceSum(const Graph<T>&, const Graph<T>& axes);
-template <class T> Graph<T> reduceProduct(const Graph<T>&, const Graph<T>& axes);
-template <class T> Graph<T> reduceMin(const Graph<T>&, const Graph<T>& axes);
-template <class T> Graph<T> reduceMax(const Graph<T>&, const Graph<T>& axes);
-template <class T> Graph<T> reduceMean(const Graph<T>&, const Graph<T>& axes);
+template <class T> Graph<T> reduceSum(Graph<T>, Graph<T> axes);
+template <class T> Graph<T> reduceProduct(Graph<T>, Graph<T> axes);
+template <class T> Graph<T> reduceMin(Graph<T>, Graph<T> axes);
+template <class T> Graph<T> reduceMax(Graph<T>, Graph<T> axes);
+template <class T> Graph<T> reduceMean(Graph<T>, Graph<T> axes);
 
-template <class T> Graph<T> shape(const Graph<T>&);
-template <class T> Graph<T> size(const Graph<T>&);
-template <class T> Graph<T> list(const vector<Graph<T>>&);
+template <class T> Graph<T> shape(Graph<T>);
+template <class T> Graph<T> size(Graph<T>);
+template <class T> Graph<T> list(vector<Graph<T>>&);
 
-template <class T> Graph<T> assign(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> addTo(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> subFrom(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> multBy(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> divBy(const Graph<T>&, const Graph<T>&);
+template <class T> Graph<T> assign(Graph<T>, Graph<T>);
+template <class T> Graph<T> addTo(Graph<T>, Graph<T>);
+template <class T> Graph<T> subFrom(Graph<T>, Graph<T>);
+template <class T> Graph<T> multBy(Graph<T>, Graph<T>);
+template <class T> Graph<T> divBy(Graph<T>, Graph<T>);
 
-template <class T> Graph<T> axpy(const Graph<T>&, const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> scale(const Graph<T>&, const Graph<T>&);
-template <class T, class U> Graph<T> clip(const Graph<T>&, const U min, const U max);
+template <class T> Graph<T> axpy(Graph<T>, Graph<T>, Graph<T>);
+template <class T> Graph<T> scale(Graph<T>, Graph<T>);
+template <class T, class U> Graph<T> clip(Graph<T>, const U min, const U max);
 
 // -------------------------------------------------------------------------- //
 // Forward declarations for the derivatives
 
 #define FD_DERIV(name)                                                         \
 template <class T>                                                             \
-void name(const Graph<T>& node, const Graph<T>& delta,                         \
-    std::vector<Graph<T>>& gradients);                                         \
+void name(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients);  \
 
 FD_DERIV(dSqrt)
 FD_DERIV(dAbs)
@@ -105,10 +104,10 @@ FD_DERIV(dScalarProduct)
 // element of the incoming tensor.
 #define ELEMENT_WISE_OP(desiredName, derivFn, fn)                              \
 template <class T>                                                             \
-Graph<T> desiredName(const Graph<T>& arg)                                      \
+Graph<T> desiredName(Graph<T> arg)                                            \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](const Graph<T>& node, const Graph<T>& delta,                        \
+        [](Graph<T> node, Graph<T> delta,                                    \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_unary<T>(#desiredName, [](Tensor<T>& y, const Tensor<T>& x)    \
     {                                                                          \
@@ -125,10 +124,10 @@ ELEMENT_WISE_OP(square, dSquare, [](const T x) { return x * x;               })
 #undef ELEMENT_WISE_OP
 
 template <class T>
-Graph<T> operator-(const Graph<T>& arg)
+Graph<T> operator-(Graph<T> arg)
 {
     registerDerivative<T>("neg",
-        [](const Graph<T>& node, const Graph<T>& delta,
+        [](Graph<T> node, Graph<T> delta,
         std::vector<Graph<T>>& gradients) {dNeg(node, delta, gradients);});
 
     return make_unary<T>("neg", [](Tensor<T>& y, const Tensor<T>& x)
@@ -141,19 +140,19 @@ Graph<T> operator-(const Graph<T>& arg)
 // -------------------------------------------------------------------------- //
 
 template <class T>
-void dSqrt(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dSqrt(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     gradients.push_back((1 / (2 * node)) * delta);
 }
 
 template <class T>
-void dAbs(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dAbs(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     gradients.push_back((node.getChild(0) / node) * delta);
 }
 
 template <class T>
-void dCeil(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dCeil(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     // Technically, the derivative doesn't exist for integers, but it's 0
     // everywhere else.
@@ -161,7 +160,7 @@ void dCeil(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& g
 }
 
 template <class T>
-void dFloor(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dFloor(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     // Technically, the derivative doesn't exist for integers, but it's 0
     // everywhere else.
@@ -169,14 +168,14 @@ void dFloor(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& 
 }
 
 template <class T>
-void dSquare(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dSquare(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     // dy/dx [a^2] = dy/da * 2a
     gradients.push_back(delta * (node.getChild(0) * 2));
 }
 
 template <class T>
-void dNeg(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dNeg(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     gradients.push_back(-delta);
 }
@@ -186,10 +185,10 @@ void dNeg(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gr
 // Shorthand for creating a binary function graph node
 #define BINARY_OP(desiredName, derivFn, fn)                                    \
 template <class T>                                                             \
-Graph<T> desiredName(const Graph<T>& A, const Graph<T>& B)                     \
+Graph<T> desiredName(Graph<T> A, Graph<T> B)                                 \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](const Graph<T>& node, const Graph<T>& delta,                        \
+        [](Graph<T> node, Graph<T> delta,                                    \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_binary<T>(#desiredName, fn, A, B);                             \
 }                                                                              \
@@ -228,50 +227,50 @@ BINARY_OP(min, dMin, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 // -------------------------------------------------------------------------- //
 
 template <class T>
-void dAdd(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dAdd(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     gradients.push_back(reduceSumTo(delta, shape(left)));
     gradients.push_back(reduceSumTo(delta, shape(right)));
 }
 
 template <class T>
-void dSubtract(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dSubtract(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     gradients.push_back(reduceSumTo(delta, shape(left)));
     gradients.push_back(reduceSumTo(-delta, shape(right)));
 }
 
 template <class T>
-void dMultiply(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dMultiply(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     gradients.push_back(reduceSumTo(right * delta, shape(left)));
     gradients.push_back(reduceSumTo(left * delta, shape(right)));
 }
 
 template <class T>
-void dDivide(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dDivide(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     gradients.push_back(reduceSumTo((1 / right) * delta, shape(left)));
     gradients.push_back(reduceSumTo((-left / square(right)) * delta, shape(right)));
 }
 
 template <class T>
-void dMax(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dMax(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     // Create matrix with 1s wherever the max element appeared in both tensors.
     // When both tensors have the same value, we divide the gradient between the
@@ -285,10 +284,10 @@ void dMax(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gr
 }
 
 template <class T>
-void dMin(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dMin(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     // Create matrix with 1s wherever the max element appeared in both tensors.
     // When both tensors have the same value, we divide the gradient between the
@@ -304,10 +303,10 @@ void dMin(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gr
 // -------------------------------------------------------------------------- //
 #define SCALAR_OP_RIGHT(fnName, fn, derivFn)                                   \
 template <class T, class U>                                                    \
-Graph<T> fnName(const Graph<T>& arg, U scalar)                                 \
+Graph<T> fnName(Graph<T> arg, U scalar)                                       \
 {                                                                              \
     registerDerivative<T>(#fnName,                                             \
-        [](const Graph<T>& node, const Graph<T>& delta,                        \
+        [](Graph<T> node, Graph<T> delta,                                    \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_binary<T>(#fnName, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)  \
     {                                                                          \
@@ -318,14 +317,14 @@ Graph<T> fnName(const Graph<T>& arg, U scalar)                                 \
 
 #define SCALAR_OP_LEFT(fnName, fn, derivFn)                                    \
 template <class T, class U>                                                    \
-Graph<T> fnName(U scalar, const Graph<T>& arg)                                 \
+Graph<T> fnName(U scalar, Graph<T> arg)                                       \
 {                                                                              \
     registerDerivative<T>(#fnName,                                             \
-        [](const Graph<T>& node, const Graph<T>& delta,                        \
+        [](Graph<T> node, Graph<T> delta,                                    \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_binary<T>(#fnName, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)  \
     {                                                                          \
-        return fn(y, A, B);                                                       \
+        return fn(y, A, B);                                                    \
     },                                                                         \
     make_constant<T>(scalar), arg);                                            \
 }                                                                              \
@@ -350,7 +349,7 @@ SCALAR_OP_RIGHT(min, min, dMin);
 
 #define CONTROL_OP(desiredName, fn)                                            \
 template <class T>                                                             \
-Graph<T> desiredName(const Graph<T>& A, const Graph<T>& B)                     \
+Graph<T> desiredName(Graph<T> A, Graph<T> B)                                 \
 {                                                                              \
     return make_binary<T>(#desiredName, fn, A, B);                             \
 }                                                                              \
@@ -389,7 +388,7 @@ CONTROL_OP(lessEqual, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 
 #define SHAPE_OP(desiredName, fn)                                              \
 template <class T>                                                             \
-Graph<T> desiredName(const Graph<T>& A, const Graph<T>& shape)                 \
+Graph<T> desiredName(Graph<T> A, Graph<T> shape)                             \
 {                                                                              \
     return make_binary<T>(#desiredName, fn, A, shape);                         \
 }                                                                              \
@@ -432,20 +431,20 @@ SHAPE_OP(expandIfSmaller, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& 
 // Shorthand for creating a reduction function graph node
 #define REDUCE_OP(desiredName, derivFn, fn)                                    \
 template <class T>                                                             \
-Graph<T> desiredName(const Graph<T>& A, const Graph<T>& axes)                  \
+Graph<T> desiredName(Graph<T> A, Graph<T> axes)                              \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](const Graph<T>& node, const Graph<T>& delta,                        \
+        [](Graph<T> node, Graph<T> delta,                                    \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_binary<T>(#desiredName, fn, A, axes);                          \
 }                                                                              \
 
 #define REDUCE_OP_SIMPLE(desiredName, derivFn, fn)                             \
 template <class T>                                                             \
-Graph<T> desiredName(const Graph<T>& A)                                        \
+Graph<T> desiredName(Graph<T> A)                                              \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](const Graph<T>& node, const Graph<T>& delta,                        \
+        [](Graph<T> node, Graph<T> delta,                                    \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_unary<T>(#desiredName, fn, A);                                 \
 }                                                                              \
@@ -501,14 +500,14 @@ REDUCE_OP_SIMPLE(reduceMean, dReduceMean, [](Tensor<T>& y, const Tensor<T>& x)
 });
 
 template <class T>
-void dReduceSum(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dReduceSum(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     gradients.push_back(expand(delta, shape(node.getChild(0))));
     if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
-void dReduceProduct(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dReduceProduct(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     // Broadcasting should make sure delta is the right shape
     gradients.push_back((node / node.getChild(0)) * delta);
@@ -516,18 +515,18 @@ void dReduceProduct(const Graph<T>& node, const Graph<T>& delta, std::vector<Gra
 }
 
 template <class T>
-void dReduceMin(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dReduceMin(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     if (node.getNumChildren() == 1)
     {
-        const Graph<T>& x   = node.getChild(0);
+        Graph<T> x         = node.getChild(0);
         Graph<T> indicators = equal(x, node);
         gradients.push_back((indicators / reduceSum(indicators)) * delta);
     }
     else
     {
-        const Graph<T>& x    = node.getChild(0);
-        const Graph<T>& axes = node.getChild(1);
+        Graph<T> x    = node.getChild(0);
+        Graph<T> axes = node.getChild(1);
 
         // Create matrix with 1s wherever the min element appeared, and
         // divide by the number of duplicates so all min elements share blame.
@@ -538,18 +537,18 @@ void dReduceMin(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T
 }
 
 template <class T>
-void dReduceMax(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dReduceMax(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     if (node.getNumChildren() == 1)
     {
-        const Graph<T>& x   = node.getChild(0);
+        Graph<T> x         = node.getChild(0);
         Graph<T> indicators = equal(x, node);
         gradients.push_back((indicators / reduceSum(indicators)) * delta);
     }
     else
     {
-        const Graph<T>& x    = node.getChild(0);
-        const Graph<T>& axes = node.getChild(1);
+        Graph<T> x    = node.getChild(0);
+        Graph<T> axes = node.getChild(1);
 
         // Create matrix with 1s wherever the max element appeared, and
         // divide by the number of duplicates so all max elements share blame.
@@ -560,16 +559,16 @@ void dReduceMax(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T
 }
 
 template <class T>
-void dReduceMean(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dReduceMean(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& x = node.getChild(0);
+    Graph<T> x     = node.getChild(0);
     Graph<T> factor = size(x) / size(node);
     gradients.push_back(expand(delta / factor, shape(x)));
     if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
-Graph<T> argmax(const Graph<T>& node, const size_t dimension)
+Graph<T> argmax(Graph<T> node, const size_t dimension)
 {
     return make_binary<T>("argmax", [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& dim)
     {
@@ -577,11 +576,11 @@ Graph<T> argmax(const Graph<T>& node, const size_t dimension)
         ASSERT(T(dim) >= T{}, "Dimension must be non-negative.");
 
         return argmax(y, A, size_t(T(dim)));
-    }, node, make_constant<T>("d", Tensor<T>::fromScalar(dimension)));
+    }, node, make_constant<T>("dim", Tensor<T>::fromScalar(dimension)));
 }
 
 template <class T>
-Graph<T> argmin(const Graph<T>& node, const size_t dimension)
+Graph<T> argmin(Graph<T> node, const size_t dimension)
 {
     return make_binary<T>("argmin", [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& dim)
     {
@@ -589,13 +588,13 @@ Graph<T> argmin(const Graph<T>& node, const size_t dimension)
         ASSERT(T(dim) >= T{}, "Dimension must be non-negative.");
 
         return argmin(y, A, size_t(T(dim)));
-    }, node, make_constant<T>("d", Tensor<T>::fromScalar(dimension)));
+    }, node, make_constant<T>("dim", Tensor<T>::fromScalar(dimension)));
 }
 
 // -------------------------------------------------------------------------- //
 
 template <class T>
-Graph<T> shape(const Graph<T>& A)
+Graph<T> shape(Graph<T> A)
 {
     registerNonDifferentiable<T>("shape");
     return make_unary<T>("shape", [](Tensor<T>& y, const Tensor<T>& A)
@@ -610,7 +609,7 @@ Graph<T> shape(const Graph<T>& A)
 }
 
 template <class T>
-Graph<T> shape(const Graph<T>& A, size_t index)
+Graph<T> shape(Graph<T> A, size_t index)
 {
     registerNonDifferentiable<T>("shape");
     return make_unary<T>("shape", [index](Tensor<T>& y, const Tensor<T>& A)
@@ -621,7 +620,7 @@ Graph<T> shape(const Graph<T>& A, size_t index)
 }
 
 template <class T>
-Graph<T> rank(const Graph<T>& A)
+Graph<T> rank(Graph<T> A)
 {
     registerNonDifferentiable<T>("rank");
     return make_unary<T>("rank", [](Tensor<T>& y, const Tensor<T>& A)
@@ -632,7 +631,7 @@ Graph<T> rank(const Graph<T>& A)
 }
 
 template <class T>
-Graph<T> size(const Graph<T>& A)
+Graph<T> size(Graph<T> A)
 {
     registerNonDifferentiable<T>("size");
     return make_unary<T>("size", [](Tensor<T>& y, const Tensor<T>& A)
@@ -643,7 +642,7 @@ Graph<T> size(const Graph<T>& A)
 }
 
 template <class T>
-Graph<T> assign(const Graph<T>& target, const Graph<T>& value)
+Graph<T> assign(Graph<T> target, Graph<T> value)
 {
     registerNonDifferentiable<T>("=");
     return make_update<T>("=", [](Tensor<T>& A, const Tensor<T>& B)
@@ -653,7 +652,7 @@ Graph<T> assign(const Graph<T>& target, const Graph<T>& value)
 }
 
 template <class T>
-Graph<T> list(const vector<Graph<T>>& pieces)
+Graph<T> list(vector<Graph<T>>& pieces)
 {
     if (pieces.size() == 1)
         return pieces[0];
@@ -661,7 +660,7 @@ Graph<T> list(const vector<Graph<T>>& pieces)
 }
 
 template <class T>
-Graph<T> addTo(const Graph<T>& target, const Graph<T>& value)
+Graph<T> addTo(Graph<T> target, Graph<T> value)
 {
     registerNonDifferentiable<T>("+=");
     return make_update<T>("+=", [](Tensor<T>& A, const Tensor<T>& B)
@@ -671,7 +670,7 @@ Graph<T> addTo(const Graph<T>& target, const Graph<T>& value)
 }
 
 template <class T>
-Graph<T> subFrom(const Graph<T>& target, const Graph<T>& value)
+Graph<T> subFrom(Graph<T> target, Graph<T> value)
 {
     registerNonDifferentiable<T>("-=");
     return make_update<T>("-=", [](Tensor<T>& A, const Tensor<T>& B)
@@ -681,7 +680,7 @@ Graph<T> subFrom(const Graph<T>& target, const Graph<T>& value)
 }
 
 template <class T>
-Graph<T> multBy(const Graph<T>& target, const Graph<T>& value)
+Graph<T> multBy(Graph<T> target, Graph<T> value)
 {
     registerNonDifferentiable<T>("*=");
     return make_update<T>("*=", [](Tensor<T>& A, const Tensor<T>& B)
@@ -691,7 +690,7 @@ Graph<T> multBy(const Graph<T>& target, const Graph<T>& value)
 }
 
 template <class T>
-Graph<T> divBy(const Graph<T>& target, const Graph<T>& value)
+Graph<T> divBy(Graph<T> target, Graph<T> value)
 {
     registerNonDifferentiable<T>("/=");
     return make_update<T>("/=", [](Tensor<T>& A, const Tensor<T>& B)
@@ -701,7 +700,7 @@ Graph<T> divBy(const Graph<T>& target, const Graph<T>& value)
 }
 
 template <class T>
-Graph<T> axpy(const Graph<T>& y, const Graph<T>& x, const Graph<T>& alpha)
+Graph<T> axpy(Graph<T> y, Graph<T> x, Graph<T> alpha)
 {
     registerNonDifferentiable<T>("axpy");
     return make_update<T>("axpy", [](Tensor<T>& A, const Tensor<T>& B, const Tensor<T>& C)
@@ -711,7 +710,7 @@ Graph<T> axpy(const Graph<T>& y, const Graph<T>& x, const Graph<T>& alpha)
 }
 
 template <class T>
-Graph<T> scale(const Graph<T>& x, const Graph<T>& alpha)
+Graph<T> scale(Graph<T> x, Graph<T> alpha)
 {
     registerNonDifferentiable<T>("scale");
     return make_update<T>("scale", [](Tensor<T>& A, const Tensor<T>& B)
@@ -724,7 +723,7 @@ Graph<T> scale(const Graph<T>& x, const Graph<T>& alpha)
 #undef UNARY_OP
 
 template <class T, class U>
-Graph<T> clip(const Graph<T>& x, const U min, const U max)
+Graph<T> clip(Graph<T> x, const U min, const U max)
 {
     registerNonDifferentiable<T>("clip");
     return make_unary<T>("clip", [min, max](Tensor<T>& y, const Tensor<T>& A)

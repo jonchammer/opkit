@@ -10,13 +10,13 @@ namespace opkit
 // -------------------------- Activation Functions -------------------------- //
 
 template <class T>
-Graph<T> relu(const Graph<T>& x)
+Graph<T> relu(Graph<T> x)
 {
     return max(x, 0);
 }
 
 template <class T>
-void dLogistic(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dLogistic(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     using namespace std;
 
@@ -38,10 +38,10 @@ void dLogistic(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>
 }
 
 template <class T>
-Graph<T> logistic(const Graph<T>& x)
+Graph<T> logistic(Graph<T> x)
 {
     registerDerivative<T>("logistic",
-        [](const Graph<T>& node, const Graph<T>& delta,
+        [](Graph<T> node, Graph<T> delta,
         std::vector<Graph<T>>& gradients) {dLogistic(node, delta, gradients);});
 
     return make_unary<T>("logistic", [](Tensor<T>& y, const Tensor<T>& A)
@@ -54,16 +54,16 @@ Graph<T> logistic(const Graph<T>& x)
 }
 
 template <class T>
-void dSoftplus(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dSoftplus(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     gradients.push_back( (1 / (1 + exp(-node.getChild(0)))) * delta );
 }
 
 template <class T>
-Graph<T> softplus(const Graph<T>& x)
+Graph<T> softplus(Graph<T> x)
 {
     registerDerivative<T>("softplus",
-        [](const Graph<T>& node, const Graph<T>& delta,
+        [](Graph<T> node, Graph<T> delta,
         std::vector<Graph<T>>& gradients) {dSoftplus(node, delta, gradients);});
 
     return make_unary<T>("softplus", [](Tensor<T>& y, const Tensor<T>& A)
@@ -76,17 +76,17 @@ Graph<T> softplus(const Graph<T>& x)
 }
 
 template <class T>
-void dBentIdentity(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dBentIdentity(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& x = node.getChild(0);
+    Graph<T> x = node.getChild(0);
     gradients.push_back( (x / (2 * sqrt(square(x) + 1)) + 1) * delta );
 }
 
 template <class T>
-Graph<T> bentIdentity(const Graph<T>& x)
+Graph<T> bentIdentity(Graph<T> x)
 {
     registerDerivative<T>("bentIdentity",
-        [](const Graph<T>& node, const Graph<T>& delta,
+        [](Graph<T> node, Graph<T> delta,
         std::vector<Graph<T>>& gradients) {dBentIdentity(node, delta, gradients);});
 
     return make_unary<T>("bentIdentity", [](Tensor<T>& y, const Tensor<T>& A)
@@ -99,7 +99,7 @@ Graph<T> bentIdentity(const Graph<T>& x)
 }
 
 template <class T>
-Graph<T> softmax(const Graph<T>& x)
+Graph<T> softmax(Graph<T> x)
 {
     Graph<T> shape = rank(x) - 1;
     Graph<T> temp  = exp(x - reduceMax(x, shape));
@@ -110,7 +110,7 @@ Graph<T> softmax(const Graph<T>& x)
 
 // Simple linear layer: y = x * w + b
 template <class T>
-Graph<T> linear(const Graph<T>& x, const Graph<T>& w, const Graph<T>& b)
+Graph<T> linear(Graph<T> x, Graph<T> w, Graph<T> b)
 {
     return matrixMultiply(x, w) + b;
 }

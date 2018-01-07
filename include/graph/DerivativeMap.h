@@ -16,7 +16,7 @@ class DerivativeMap
 {
 private:
     using FunctionMap = std::unordered_map<std::string,
-        std::function<void(const Graph<T>& node, const Graph<T>& delta,
+        std::function<void(Graph<T> node, Graph<T> delta,
             std::vector<Graph<T>>& gradients)>>;
     FunctionMap mMap;
 

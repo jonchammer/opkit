@@ -18,21 +18,20 @@ namespace opkit
 
 // -------------------------------------------------------------------------- //
 // Forward declarations
-template <class T> Graph<T> matrixMultiply(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> matrixMultiplyT1(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> matrixMultiplyT2(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> innerProduct(const Graph<T>&, const Graph<T>&);
-template <class T> Graph<T> transpose(const Graph<T>&);
-template <class T> Graph<T> l1Norm(const Graph<T>&);
-template <class T> Graph<T> l2Norm(const Graph<T>&);
+template <class T> Graph<T> matrixMultiply(Graph<T>, Graph<T>);
+template <class T> Graph<T> matrixMultiplyT1(Graph<T>, Graph<T>);
+template <class T> Graph<T> matrixMultiplyT2(Graph<T>, Graph<T>);
+template <class T> Graph<T> innerProduct(Graph<T>, Graph<T>);
+template <class T> Graph<T> transpose(Graph<T>);
+template <class T> Graph<T> l1Norm(Graph<T>);
+template <class T> Graph<T> l2Norm(Graph<T>);
 
 // -------------------------------------------------------------------------- //
 // Forward declarations for the derivatives
 
 #define FD_DERIV(name)                                                         \
 template <class T>                                                             \
-void name(const Graph<T>& node, const Graph<T>& delta,                         \
-    std::vector<Graph<T>>& gradients);                                         \
+void name(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients);  \
 
 FD_DERIV(dMatrixMultiply)
 FD_DERIV(dMatrixMultiplyT1)
@@ -46,10 +45,10 @@ FD_DERIV(dInnerProduct)
 // Shorthand for creating a binary function graph node
 #define BINARY_OP(desiredName, derivFn, fn)                                    \
 template <class T>                                                             \
-Graph<T> desiredName(const Graph<T>& A, const Graph<T>& B)                     \
+Graph<T> desiredName(Graph<T> A, Graph<T> B)                                 \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](const Graph<T>& node, const Graph<T>& delta,                        \
+        [](Graph<T> node, Graph<T> delta,                                    \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_binary<T>(#desiredName, fn, A, B);                             \
 }                                                                              \
@@ -79,10 +78,10 @@ BINARY_OP(innerProduct, dInnerProduct, [](Tensor<T>& y, const Tensor<T>& A, cons
 // -------------------------------------------------------------------------- //
 
 template <class T>
-void dMatrixMultiply(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dMatrixMultiply(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     // NOTE: Assumes 'left' and 'right' are NOT already transposed
     gradients.push_back(matrixMultiplyT2(delta, right));
@@ -90,10 +89,10 @@ void dMatrixMultiply(const Graph<T>& node, const Graph<T>& delta, std::vector<Gr
 }
 
 template <class T>
-void dMatrixMultiplyT1(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dMatrixMultiplyT1(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     // NOTE: Assumes 'left' is transposed and 'right' is not
     gradients.push_back(matrixMultiplyT1(right, delta));
@@ -101,10 +100,10 @@ void dMatrixMultiplyT1(const Graph<T>& node, const Graph<T>& delta, std::vector<
 }
 
 template <class T>
-void dMatrixMultiplyT2(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dMatrixMultiplyT2(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     // NOTE: Assumes 'left' is not transposed and 'right' is
     gradients.push_back(matrixMultiply(delta, right));
@@ -112,10 +111,10 @@ void dMatrixMultiplyT2(const Graph<T>& node, const Graph<T>& delta, std::vector<
 }
 
 template <class T>
-void dInnerProduct(const Graph<T>& node, const Graph<T>& delta, std::vector<Graph<T>>& gradients)
+void dInnerProduct(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    const Graph<T>& left  = node.getChild(0);
-    const Graph<T>& right = node.getChild(1);
+    Graph<T> left  = node.getChild(0);
+    Graph<T> right = node.getChild(1);
 
     gradients.push_back(right * expand(delta, shape(left)));
     gradients.push_back(left  * expand(delta, shape(right)));
@@ -126,7 +125,7 @@ void dInnerProduct(const Graph<T>& node, const Graph<T>& delta, std::vector<Grap
 // Shorthand for creating a unary function graph node
 #define UNARY_OP(desiredName, fn)                                              \
 template <class T>                                                             \
-Graph<T> desiredName(const Graph<T>& A)                                        \
+Graph<T> desiredName(Graph<T> A)                                              \
 {                                                                              \
     return make_unary<T>(#desiredName, fn, A);                                 \
 }                                                                              \

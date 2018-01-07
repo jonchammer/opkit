@@ -51,6 +51,7 @@ static inline void print_stacktrace(FILE *out = stderr, unsigned int max_frames 
     // address of this function.
     for (int i = 1; i < addrlen; i++)
     {
+        fprintf(out, "%d. ", i);
         char *begin_name = 0, *begin_offset = 0, *end_offset = 0;
 
         // find parentheses and +address offset surrounding the mangled name:
