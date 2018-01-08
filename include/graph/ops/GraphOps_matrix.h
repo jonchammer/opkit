@@ -2,7 +2,7 @@
 #define GRAPH_OPS_MATRIX_H
 
 #include <functional>
-#include "graph/GraphAPI.h"
+#include "graph/core/GraphAPI.h"
 #include "graph/DerivativeMap.h"
 #include "graph/ops/GraphOps_core.h"
 #include "tensor/TensorMath.h"

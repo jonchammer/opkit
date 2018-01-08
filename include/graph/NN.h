@@ -1,7 +1,7 @@
 #ifndef NN_H
 #define NN_H
 
-#include "graph/GraphAPI.h"
+#include "graph/core/GraphAPI.h"
 #include "graph/ops/GraphOps_all.h"
 
 namespace opkit

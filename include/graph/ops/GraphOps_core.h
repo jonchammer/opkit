@@ -2,7 +2,7 @@
 #define GRAPH_OPS_CORE_H
 
 #include <functional>
-#include "graph/GraphAPI.h"
+#include "graph/core/GraphAPI.h"
 #include "graph/DerivativeMap.h"
 #include "tensor/TensorMath.h"
 
@@ -76,7 +76,7 @@ template <class T, class U> Graph<T> clip(Graph<T>, const U min, const U max);
 
 #define FD_DERIV(name)                                                         \
 template <class T>                                                             \
-void name(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients);  \
+void name(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients);    \
 
 FD_DERIV(dSqrt)
 FD_DERIV(dAbs)
@@ -104,10 +104,10 @@ FD_DERIV(dScalarProduct)
 // element of the incoming tensor.
 #define ELEMENT_WISE_OP(desiredName, derivFn, fn)                              \
 template <class T>                                                             \
-Graph<T> desiredName(Graph<T> arg)                                            \
+Graph<T> desiredName(Graph<T> arg)                                             \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](Graph<T> node, Graph<T> delta,                                    \
+        [](Graph<T> node, Graph<T> delta,                                      \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_unary<T>(#desiredName, [](Tensor<T>& y, const Tensor<T>& x)    \
     {                                                                          \
@@ -185,10 +185,10 @@ void dNeg(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 // Shorthand for creating a binary function graph node
 #define BINARY_OP(desiredName, derivFn, fn)                                    \
 template <class T>                                                             \
-Graph<T> desiredName(Graph<T> A, Graph<T> B)                                 \
+Graph<T> desiredName(Graph<T> A, Graph<T> B)                                   \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](Graph<T> node, Graph<T> delta,                                    \
+        [](Graph<T> node, Graph<T> delta,                                      \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_binary<T>(#desiredName, fn, A, B);                             \
 }                                                                              \
@@ -303,12 +303,13 @@ void dMin(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 // -------------------------------------------------------------------------- //
 #define SCALAR_OP_RIGHT(fnName, fn, derivFn)                                   \
 template <class T, class U>                                                    \
-Graph<T> fnName(Graph<T> arg, U scalar)                                       \
+Graph<T> fnName(Graph<T> arg, U scalar)                                        \
 {                                                                              \
     registerDerivative<T>(#fnName,                                             \
-        [](Graph<T> node, Graph<T> delta,                                    \
+        [](Graph<T> node, Graph<T> delta,                                      \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
-    return make_binary<T>(#fnName, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)  \
+    return make_binary<T>(#fnName,                                             \
+        [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)               \
     {                                                                          \
         return fn(y, A, B);                                                    \
     }, arg,                                                                    \
@@ -317,12 +318,13 @@ Graph<T> fnName(Graph<T> arg, U scalar)                                       \
 
 #define SCALAR_OP_LEFT(fnName, fn, derivFn)                                    \
 template <class T, class U>                                                    \
-Graph<T> fnName(U scalar, Graph<T> arg)                                       \
+Graph<T> fnName(U scalar, Graph<T> arg)                                        \
 {                                                                              \
     registerDerivative<T>(#fnName,                                             \
-        [](Graph<T> node, Graph<T> delta,                                    \
+        [](Graph<T> node, Graph<T> delta,                                      \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
-    return make_binary<T>(#fnName, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)  \
+    return make_binary<T>(#fnName,                                             \
+        [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)               \
     {                                                                          \
         return fn(y, A, B);                                                    \
     },                                                                         \
@@ -349,7 +351,7 @@ SCALAR_OP_RIGHT(min, min, dMin);
 
 #define CONTROL_OP(desiredName, fn)                                            \
 template <class T>                                                             \
-Graph<T> desiredName(Graph<T> A, Graph<T> B)                                 \
+Graph<T> desiredName(Graph<T> A, Graph<T> B)                                   \
 {                                                                              \
     return make_binary<T>(#desiredName, fn, A, B);                             \
 }                                                                              \
@@ -388,7 +390,7 @@ CONTROL_OP(lessEqual, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 
 #define SHAPE_OP(desiredName, fn)                                              \
 template <class T>                                                             \
-Graph<T> desiredName(Graph<T> A, Graph<T> shape)                             \
+Graph<T> desiredName(Graph<T> A, Graph<T> shape)                               \
 {                                                                              \
     return make_binary<T>(#desiredName, fn, A, shape);                         \
 }                                                                              \
@@ -410,18 +412,16 @@ SHAPE_OP(reduceMaxTo, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shap
     return reduceMaxTo(y, a, shape);
 });
 
-SHAPE_OP(expand, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shape)
+SHAPE_OP(expand, [](const Tensor<T>& a, const Tensor<T>& shape)
 {
     vector<T> shapeVec(shape.begin(), shape.end());
-    Tensor<T> res = expand(a, shapeVec.begin(), shapeVec.end());
-    res.copy(y);
+    return expand(a, shapeVec.begin(), shapeVec.end());
 });
 
-SHAPE_OP(expandIfSmaller, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& shape)
+SHAPE_OP(expandIfSmaller, [](const Tensor<T>& a, const Tensor<T>& shape)
 {
     vector<T> shapeVec(shape.begin(), shape.end());
-    Tensor<T> res = expandIfSmaller(a, shapeVec.begin(), shapeVec.end());
-    res.copy(y);
+    return expandIfSmaller(a, shapeVec.begin(), shapeVec.end());
 });
 
 #undef SHAPE_OP
@@ -431,20 +431,20 @@ SHAPE_OP(expandIfSmaller, [](Tensor<T>& y, const Tensor<T>& a, const Tensor<T>& 
 // Shorthand for creating a reduction function graph node
 #define REDUCE_OP(desiredName, derivFn, fn)                                    \
 template <class T>                                                             \
-Graph<T> desiredName(Graph<T> A, Graph<T> axes)                              \
+Graph<T> desiredName(Graph<T> A, Graph<T> axes)                                \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](Graph<T> node, Graph<T> delta,                                    \
+        [](Graph<T> node, Graph<T> delta,                                      \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_binary<T>(#desiredName, fn, A, axes);                          \
 }                                                                              \
 
 #define REDUCE_OP_SIMPLE(desiredName, derivFn, fn)                             \
 template <class T>                                                             \
-Graph<T> desiredName(Graph<T> A)                                              \
+Graph<T> desiredName(Graph<T> A)                                               \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](Graph<T> node, Graph<T> delta,                                    \
+        [](Graph<T> node, Graph<T> delta,                                      \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_unary<T>(#desiredName, fn, A);                                 \
 }                                                                              \
@@ -519,7 +519,7 @@ void dReduceMin(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     if (node.getNumParents() == 1)
     {
-        Graph<T> x         = node.getParent(0);
+        Graph<T> x          = node.getParent(0);
         Graph<T> indicators = equal(x, node);
         gradients.push_back((indicators / reduceSum(indicators)) * delta);
     }
@@ -541,7 +541,7 @@ void dReduceMax(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     if (node.getNumParents() == 1)
     {
-        Graph<T> x         = node.getParent(0);
+        Graph<T> x          = node.getParent(0);
         Graph<T> indicators = equal(x, node);
         gradients.push_back((indicators / reduceSum(indicators)) * delta);
     }
@@ -561,7 +561,7 @@ void dReduceMax(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dReduceMean(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> x     = node.getParent(0);
+    Graph<T> x      = node.getParent(0);
     Graph<T> factor = size(x) / size(node);
     gradients.push_back(expand(delta / factor, shape(x)));
     if (node.getNumParents() == 2) gradients.push_back(make_constant<T>(0));

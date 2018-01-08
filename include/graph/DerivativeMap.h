@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
-#include "graph/GraphAPI.h"
+#include "graph/core/GraphAPI.h"
 
 namespace opkit
 {

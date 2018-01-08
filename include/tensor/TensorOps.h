@@ -401,7 +401,6 @@ Tensor<T> permute(const Tensor<T>& tensor, initializer_list<size_t> indices)
     return permute(tensor, indices.begin(), indices.end());
 }
 
-
 // Returns a new view of the given tensor where singleton dimensions (either
 // implicitly or explicitly defined) are effectively duplicated by setting
 // the corresponding strides to 0.

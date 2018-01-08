@@ -2,7 +2,7 @@
 #define COST_FUNCTIONS_H
 
 #include <vector>
-#include "graph/GraphAPI.h"
+#include "graph/core/GraphAPI.h"
 #include "graph/ops/GraphOps_all.h"
 #include "tensor/TensorMath.h"
 

@@ -148,6 +148,39 @@ bool loadTensorARFF(const std::string& filename, Tensor<T>& tensor)
     return true;
 }
 
+template <class T>
+Tensor<T> convertColumnToOneHot(const Tensor<T>& input, const size_t column)
+{
+    ASSERT(input.rank() == 2, "Only 2D matrices are currently supported.");
+    const size_t rows = input.shape(0);
+    const size_t cols = input.shape(1);
+
+    // Calculate the number of unique values in this column
+    std::set<double> elements;
+    for (size_t r = 0; r < rows; ++r)
+        elements.insert(input.at({r, column}));
+
+    // Create the resulting tensor
+    Tensor<T> result({rows, cols + elements.size() - 1});
+    result.fill(T{});
+    for (size_t r = 0; r < rows; ++r)
+    {
+        // Copy the data before the column
+        size_t c = 0;
+        for (; c < column; ++c)
+            result.at({r, c}) = input.at({r, c});
+
+        // Convert the column itself
+        size_t val = input.at({r, column});
+        result.at({r, c + val}) = T{1};
+
+        // Copy the data after the column
+        for(++c; c < cols; ++c)
+            result.at({r, c + elements.size()}) = input.at({r, c});
+    }
+    return result;
+}
+
 }
 
 #endif

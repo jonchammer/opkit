@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <queue>
 #include "tensor/Tensor.h"
-#include "graph/GraphAPI.h"
+#include "graph/core/GraphAPI.h"
 #include "graph/GraphSimplifier.h"
 #include "graph/ops/GraphOps_all.h"
 

@@ -3,7 +3,7 @@
 
 #include "tensor/Tensor.h"
 #include "tensor/TensorMath.h"
-#include "graph/GraphAPI.h"
+#include "graph/core/GraphAPI.h"
 #include "graph/ops/GraphOps_all.h"
 
 // This file contains a simplify() function that should be used to eliminate
@@ -30,7 +30,7 @@ Graph<T> simplifyUnary(Graph<T> root)
     // ...
 
     // Only allocate a new graph node if we changed something.
-    return (c1 == root.getParent(0)) ? root : copyUnary(root, c1);
+    return (c1 == root.getParent(0)) ? root : copy_unary(root, c1);
 }
 
 template <class T>
@@ -210,7 +210,7 @@ Graph<T> simplifyBinary(Graph<T> root)
 
     // Only allocate a new graph node if we changed something.
     return (c1 == root.getParent(0) && c2 == root.getParent(1)) ?
-        root : copyBinary(root, c1, c2);
+        root : copy_binary(root, c1, c2);
 }
 
 // Performs simplification for lists.
@@ -229,7 +229,7 @@ Graph<T> simplifyUpdate(Graph<T> root)
 {
     Graph<T> simplifiedValue = simplify(root.getParent(1));
     return (simplifiedValue == root.getParent(1)) ? root :
-        copyUpdate(root, root.getParent(0), simplifiedValue);
+        copy_update(root, root.getParent(0), simplifiedValue);
 }
 
 // Performs simplification for updates with arguments
@@ -241,7 +241,7 @@ Graph<T> simplifyUpdateArg(Graph<T> root)
 
     if (simplifiedValue == root.getParent(1) && simplifiedArg == root.getParent(2))
         return root;
-    else return copyUpdate(root, root.getParent(0), simplifiedValue, simplifiedArg);
+    else return copy_update(root, root.getParent(0), simplifiedValue, simplifiedArg);
 }
 
 // Performs simplification for all graphs.
@@ -254,7 +254,8 @@ Graph<T> simplify(Graph<T> root)
         case Graph<T>::Type::CONSTANT:   return root;
         case Graph<T>::Type::VAR:        return root;
         case Graph<T>::Type::UNARY:      return simplifyUnary(root);
-        case Graph<T>::Type::BINARY:     return simplifyBinary(root);
+        case Graph<T>::Type::BINARY_IN:
+        case Graph<T>::Type::BINARY_OUT: return simplifyBinary(root);
         case Graph<T>::Type::LIST:       return simplifyList(root);
         case Graph<T>::Type::UPDATE:     return simplifyUpdate(root);
         case Graph<T>::Type::UPDATE_ARG: return simplifyUpdateArg(root);

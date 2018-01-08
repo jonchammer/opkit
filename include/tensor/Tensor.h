@@ -535,6 +535,31 @@ void Tensor<T>::copy(Tensor<U>& other) const
         other.mStride.assign(mStride.begin(), mStride.end());
         other.mNumElements = mNumElements;
     }
+    else if (rank() == 2)
+    {
+        const T* src  = mStorage.begin();
+              T* dest = other.mStorage.begin();
+
+        const size_t width   = shape(1);
+        const size_t height  = shape(0);
+        const size_t xStride = stride(1);
+        const size_t yStride = stride(0);
+
+        for (size_t y = 0; y < height; ++y)
+        {
+            const T* row = src;
+            for (size_t x = 0; x < width; ++x)
+            {
+                *dest++ = U(*row);
+                row += xStride;
+            }
+            src += yStride;
+        }
+
+        other.mShape.assign(mShape.begin(), mShape.end());
+        calculateOptimalStride(other.mStride, other.mShape);
+        other.mNumElements = mNumElements;
+    }
     else
     {
         size_t i = 0;
