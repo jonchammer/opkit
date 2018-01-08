@@ -1,7 +1,7 @@
 #ifndef OPTIMIZERS_H
 #define OPTIMIZERS_H
 
-#include "graph/Graph.h"
+#include "graph/GraphAPI.h"
 #include "graph/Gradients.h"
 #include "graph/ops/GraphOps_all.h"
 

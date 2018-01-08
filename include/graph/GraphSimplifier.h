@@ -3,7 +3,7 @@
 
 #include "tensor/Tensor.h"
 #include "tensor/TensorMath.h"
-#include "graph/Graph.h"
+#include "graph/GraphAPI.h"
 #include "graph/ops/GraphOps_all.h"
 
 // This file contains a simplify() function that should be used to eliminate
@@ -24,13 +24,13 @@ Graph<T> simplify(Graph<T> root);
 template <class T>
 Graph<T> simplifyUnary(Graph<T> root)
 {
-    Graph<T> c1 = simplify(root.getChild(0));
+    Graph<T> c1 = simplify(root.getParent(0));
 
     // Optionally, Simplify the root
     // ...
 
     // Only allocate a new graph node if we changed something.
-    return (c1 == root.getChild(0)) ? root : root.copyUnary(c1);
+    return (c1 == root.getParent(0)) ? root : copyUnary(root, c1);
 }
 
 template <class T>
@@ -120,13 +120,13 @@ bool simplifyMultiplication(Graph<T> c1, Graph<T> c2, Graph<T> res)
     // expand(1, x) * y = expandIfSmaller(y, x)
     if (c1.name() == "expand")
     {
-        Graph<T> expandC1 = c1.getChild(0);
+        Graph<T> expandC1 = c1.getParent(0);
         if (expandC1.type() == Graph<T>::Type::CONSTANT)
         {
             const Constant<T> constant = (const Constant<T>&) expandC1.node();
             if (constant.value().size() == 1 && T(constant.value()) == 1)
             {
-                res = expandIfSmaller(c2, c1.getChild(1));
+                res = expandIfSmaller(c2, c1.getParent(1));
                 return true;
             }
         }
@@ -135,13 +135,13 @@ bool simplifyMultiplication(Graph<T> c1, Graph<T> c2, Graph<T> res)
     // y * expand(1, x) = expandIfSmaller(y, x)
     if (c2.name() == "expand")
     {
-        Graph<T> expandC2 = c2.getChild(0);
+        Graph<T> expandC2 = c2.getParent(0);
         if (expandC2.type() == Graph<T>::Type::CONSTANT)
         {
             const Constant<T> constant = (const Constant<T>&) expandC2.node();
             if (constant.value().size() == 1 && T(constant.value()) == 1)
             {
-                res = expandIfSmaller(c1, c2.getChild(1));
+                res = expandIfSmaller(c1, c2.getParent(1));
                 return true;
             }
         }
@@ -180,8 +180,8 @@ bool simplifyAddition(Graph<T> c1, Graph<T> c2, Graph<T> res)
 template <class T>
 Graph<T> simplifyBinary(Graph<T> root)
 {
-    Graph<T> c1 = simplify(root.getChild(0));
-    Graph<T> c2 = simplify(root.getChild(1));
+    Graph<T> c1 = simplify(root.getParent(0));
+    Graph<T> c2 = simplify(root.getParent(1));
 
     // Apply any contextual simplifications
     if (root.name() == "matrixMultiply")
@@ -209,39 +209,39 @@ Graph<T> simplifyBinary(Graph<T> root)
     // TODO: operator-, neg
 
     // Only allocate a new graph node if we changed something.
-    return (c1 == root.getChild(0) && c2 == root.getChild(1)) ?
-        root : root.copyBinary(c1, c2);
+    return (c1 == root.getParent(0) && c2 == root.getParent(1)) ?
+        root : copyBinary(root, c1, c2);
 }
 
 // Performs simplification for lists.
 template <class T>
 Graph<T> simplifyList(Graph<T> root)
 {
-    std::vector<Graph<T>> children;
-    for (size_t i = 0; i < root.getNumChildren(); ++i)
-        children.emplace_back(simplify(root.getChild(i)));
-    return make_list<T>(children);
+    std::vector<Graph<T>> parents;
+    for (size_t i = 0; i < root.getNumParents(); ++i)
+        parents.emplace_back(simplify(root.getParent(i)));
+    return make_list<T>(parents);
 }
 
 // Performs simplification for updates.
 template <class T>
 Graph<T> simplifyUpdate(Graph<T> root)
 {
-    Graph<T> simplifiedValue = simplify(root.getChild(1));
-    return (simplifiedValue == root.getChild(1)) ? root :
-        root.copyUpdate(root.getChild(0), simplifiedValue);
+    Graph<T> simplifiedValue = simplify(root.getParent(1));
+    return (simplifiedValue == root.getParent(1)) ? root :
+        copyUpdate(root, root.getParent(0), simplifiedValue);
 }
 
 // Performs simplification for updates with arguments
 template <class T>
 Graph<T> simplifyUpdateArg(Graph<T> root)
 {
-    Graph<T> simplifiedValue = simplify(root.getChild(1));
-    Graph<T> simplifiedArg   = simplify(root.getChild(2));
+    Graph<T> simplifiedValue = simplify(root.getParent(1));
+    Graph<T> simplifiedArg   = simplify(root.getParent(2));
 
-    if (simplifiedValue == root.getChild(1) && simplifiedArg == root.getChild(2))
+    if (simplifiedValue == root.getParent(1) && simplifiedArg == root.getParent(2))
         return root;
-    else return root.copyUpdate(root.getChild(0), simplifiedValue, simplifiedArg);
+    else return copyUpdate(root, root.getParent(0), simplifiedValue, simplifiedArg);
 }
 
 // Performs simplification for all graphs.

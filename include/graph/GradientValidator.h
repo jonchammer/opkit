@@ -1,7 +1,7 @@
 #ifndef GRADIENT_VALIDATOR_H
 #define GRADIENT_VALIDATOR_H
 
-#include "graph/Graph.h"
+#include "graph/GraphAPI.h"
 #include "graph/Gradients.h"
 #include "tensor/Tensor.h"
 

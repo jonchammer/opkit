@@ -1,7 +1,7 @@
 #ifndef NN_H
 #define NN_H
 
-#include "graph/Graph.h"
+#include "graph/GraphAPI.h"
 #include "graph/ops/GraphOps_all.h"
 
 namespace opkit
@@ -56,7 +56,7 @@ Graph<T> logistic(Graph<T> x)
 template <class T>
 void dSoftplus(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back( (1 / (1 + exp(-node.getChild(0)))) * delta );
+    gradients.push_back( (1 / (1 + exp(-node.getParent(0)))) * delta );
 }
 
 template <class T>
@@ -78,7 +78,7 @@ Graph<T> softplus(Graph<T> x)
 template <class T>
 void dBentIdentity(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> x = node.getChild(0);
+    Graph<T> x = node.getParent(0);
     gradients.push_back( (x / (2 * sqrt(square(x) + 1)) + 1) * delta );
 }
 

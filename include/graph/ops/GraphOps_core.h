@@ -2,7 +2,7 @@
 #define GRAPH_OPS_CORE_H
 
 #include <functional>
-#include "graph/Graph.h"
+#include "graph/GraphAPI.h"
 #include "graph/DerivativeMap.h"
 #include "tensor/TensorMath.h"
 
@@ -148,7 +148,7 @@ void dSqrt(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dAbs(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back((node.getChild(0) / node) * delta);
+    gradients.push_back((node.getParent(0) / node) * delta);
 }
 
 template <class T>
@@ -171,7 +171,7 @@ template <class T>
 void dSquare(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     // dy/dx [a^2] = dy/da * 2a
-    gradients.push_back(delta * (node.getChild(0) * 2));
+    gradients.push_back(delta * (node.getParent(0) * 2));
 }
 
 template <class T>
@@ -229,8 +229,8 @@ BINARY_OP(min, dMin, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 template <class T>
 void dAdd(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     gradients.push_back(reduceSumTo(delta, shape(left)));
     gradients.push_back(reduceSumTo(delta, shape(right)));
@@ -239,8 +239,8 @@ void dAdd(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dSubtract(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     gradients.push_back(reduceSumTo(delta, shape(left)));
     gradients.push_back(reduceSumTo(-delta, shape(right)));
@@ -249,8 +249,8 @@ void dSubtract(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dMultiply(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     gradients.push_back(reduceSumTo(right * delta, shape(left)));
     gradients.push_back(reduceSumTo(left * delta, shape(right)));
@@ -259,8 +259,8 @@ void dMultiply(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dDivide(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     gradients.push_back(reduceSumTo((1 / right) * delta, shape(left)));
     gradients.push_back(reduceSumTo((-left / square(right)) * delta, shape(right)));
@@ -269,8 +269,8 @@ void dDivide(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dMax(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     // Create matrix with 1s wherever the max element appeared in both tensors.
     // When both tensors have the same value, we divide the gradient between the
@@ -286,8 +286,8 @@ void dMax(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dMin(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     // Create matrix with 1s wherever the max element appeared in both tensors.
     // When both tensors have the same value, we divide the gradient between the
@@ -502,31 +502,31 @@ REDUCE_OP_SIMPLE(reduceMean, dReduceMean, [](Tensor<T>& y, const Tensor<T>& x)
 template <class T>
 void dReduceSum(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    gradients.push_back(expand(delta, shape(node.getChild(0))));
-    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>(0));
+    gradients.push_back(expand(delta, shape(node.getParent(0))));
+    if (node.getNumParents() == 2) gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
 void dReduceProduct(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
     // Broadcasting should make sure delta is the right shape
-    gradients.push_back((node / node.getChild(0)) * delta);
-    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>(0));
+    gradients.push_back((node / node.getParent(0)) * delta);
+    if (node.getNumParents() == 2) gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>
 void dReduceMin(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    if (node.getNumChildren() == 1)
+    if (node.getNumParents() == 1)
     {
-        Graph<T> x         = node.getChild(0);
+        Graph<T> x         = node.getParent(0);
         Graph<T> indicators = equal(x, node);
         gradients.push_back((indicators / reduceSum(indicators)) * delta);
     }
     else
     {
-        Graph<T> x    = node.getChild(0);
-        Graph<T> axes = node.getChild(1);
+        Graph<T> x    = node.getParent(0);
+        Graph<T> axes = node.getParent(1);
 
         // Create matrix with 1s wherever the min element appeared, and
         // divide by the number of duplicates so all min elements share blame.
@@ -539,16 +539,16 @@ void dReduceMin(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dReduceMax(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    if (node.getNumChildren() == 1)
+    if (node.getNumParents() == 1)
     {
-        Graph<T> x         = node.getChild(0);
+        Graph<T> x         = node.getParent(0);
         Graph<T> indicators = equal(x, node);
         gradients.push_back((indicators / reduceSum(indicators)) * delta);
     }
     else
     {
-        Graph<T> x    = node.getChild(0);
-        Graph<T> axes = node.getChild(1);
+        Graph<T> x    = node.getParent(0);
+        Graph<T> axes = node.getParent(1);
 
         // Create matrix with 1s wherever the max element appeared, and
         // divide by the number of duplicates so all max elements share blame.
@@ -561,10 +561,10 @@ void dReduceMax(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 template <class T>
 void dReduceMean(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> x     = node.getChild(0);
+    Graph<T> x     = node.getParent(0);
     Graph<T> factor = size(x) / size(node);
     gradients.push_back(expand(delta / factor, shape(x)));
-    if (node.getNumChildren() == 2) gradients.push_back(make_constant<T>(0));
+    if (node.getNumParents() == 2) gradients.push_back(make_constant<T>(0));
 }
 
 template <class T>

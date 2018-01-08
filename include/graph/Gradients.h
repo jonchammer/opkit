@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <queue>
 #include "tensor/Tensor.h"
-#include "graph/Graph.h"
+#include "graph/GraphAPI.h"
 #include "graph/GraphSimplifier.h"
 #include "graph/ops/GraphOps_all.h"
 
@@ -56,7 +56,7 @@ std::unordered_map<std::string, Graph<T>> gradients(Graph<T> node,
         }
 
         // When we see a function, we calculate its gradient by calling the
-        // corresponding derivative function. We then push that node's children
+        // corresponding derivative function. We then push that node's parents
         // and their current gradients into the queues so the process can
         // continue recursively.
         else if (cur.type() != Graph<T>::Type::CONSTANT)
@@ -66,9 +66,9 @@ std::unordered_map<std::string, Graph<T>> gradients(Graph<T> node,
             grads.clear();
             if (derivativeMap.call(cur.name(), cur, delta, grads))
             {
-                for (size_t i = 0; i < cur.getNumChildren(); ++i)
+                for (size_t i = 0; i < cur.getNumParents(); ++i)
                 {
-                    nodeQueue.push(cur.getChild(i));
+                    nodeQueue.push(cur.getParent(i));
                     gradQueue.push(grads[i]);
                 }
             }

@@ -2,7 +2,7 @@
 #define GRAPH_OPS_MATRIX_H
 
 #include <functional>
-#include "graph/Graph.h"
+#include "graph/GraphAPI.h"
 #include "graph/DerivativeMap.h"
 #include "graph/ops/GraphOps_core.h"
 #include "tensor/TensorMath.h"
@@ -80,8 +80,8 @@ BINARY_OP(innerProduct, dInnerProduct, [](Tensor<T>& y, const Tensor<T>& A, cons
 template <class T>
 void dMatrixMultiply(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     // NOTE: Assumes 'left' and 'right' are NOT already transposed
     gradients.push_back(matrixMultiplyT2(delta, right));
@@ -91,8 +91,8 @@ void dMatrixMultiply(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradi
 template <class T>
 void dMatrixMultiplyT1(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     // NOTE: Assumes 'left' is transposed and 'right' is not
     gradients.push_back(matrixMultiplyT1(right, delta));
@@ -102,8 +102,8 @@ void dMatrixMultiplyT1(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gra
 template <class T>
 void dMatrixMultiplyT2(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     // NOTE: Assumes 'left' is not transposed and 'right' is
     gradients.push_back(matrixMultiply(delta, right));
@@ -113,8 +113,8 @@ void dMatrixMultiplyT2(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gra
 template <class T>
 void dInnerProduct(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> left  = node.getChild(0);
-    Graph<T> right = node.getChild(1);
+    Graph<T> left  = node.getParent(0);
+    Graph<T> right = node.getParent(1);
 
     gradients.push_back(right * expand(delta, shape(left)));
     gradients.push_back(left  * expand(delta, shape(right)));

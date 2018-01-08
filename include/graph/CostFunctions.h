@@ -2,7 +2,7 @@
 #define COST_FUNCTIONS_H
 
 #include <vector>
-#include "graph/Graph.h"
+#include "graph/GraphAPI.h"
 #include "graph/ops/GraphOps_all.h"
 #include "tensor/TensorMath.h"
 
@@ -107,8 +107,8 @@ Graph<T> crossEntropy(Graph<T> model, Graph<T> labels)
 template <class T>
 void dSoftmaxCrossEntropyFast(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> y      = softmax(node.getChild(0));
-    Graph<T> labels = node.getChild(1);
+    Graph<T> y      = softmax(node.getParent(0));
+    Graph<T> labels = node.getParent(1);
 
     auto op = make_binary<T>("softmaxEmbeddingOp",
     [](Tensor<T>& res, const Tensor<T>& model, const Tensor<T>& label)
@@ -128,8 +128,8 @@ void dSoftmaxCrossEntropyFast(Graph<T> node, Graph<T> delta, std::vector<Graph<T
 template <class T>
 void dSoftmaxCrossEntropySlow(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
 {
-    Graph<T> y      = softmax(node.getChild(0));
-    Graph<T> labels = node.getChild(1);
+    Graph<T> y      = softmax(node.getParent(0));
+    Graph<T> labels = node.getParent(1);
 
     gradients.push_back( (y - labels) * delta );
     gradients.push_back( make_constant<T>(0) );

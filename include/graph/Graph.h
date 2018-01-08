@@ -66,48 +66,6 @@ public:
     Graph<T>& operator=(const Graph<T>& rhs) = default;
     Graph<T>& operator=(Graph<T>&& rhs)      = default;
 
-    // Creates a new graph node that performs the same task as 'unary', with a
-    // different child element.
-    Graph<T> copyUnary(Graph<T> child) const
-    {
-        auto fn = ((UnaryFunction<T>&)(*mNode)).getFunction();
-        Graph<T> res(new UnaryFunction<T>(name(), fn, child), UNARY);
-        child.addParent(res);
-        return res;
-    }
-
-    // Creates a new graph node that performs the same task as 'binary', with
-    // different child elements.
-    Graph<T> copyBinary(Graph<T> child1, Graph<T> child2) const
-    {
-        auto fn = ((BinaryFunction<T>&)(*mNode)).getFunction();
-        Graph<T> res(new BinaryFunction<T>(name(), fn, child1, child2), BINARY);
-        child1.addParent(res);
-        child2.addParent(res);
-        return res;
-    }
-
-    // Creates a new graph node that performs the same task as this update rule,
-    // with different child elements
-    Graph<T> copyUpdate(Graph<T> target, Graph<T> value) const
-    {
-        auto fn = ((UpdateNode<T>&)(*mNode)).getFunction();
-        Graph<T> res(new UpdateNode<T>(name(), fn, target, value), UPDATE);
-        target.addParent(res);
-        value.addParent(res);
-        return res;
-    }
-
-    Graph<T> copyUpdate(Graph<T> target, Graph<T> value, Graph<T> arg) const
-    {
-        auto fn = ((UpdateNodeArg<T>&)(*mNode)).getFunction();
-        Graph<T> res(new UpdateNodeArg<T>(name(), fn, target, value, arg), UPDATE_ARG);
-        target.addParent(res);
-        value.addParent(res);
-        arg.addParent(res);
-        return res;
-    }
-
     // Comparison operators
     bool operator==(const Graph<T>& other) const
     {
@@ -118,24 +76,43 @@ public:
         return !(*this == other);
     }
 
-    // Called during graph creation - not part of the public API
-    void addParent(const Graph<T>& parent)
+    // Add a new node dependency. 'child' relies on the output of this node.
+    void addChild(const Graph<T>& child)
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
-        mNode->addParent(parent);
+        mNode->addChild(child);
+    }
+
+    // Many graph nodes cache their most recent calculations to improve
+    // performance. This function invalidates the cache of this graph node as
+    // well as the caches of any node that depend on this one (children).
+    void invalidate()
+    {
+        static vector<Graph<T>*> stack;
+        stack.push_back(this);
+
+        while (!stack.empty())
+        {
+            Graph<T>* cur = stack.back();
+            stack.pop_back();
+
+            cur->node().invalidate();
+            for (size_t i = 0; i < cur->getNumChildren(); ++i)
+                stack.push_back(&cur->getChild(i));
+        }
     }
 
     // Locate a node with the given name in the dependencies for this node
-    // (children nodes only). If a child cannot be found, nullptr is returned.
+    // (parent nodes only). If a parent cannot be found, nullptr is returned.
     const Graph<T>* find(const std::string& name) const
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
         if (name == this->name()) return this;
         else
         {
-            for (size_t i = 0; i < getNumChildren(); ++i)
+            for (size_t i = 0; i < getNumParents(); ++i)
             {
-                const Graph<T>* res = getChild(i).find(name);
+                const Graph<T>* res = getParent(i).find(name);
                 if (res != nullptr) return res;
             }
             return nullptr;
@@ -156,12 +133,31 @@ public:
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
         mNode->assign(newValue);
-        mNode->invalidateAll();
+        invalidate();
     }
 
-    // Each graph node has either 0 or more children depending on its type.
-    // This function allows one to traverse the graph backwards to find those
-    // children.
+    // Each graph node has 0 or more parents (dependencies) depending on its
+    // type. This allows one to traverse the graph backwards to find those
+    // parents.
+    const Graph<T>& getParent(const size_t index) const
+    {
+        ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
+        return mNode->getParent(index);
+    }
+    Graph<T>& getParent(const size_t index)
+    {
+        ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
+        return mNode->getParent(index);
+    }
+    size_t getNumParents() const
+    {
+        ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
+        return mNode->getNumParents();
+    }
+
+    // Each graph node has either 0 or more children (dependents) depending on
+    // its type. This function allows one to traverse the graph forwards to
+    // find those children.
     const Graph<T>& getChild(const size_t index) const
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
@@ -202,98 +198,6 @@ public:
     Node<T>* ptr()        const { return mNode.operator->(); }
 };
 
-// Functions that should be used to create graphs of different types by the user
-template <class T, class TensorType>
-Graph<T> make_constant(const std::string& name, TensorType&& tensor)
-{
-    return Graph<T>(new Constant<T>(name,
-        std::forward<TensorType>(tensor)), Graph<T>::Type::CONSTANT);
-}
-
-template <class T, class ValueType>
-Graph<T> make_constant(const ValueType constant)
-{
-    return Graph<T>(new Constant<T>(std::to_string(constant),
-        Tensor<T>::fromScalar(constant)), Graph<T>::Type::CONSTANT);
-}
-
-template <class T>
-Graph<T> make_constant(const std::string& name)
-{
-    return Graph<T>(new Constant<T>(name), Graph<T>::Type::CONSTANT);
-}
-
-template <class T, class TensorType>
-Graph<T> make_variable(const std::string& name, TensorType&& tensor)
-{
-    return Graph<T>(new Variable<T>(name,
-        std::forward<TensorType>(tensor)), Graph<T>::Type::VAR);
-}
-
-template <class T>
-Graph<T> make_variable(const std::string& name)
-{
-    return Graph<T>(new Variable<T>(name), Graph<T>::Type::VAR);
-}
-
-template <class T, class Func>
-Graph<T> make_unary(const std::string& name, Func&& func, Graph<T> dependent)
-{
-    Graph<T> res(new UnaryFunction<T>(name, std::forward<Func>(func),
-        dependent), Graph<T>::Type::UNARY);
-
-    dependent.addParent(res);
-    return res;
-}
-
-template <class T, class Func>
-Graph<T> make_binary(const std::string& name, Func&& func,
-    Graph<T> dependent1, Graph<T> dependent2)
-{
-    Graph<T> res(new BinaryFunction<T>(name, std::forward<Func>(func),
-        dependent1, dependent2), Graph<T>::Type::BINARY);
-
-    dependent1.addParent(res);
-    dependent2.addParent(res);
-    return res;
-}
-
-template <class T, class VecType>
-Graph<T> make_list(VecType&& dependents)
-{
-    Graph<T> res(new ListNode<T>("list", std::forward<VecType>(dependents)),
-        Graph<T>::Type::LIST);
-
-    for (auto& elem : dependents)
-        elem.addParent(res);
-    return res;
-}
-
-template <class T, class Func>
-Graph<T> make_update(const std::string& name, Func&& func,
-    Graph<T> target, Graph<T> value)
-{
-    Graph<T> res(new UpdateNode<T>(name, std::forward<Func>(func),
-        target, value), Graph<T>::Type::UPDATE);
-
-    target.addParent(res);
-    value.addParent(res);
-    return res;
-}
-
-template <class T, class Func>
-Graph<T> make_update(const std::string& name, Func&& func,
-    Graph<T> target, Graph<T> value, Graph<T> arg)
-{
-    Graph<T> res(new UpdateNodeArg<T>(name, std::forward<Func>(func),
-        target, value, arg), Graph<T>::Type::UPDATE_ARG);
-
-    target.addParent(res);
-    value.addParent(res);
-    arg.addParent(res);
-    return res;
-}
-
 // ----------------------------- Implementation ----------------------------- //
 
 // Base class for all nodes in the graph.
@@ -303,21 +207,31 @@ struct Node : public RCObject
 
 // ---------------------- Begin Invalidation framework ---------------------- //
 private:
-    std::vector<Graph<T>> parents;
+    std::vector<Graph<T>> children;
 
 public:
 
-    void addParent(const Graph<T>& parent)
+    void addChild(const Graph<T>& child)
     {
-        parents.push_back(parent);
+        children.push_back(child);
     }
 
-    void invalidateAll()
+    // Get the nth child for this node. Some nodes may have 0 children.
+    const Graph<T>& getChild(const size_t index) const
     {
-        invalidate();
-        for (auto& elem : parents)
-            elem.node().invalidateAll();
+        return children[index];
     }
+
+    Graph<T>& getChild(const size_t index)
+    {
+        return children[index];
+    }
+
+    size_t getNumChildren() const
+    {
+        return children.size();
+    }
+
 // ----------------------- End Invalidation framework ----------------------- //
 
     virtual ~Node() {}
@@ -333,20 +247,20 @@ public:
         ASSERT(false, "This node type does not support assignment.");
     }
 
-    // Get the nth child for this node. Some nodes may have 0 children.
-    virtual const Graph<T>& getChild(const size_t index) const
+    // Get the nth parent for this node. Some nodes may have 0 parents.
+    virtual const Graph<T>& getParent(const size_t index) const
     {
-        ASSERT(false, "Component has no children.");
+        ASSERT(false, "Component has no parents.");
         throw std::exception();
     }
 
-    virtual Graph<T>& getChild(const size_t index)
+    virtual Graph<T>& getParent(const size_t index)
     {
-        ASSERT(false, "Component has no children.");
+        ASSERT(false, "Component has no parents.");
         throw std::exception();
     }
 
-    virtual size_t getNumChildren() const
+    virtual size_t getNumParents() const
     {
         return 0;
     }
@@ -354,7 +268,7 @@ public:
     // Returns the name of this node. Used for printing and graph manipulation
     virtual std::string name() const = 0;
 
-    // Allows child classes to be printed using <<
+    // Allows subclasses to be printed using <<
     virtual std::ostream& print(std::ostream&) const = 0;
 
     // Polymorphic print
@@ -503,17 +417,17 @@ public:
         return mCachedResult;
     }
 
-    const Graph<T>& getChild(const size_t index) const override
+    const Graph<T>& getParent(const size_t index) const override
     {
-        ASSERT(index < 1, "Unary functions have only one child.");
+        ASSERT(index < 1, "Unary functions have only one parent.");
         return mDependent;
     }
-    Graph<T>& getChild(const size_t index) override
+    Graph<T>& getParent(const size_t index) override
     {
-        ASSERT(index < 1, "Unary functions have only one child.");
+        ASSERT(index < 1, "Unary functions have only one parent.");
         return mDependent;
     }
-    constexpr size_t getNumChildren() const override
+    constexpr size_t getNumParents() const override
     {
         return 1;
     }
@@ -593,21 +507,21 @@ public:
         return mCachedResult;
     }
 
-    const Graph<T>& getChild(const size_t index) const override
+    const Graph<T>& getParent(const size_t index) const override
     {
-        ASSERT(index < 2, "Binary functions have only two children.");
+        ASSERT(index < 2, "Binary functions have only two parents.");
         if (index == 0)
             return mDependent1;
         else return mDependent2;
     }
-    Graph<T>& getChild(const size_t index) override
+    Graph<T>& getParent(const size_t index) override
     {
-        ASSERT(index < 2, "Binary functions have only two children.");
+        ASSERT(index < 2, "Binary functions have only two parents.");
         if (index == 0)
             return mDependent1;
         else return mDependent2;
     }
-    constexpr size_t getNumChildren() const override
+    constexpr size_t getNumParents() const override
     {
         return 2;
     }
@@ -677,15 +591,15 @@ public:
         return mDependents.back()();
     }
 
-    const Graph<T>& getChild(const size_t index) const override
+    const Graph<T>& getParent(const size_t index) const override
     {
         return mDependents[index];
     }
-    Graph<T>& getChild(const size_t index) override
+    Graph<T>& getParent(const size_t index) override
     {
         return mDependents[index];
     }
-    constexpr size_t getNumChildren() const override
+    constexpr size_t getNumParents() const override
     {
         return mDependents.size();
     }
@@ -698,7 +612,7 @@ public:
     std::ostream& print(std::ostream& out) const override
     {
         out << name() << " = [ " << std::endl;
-        for (size_t i = 0; i < getNumChildren(); ++i)
+        for (size_t i = 0; i < getNumParents(); ++i)
             out << (i+1) << ": " << mDependents[i] << std::endl;
         out << "]";
         return out;
@@ -751,19 +665,19 @@ public:
         return value;
     }
 
-    const Graph<T>& getChild(const size_t index) const override
+    const Graph<T>& getParent(const size_t index) const override
     {
-        ASSERT(index < 2, "Updates only have two children.");
+        ASSERT(index < 2, "Updates only have two parents.");
         if (index == 0) return mTarget;
         else            return mValue;
     }
-    Graph<T>& getChild(const size_t index) override
+    Graph<T>& getParent(const size_t index) override
     {
-        ASSERT(index < 2, "Updates only have two children.");
+        ASSERT(index < 2, "Updates only have two parents.");
         if (index == 0) return mTarget;
         else            return mValue;
     }
-    constexpr size_t getNumChildren() const override
+    constexpr size_t getNumParents() const override
     {
         return 2;
     }
@@ -811,7 +725,9 @@ public:
 
     // Additional constructors
     template <class Func, class TargetType, class ValueType, class ArgType>
-    UpdateNodeArg(const std::string& name, Func&& f, TargetType&& target, ValueType&& value, ArgType&& arg) :
+    UpdateNodeArg(const std::string& name, Func&& f,
+        TargetType&& target, ValueType&& value, ArgType&& arg) :
+
         mName(name),
         mFunc(std::forward<Func>(f)),
         mTarget(std::forward<TargetType>(target)),
@@ -834,21 +750,21 @@ public:
         return value;
     }
 
-    const Graph<T>& getChild(const size_t index) const override
+    const Graph<T>& getParent(const size_t index) const override
     {
-        ASSERT(index < 3, "Updates with arguments only have three children.");
+        ASSERT(index < 3, "Updates with arguments only have three parents.");
         if      (index == 0) return mTarget;
         else if (index == 1) return mValue;
         else                 return mArg;
     }
-    Graph<T>& getChild(const size_t index) override
+    Graph<T>& getParent(const size_t index) override
     {
-        ASSERT(index < 3, "Updates with arguments only have three children.");
+        ASSERT(index < 3, "Updates with arguments only have three parents.");
         if      (index == 0) return mTarget;
         else if (index == 1) return mValue;
         else                 return mArg;
     }
-    constexpr size_t getNumChildren() const override
+    constexpr size_t getNumParents() const override
     {
         return 3;
     }
@@ -876,298 +792,5 @@ public:
     }
 };
 
-// namespace helper
-// {
-//     template <int... Is>
-//     struct index {};
-//
-//     template <int N, int... Is>
-//     struct gen_seq : gen_seq<N - 1, N - 1, Is...> {};
-//
-//     template <int... Is>
-//     struct gen_seq<0, Is...> : index<Is...> {};
-// }
-//
-// template <size_t n, typename... T>
-// typename std::enable_if<(n >= sizeof...(T))>::type
-//     print_tuple(std::ostream&, const std::tuple<T...>&)
-// {}
-//
-// template <size_t n, typename... T>
-// typename std::enable_if<(n < sizeof...(T))>::type
-//     print_tuple(std::ostream& os, const std::tuple<T...>& tup)
-// {
-//     if (n != 0)
-//         os << ", ";
-//     os << std::get<n>(tup);
-//     print_tuple<n+1>(os, tup);
-// }
-//
-// template <typename... T>
-// std::ostream& operator<<(std::ostream& os, const std::tuple<T...>& tup)
-// {
-//     print_tuple<0>(os, tup);
-//     return os;
-// }
-//
-//
-//
-// // Forward declarations
-// template <class T>
-// class Node;
-//
-// // Core graph class. This should be the entry point for users.
-// //
-// // Most of the actual work is done in the Node class. The Graph class is mostly
-// // a wrapper that handles the reference counting, which allows clients to create
-// // and share graphs without having to worry about whether the underlying objects
-// // are stored on the stack or the heap.
-// template <class T>
-// class Graph
-// {
-// private:
-//     RCPtr<Node<T>> mNode; // Pointer to the actual node.
-//
-// public:
-//     // Used for meta-programming.
-//     using OutputType = T;
-//
-//     // Normal constructors
-//     Graph()                  = delete;
-//     Graph(const Graph& orig) = default;
-//     Graph(Graph&& orig)      = default;
-//
-//     // Construct a normal node
-//     template <class Func, class... Args>
-//     Graph(const std::string& name, Func&& f, Args&&... children) :
-//         mNode(new Node<T, Args...>(name, std::forward<Func>(f),
-//             std::forward<Args>(children)...))
-//     {}
-//
-//     // Construct a variable node
-//     Graph(const std::string& name, Tensor<O>&& out) :
-//         mNode(new Node<T>(name, std::forward<Tensor<T>>(out)))
-//     {}
-//
-//     Graph(const std::string& name, const Tensor<T>& out) :
-//         mNode(new Node<T>(name, out))
-//     {}
-//
-//     // Assignment operators
-//     Graph& operator=(const Graph& rhs) = default;
-//     Graph& operator=(Graph&& rhs)      = default;
-//
-//     // Comparison operators
-//     bool operator==(const Graph& other) const
-//     {
-//         return mNode == other.mNode;
-//     }
-//     bool operator!=(const Graph& other) const
-//     {
-//         return !(*this == other);
-//     }
-//
-//     // Allows graphs to be printed in a human-readable format.
-//     friend std::ostream& operator<<(std::ostream& out,
-//         const Graph<T>& graph)
-//     {
-//         out << *graph.mNode;
-//         return out;
-//     }
-//
-//     // Graph-specific operations. Note that clients should avoid using these
-//     // as much as possible.
-//     Node<T>& node()             { return *mNode; }
-//     const Node<T>& node() const { return *mNode; }
-//
-//     // --------------- Interface exported from the Node class --------------- //
-//     Tensor<T> evaluate(const bool recalculate = false) const
-//     {
-//         return mNode->evaluate(recalculate);
-//     }
-//
-//     auto& children()
-//     {
-//         return mNode->children();
-//     }
-//
-//     const auto& children() const
-//     {
-//         return mNode->children();
-//     }
-//
-//     size_t numChildren() const
-//     {
-//         return mNode->numChildren();
-//     }
-//
-//     std::string name() const
-//     {
-//         return mNode->name();
-//     }
-//
-//     void assignOutput(Tensor<T>&& out)
-//     {
-//         mNode->assignOutput(std::forward<Tensor<T>>(out));
-//     }
-// };
-//
-// // Helper function to make creating Graphs easier. Some of the template types
-// // can be inferred from the usage, which saves typing.
-// template <class T, class Func, class... Args>
-// Graph<T> make_graph(const string& name, Func&& f, Args&&... args)
-// {
-//     return Graph<T>(name, std::forward<Func>(f), std::forward<Args>(args)...);
-// }
-//
-// template <class T>
-// Graph<T> make_variable(const string& name, Tensor<T>&& value)
-// {
-//     return Graph<T>(name, std::forward<Tensor<T>>(value));
-// }
-//
-// template <class T>
-// Graph<T> make_variable(const string& name, const Tensor<T>& value)
-// {
-//     return Graph<T>(name, value);
-// }
-//
-// // 'T' is type. E.g. "double", "int", etc.
-// template <class T>
-// class Node : public RCObject
-// {
-// private:
-//     // The name of this node. All nodes must have identifying names.
-//     std::string mName;
-//
-//     // The function to be performed for this part of the graph.
-//     // The declaration looks complicated, but it's really just saying the
-//     // function should look like this:
-//     // Tensor<T> function(const Tensor<I1>& x, const Tensor<I2>& y, ...)
-//     std::function<Tensor<T>(const Tensor<typename
-//         std::remove_reference<ChildTypes>::type::OutputType>&...)> mFunc;
-//
-//     // Store the nodes we depend on. Each of these should also be a Node with
-//     // an associated output type and zero or more input types.
-//     std::vector< Graph<T> > > mChildren;
-//
-//     // Each node caches its final result to avoid excessive recalcuations, but
-//     // it can also be set directly (e.g. to represent a variable).
-//     Tensor<T> mOutput;
-//     bool mHasOutput;
-//     bool mIsVariable;
-//
-//     // Helper for evaluate().
-//     template <class... Args, int... Indices>
-//     Tensor<T> func(std::tuple<Args...>& tup, helper::index<Indices...>,
-//         const bool recalculate)
-//     {
-//         // Variables will never be evaluated.
-//         // Non-variables will be evaluated if
-//         //   1. The recalculate flag has been set.
-//         //   2. This node has never been evaluated.
-//         if (!mIsVariable && (recalculate || !mHasOutput))
-//         {
-//             mOutput    = mFunc(std::get<Indices>(tup).evaluate(recalculate)...);
-//             mHasOutput = true;
-//         }
-//
-//         return mOutput;
-//     }
-//
-//     // Helper for evaluate().
-//     template <class... Args>
-//     Tensor<O> func(std::tuple<Args...>& tup, const bool recalculate)
-//     {
-//         return func(tup, helper::gen_seq<sizeof...(Args)>{}, recalculate);
-//     }
-//
-// public:
-//
-//     Node() = delete;
-//
-//     // Create a graph node given a function and all the children. Compilation
-//     // will fail if 'f' does not fit the format for 'mFunc' or if 'children'
-//     // does not match the format for 'mChildren'.
-//     template <class Func, class... Args>
-//     Node(const std::string& name, Func&& f, Args&&... children) :
-//         mName(name),
-//         mFunc(std::forward<Func>(f)),
-//         mChildren(std::forward<Args>(children)...),
-//         mHasOutput(false),
-//         mIsVariable(false)
-//     {}
-//
-//     // Create a variable Node
-//     Node(const std::string& name, Tensor<T>&& out) :
-//         mName(name),
-//         mOutput(std::forward<Tensor<T>>(out)),
-//         mHasOutput(true),
-//         mIsVariable(true)
-//     {}
-//
-//     // Create a variable Node
-//     Node(const std::string& name, const Tensor<T>& out) :
-//         mName(name),
-//         mOutput(out),
-//         mHasOutput(true),
-//         mIsVariable(true)
-//     {}
-//
-//     Tensor<T> evaluate(const bool recalculate = false)
-//     {
-//         if (!mIsVariable && (recalculate || !mHasOutput))
-//         {
-//             mOutput    = mFunc(std::get<Indices>(tup).evaluate(recalculate)...);
-//             mHasOutput = true;
-//         }
-//
-//         return mOutput;
-//     }
-//
-//     size_t numChildren() const
-//     {
-//         return mChildren.size();
-//     }
-//
-//     auto& children()
-//     {
-//         return mChildren;
-//     }
-//     const auto& children() const
-//     {
-//         return mChildren;
-//     }
-//
-//     std::string name() const
-//     {
-//         return mName;
-//     }
-//
-//     friend std::ostream& operator<<(std::ostream& out, Node<T>& node)
-//     {
-//         out << node.name();
-//         if (numChildren() > 0)
-//         {
-//             out << "[ ";
-//             for (auto& child : mChildren)
-//                 out << child << ", ";
-//             out << " ]";
-//         }
-//         return out;
-//     }
-//
-//     Node<T>* clone() const
-//     {
-//         return new Node<T>(*this);
-//     }
-//
-//     void assignOutput(Tensor<T>&& out)
-//     {
-//         mOutput    = out;
-//         mHasOutput = true;
-//     }
-// };
 }
-
 #endif
