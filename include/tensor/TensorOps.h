@@ -226,6 +226,26 @@ Tensor<T> normalLike(const Tensor<U>& model, Rand& rand,
     return res;
 }
 
+template <class T>
+Tensor<T> xavier(std::initializer_list<size_t> shape, Rand& rand)
+{
+    T stdev = sqrt(T{2} / shape[0]);
+    return normal<T>(shape, rand, 0, stdev);
+}
+
+template <class T, class U>
+Tensor<T> xavierLike(const Tensor<U>& model, Rand& rand)
+{
+    T stdev = sqrt(T{2} / model.shape(0));
+
+    const SmallVector& shape = model.shape();
+    Tensor<T> res(shape.begin(), shape.end());
+    for (T& elem : res)
+        elem = rand.nextGaussian(0, stdev);
+    return res;
+}
+
+
 // ------------------------------ Tensor Views ------------------------------ //
 
 // Returns a new view of the given tensor that is narrowed in

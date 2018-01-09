@@ -1,5 +1,5 @@
 // Comment to disable debug assertions
-// #define NDEBUG
+#define NDEBUG
 
 #include <iostream>
 #include <unordered_map>
@@ -11,39 +11,6 @@
 
 using namespace std;
 using namespace opkit;
-
-template <class T>
-Tensor<T> convertColumnToOneHot(const Tensor<T>& input, const size_t column)
-{
-    ASSERT(input.rank() == 2, "Only 2D matrices are currently supported.");
-    const size_t rows = input.shape(0);
-    const size_t cols = input.shape(1);
-
-    // Calculate the number of unique values in this column
-    std::set<double> elements;
-    for (size_t r = 0; r < rows; ++r)
-        elements.insert(input.at({r, column}));
-
-    // Create the resulting tensor
-    Tensor<T> result({rows, cols + elements.size() - 1});
-    result.fill(T{});
-    for (size_t r = 0; r < rows; ++r)
-    {
-        // Copy the data before the column
-        size_t c = 0;
-        for (; c < column; ++c)
-            result.at({r, c}) = input.at({r, c});
-
-        // Convert the column itself
-        size_t val = input.at({r, column});
-        result.at({r, c + val}) = T{1};
-
-        // Copy the data after the column
-        for(++c; c < cols; ++c)
-            result.at({r, c + elements.size()}) = input.at({r, c});
-    }
-    return result;
-}
 
 template <class T>
 Tensor<T> xavierInit(const size_t m, const size_t n, Rand& rand)
@@ -146,15 +113,17 @@ int main()
     {
         // Get the next batch
         it.next(batchFeatures, batchLabels);
+        if (!it.hasNext())
+            it.reset();
 
         // Update the discriminator
         x.assign(*batchFeatures);
         z.assign(sampleZ<T>(batchSize, zDim, initializer));
-        dSolver.evaluate(true);
+        dSolver();
 
         // Update the generator
         z.assign(sampleZ<T>(batchSize, zDim, initializer));
-        gSolver.evaluate(true);
+        gSolver();
 
         if (i % 1000 == 0)
         {
@@ -162,21 +131,18 @@ int main()
             printf("%5zu, %8.2f, %8.4f, %8.4f\n",
                 j,
                 t.getElapsedTimeSeconds(),
-                T(gLoss.evaluate(true)),
-                T(dLoss.evaluate(true)));
+                T(gLoss()),
+                T(dLoss()));
             cout.flush();
 
             // Save a few samples to demonstrate the system is working
             z.assign(testZ);
-            Tensor<T> samples = gSample.evaluate(true);
+            Tensor<T> samples = gSample();
             string filename = "./out/img_" + to_string(j) + ".png";
             if (!plotGrid(filename, samples, 4, 4, 28, 28, 2, 2, 2, 2))
                 cerr << "Unable to create file: " << filename << endl;
             ++j;
         }
-
-        if (!it.hasNext())
-            it.reset();
     }
 
     return 0;
