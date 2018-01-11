@@ -154,7 +154,8 @@ template <class T>
 Channel channelFrom1DTensor(const Tensor<T>& data, const size_t width, const size_t height)
 {
     Channel res(width, height);
-    auto it = data.begin();
+    Tensor<T> clipped = clip(data, 0, 1);
+    auto it = clipped.begin();
     for (size_t y = 0; y < height; ++y)
     {
         for (size_t x = 0; x < width; ++x)
@@ -173,7 +174,8 @@ Channel channelFrom2DTensor(const Tensor<T>& data)
     const size_t height = data.shape(0);
 
     Channel res(width, height);
-    auto it = data.begin();
+    Tensor<T> clipped = clip(data, 0, 1);
+    auto it = clipped.begin();
     for (size_t y = 0; y < height; ++y)
     {
         for (size_t x = 0; x < width; ++x)

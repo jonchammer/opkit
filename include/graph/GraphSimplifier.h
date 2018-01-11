@@ -34,7 +34,7 @@ Graph<T> simplifyUnary(Graph<T> root)
 }
 
 template <class T>
-bool simplifyMatrixMultiply(Graph<T> c1, Graph<T> c2, Graph<T> res)
+bool simplifyMatrixMultiply(Graph<T> c1, Graph<T> c2, Graph<T>& res)
 {
     // 0 * x = 0
     // 1 * x = x
@@ -77,7 +77,7 @@ bool simplifyMatrixMultiply(Graph<T> c1, Graph<T> c2, Graph<T> res)
 }
 
 template <class T>
-bool simplifyMultiplication(Graph<T> c1, Graph<T> c2, Graph<T> res)
+bool simplifyMultiplication(Graph<T> c1, Graph<T> c2, Graph<T>& res)
 {
     // 0 * x = 0
     // 1 * x = x
@@ -150,7 +150,7 @@ bool simplifyMultiplication(Graph<T> c1, Graph<T> c2, Graph<T> res)
 }
 
 template <class T>
-bool simplifyAddition(Graph<T> c1, Graph<T> c2, Graph<T> res)
+bool simplifyAddition(Graph<T> c1, Graph<T> c2, Graph<T>& res)
 {
     // 0 + x = 0
     if (c1.type() == Graph<T>::Type::CONSTANT)

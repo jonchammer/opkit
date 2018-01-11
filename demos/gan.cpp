@@ -13,31 +13,24 @@ using namespace std;
 using namespace opkit;
 
 template <class T>
-Tensor<T> xavierInit(const size_t m, const size_t n, Rand& rand)
-{
-    T stdev = T{1} / sqrt(m / T{2});
-    return normal<T>({m, n}, rand, 0, stdev);
-}
-
-template <class T>
 Tensor<T> sampleZ(const size_t m, const size_t n, Rand& rand)
 {
     return uniform<T>({m, n}, rand, -1, 1);
 }
 
 template <class T>
-Graph<T> generator(const Graph<T>& z,
-    const Graph<T>& gW1, const Graph<T>& gB1,
-    const Graph<T>& gW2, const Graph<T>& gB2)
+Graph<T> generator(Graph<T> z,
+     Graph<T> gW1, Graph<T> gB1,
+     Graph<T> gW2, Graph<T> gB2)
 {
     auto gH1 = relu(linear(z, gW1, gB1));
     return logistic(linear(gH1, gW2, gB2));
 }
 
 template <class T>
-Graph<T> discriminator(const Graph<T>& x,
-    const Graph<T>& dW1, const Graph<T>& dB1,
-    const Graph<T>& dW2, const Graph<T>& dB2)
+Graph<T> discriminator(Graph<T> x,
+    Graph<T> dW1, Graph<T> dB1,
+    Graph<T> dW2, Graph<T> dB2)
 {
     auto dH1 = relu(linear(x, dW1, dB1));
     return logistic(linear(dH1, dW2, dB2));
@@ -61,7 +54,7 @@ int main()
     testLabels  = convertColumnToOneHot(testLabels, 0);
 
     // Construct the variables
-    const size_t zDim            = 128;
+    const size_t zDim            = 100;
     const size_t batchSize       = 128;
     const size_t plotSamples     = 16;
     const size_t featureDims     = 784;
@@ -74,16 +67,16 @@ int main()
     auto x    = make_variable<T>("x", trainFeatures);
     auto z    = make_variable<T>("z", zeroes<T>({1, zDim}));
 
-    auto dW1  = make_variable<T>("dW1", xavierInit<T>(featureDims, 128, initializer));
+    auto dW1  = make_variable<T>("dW1", xavier<T>({featureDims, 128}, initializer));
     auto dB1  = make_variable<T>("dB1", zeroes<T>({1, 128}));
-    auto dW2  = make_variable<T>("dW2", xavierInit<T>(128, 1, initializer));
+    auto dW2  = make_variable<T>("dW2", xavier<T>({128, 1}, initializer));
     auto dB2  = make_variable<T>("dB2", zeroes<T>({1, 1}));
     std::unordered_set<std::string> dNames({"dW1", "dB1", "dW2", "dB2"});
     std::vector<Graph<T>>           dVars({dW1, dB1, dW2, dB2});
 
-    auto gW1  = make_variable<T>("gW1", xavierInit<T>(zDim, 128, initializer));
+    auto gW1  = make_variable<T>("gW1", xavier<T>({zDim, 128}, initializer));
     auto gB1  = make_variable<T>("gB1", zeroes<T>({1, 128}));
-    auto gW2  = make_variable<T>("gW2", xavierInit<T>(128, featureDims, initializer));
+    auto gW2  = make_variable<T>("gW2", xavier<T>({128, featureDims}, initializer));
     auto gB2  = make_variable<T>("gB2", zeroes<T>({1, featureDims}));
     std::unordered_set<std::string> gNames({"gW1", "gB1", "gW2", "gB2"});
 
@@ -97,8 +90,10 @@ int main()
     auto gLoss = -reduceMean(log(dFake));
 
     // Build the update rule
-    auto dSolver = adam(dLoss, dNames, T{1E-3});
-    auto gSolver = adam(gLoss, gNames, T{1E-3});
+    auto dSolver = gradientDescentMomentum(dLoss, dNames);
+    auto gSolver = gradientDescentMomentum(gLoss, gNames);
+    // auto dSolver = adam(dLoss, dNames, T{1E-3});
+    // auto gSolver = adam(gLoss, gNames, T{1E-3});
 
     Rand rand(42);
     BatchIterator<T> it(trainFeatures, trainLabels, batchSize, rand);

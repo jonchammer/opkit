@@ -81,6 +81,92 @@ std::unordered_map<std::string, Graph<T>> gradients(Graph<T> node,
         pair.second = simplify(pair.second);
     return namesToGradients;
 }
+}
+
+namespace detail
+{
+    template <class T>
+    struct Epsilon{};
+
+    template <>
+    struct Epsilon<float>
+    {
+        constexpr static float value = 1E-2;
+    };
+
+    template <>
+    struct Epsilon<double>
+    {
+        constexpr static double value = std::sqrt(std::numeric_limits<double>::epsilon());
+    };
+}
+
+namespace opkit
+{
+// Calculates the gradients of the given graph with respect to each of the
+// variables listed in 'targets' empirically using a finite difference
+// approximation. The result is a map from the variable names to
+// a corresponding tensor that will calculate the gradient. The targets set
+// must not be empty.
+template <class T>
+std::unordered_map<std::string, Tensor<T>> empiricalGradients(Graph<T> node,
+    std::unordered_set<std::string> targets)
+{
+    std::unordered_map<std::string, Tensor<T>> grads;
+
+    // Calculate the gradient empirically using the finite difference
+    // approximation:
+    // d/dx ~= (f(x + dx) - f(x - dx)) / (2 * dx)
+    const static T DELTA     = detail::Epsilon<T>::value;
+    const static T INV_DENOM = T{0.5} / DELTA;
+    for (const std::string& name : targets)
+    {
+        Graph<T>* ptr = node.find(name);
+        if (ptr == nullptr) continue;
+
+        Variable<T>& variable = (Variable<T>&) ptr->node();
+
+        // Work with a copy of the original tensor because other nodes in the
+        // graph might share its storage. (Changing an element of this variable
+        // might affect other variables unintentionally).
+        Tensor<T>& orig = variable.value();
+        Tensor<T> value = orig.clone();
+        ptr->assign(value);
+
+        // Declare a temporary tensor to hold the derivative
+        const SmallVector& shape = value.shape();
+        Tensor<T> derivative(shape.begin(), shape.end());
+        derivative.fill(T{});
+
+        auto derivativeIt = derivative.begin();
+        for (T& elem : value)
+        {
+            T orig = elem;
+
+            elem = orig + DELTA;
+            ptr->invalidate();
+            Tensor<T> f1 = node().clone();
+
+            elem = orig - DELTA;
+            ptr->invalidate();
+            Tensor<T> f2 = node().clone();
+
+            elem = orig;
+
+            // Calculate the derivative by subtracting the two estimates, dividing
+            // by 2 * DELTA, and then adding all the entries together to get a
+            // single scalar.
+            *derivativeIt = T(reduceSum(multiply(Tensor<T>::fromScalar(INV_DENOM), sub(f1, f2))));
+            ++derivativeIt;
+        }
+
+        // Replace the original value and save the gradient for this variable
+        ptr->assign(orig);
+        grads[name] = derivative;
+    }
+
+    return grads;
+}
 
 }
 #endif

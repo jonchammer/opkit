@@ -5,6 +5,8 @@
 #include "graph/Gradients.h"
 #include "tensor/Tensor.h"
 
+
+
 namespace opkit
 {
 
@@ -22,57 +24,42 @@ bool validate(Graph<T>& root, std::vector<Graph<T>>& targets, const double thres
         names.insert(node.name());
     auto grads = gradients(root, names);
 
-    // Calculate the gradient empirically and compare to the gradient found by
-    // automatic differentiation.
-    // d/dx ~= (f(x + dx) - f(x - dx)) / (2 * dx)
-    const static T DELTA     = std::sqrt(std::numeric_limits<T>::epsilon());
-    const static T INV_DENOM = T{0.5} / DELTA;
-    for (Graph<T>& variable : targets)
+    // Calculate the gradients using finite differences
+    auto grads2 = empiricalGradients(root, names);
+
+    // Compare the gradients produced by each method
+    for (const std::string& name : names)
     {
-        Tensor<T>& value = ((Variable<T>&) variable.node()).value();
+        // Ignore variables that did not directly affect the root node
+        if (grads.find(name) == grads.end()) continue;
 
-        // Declare a temporary tensor to hold the derivative
-        const auto& shape = value.shape();
-        Tensor<T> derivative(shape.begin(), shape.end());
-        derivative.fill(T{});
+        Tensor<T> automatic = grads[name]();
+        Tensor<T> empirical = grads2[name];
 
-        auto derivativeIt = derivative.begin();
-        for (T& elem : value)
+        // Check for NaN cells
+        for (T& elem : empirical)
         {
-            T orig       = elem;
-            elem         = orig + DELTA;
-            Tensor<T> f1 = root.evaluate(true).clone();
-
-            elem         = orig - DELTA;
-            Tensor<T> f2 = root.evaluate(true).clone();
-            elem         = orig;
-
-            // Calculate the derivative by subtracting the two estimates, dividing
-            // by 2 * DELTA, and then adding all the entries together to get a
-            // single scalar.
-            *derivativeIt = T(reduceSum(multiply(Tensor<T>::fromScalar(INV_DENOM), sub(f1, f2))));
-            ++derivativeIt;
+            if (std::isnan(elem))
+            {
+                cout << "Warning: NaN produced by empirical estimator." << endl;
+                cout << "Empirical: " << endl;
+                cout << empirical     << endl;
+                cout << "Automatic: " << endl;
+                cout << automatic     << endl << endl;
+            }
         }
 
-        if (grads.find(variable.name()) != grads.end())
+        Tensor<T> diff      = sub(automatic, empirical);
+        diff.apply([](const T x) { return std::abs(x); });
+        if (T(reduceMax(diff)) > threshold)
         {
-            //cout << grads.find(variable.name())->second << endl;
+            cout << "Mismatch detected for variable: " << name << endl;
+            cout << "Empirical:"            << endl;
+            cout << to_string(empirical, 4) << endl;
+            cout << "Automatic: "           << endl;
+            cout << to_string(automatic, 4) << endl;
 
-            Tensor<T> test       = grads.find(variable.name())->second.evaluate(true);
-            Tensor<T> difference = sub(test, derivative);
-            for (const auto& elem : difference)
-            {
-                if (std::abs(elem) > threshold)
-                {
-                    cout << "Mismatch detected for variable: " << variable.name() << endl;
-                    cout << "Expected:"              << endl;
-                    cout << to_string(derivative, 4) << endl;
-                    cout << "Got: "                  << endl;
-                    cout << to_string(test, 4)       << endl;
-
-                    return false;
-                }
-            }
+            return false;
         }
     }
 

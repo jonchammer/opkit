@@ -83,7 +83,7 @@ public:
 
     // Locate a node with the given name in the dependencies for this node
     // (parent nodes only). If a parent cannot be found, nullptr is returned.
-    const Graph<T>* find(const std::string& name) const
+    Graph<T>* find(const std::string& name)
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
         if (name == this->name()) return this;
@@ -91,7 +91,7 @@ public:
         {
             for (size_t i = 0; i < getNumParents(); ++i)
             {
-                const Graph<T>* res = getParent(i).find(name);
+                Graph<T>* res = getParent(i).find(name);
                 if (res != nullptr) return res;
             }
             return nullptr;

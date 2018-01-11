@@ -45,30 +45,34 @@ FD_DERIV(dInnerProduct)
 // Shorthand for creating a binary function graph node
 #define BINARY_OP(desiredName, derivFn, fn)                                    \
 template <class T>                                                             \
-Graph<T> desiredName(Graph<T> A, Graph<T> B)                                 \
+Graph<T> desiredName(Graph<T> A, Graph<T> B)                                   \
 {                                                                              \
     registerDerivative<T>(#desiredName,                                        \
-        [](Graph<T> node, Graph<T> delta,                                    \
+        [](Graph<T> node, Graph<T> delta,                                      \
         std::vector<Graph<T>>& gradients) {derivFn(node, delta, gradients);}); \
     return make_binary<T>(#desiredName, fn, A, B);                             \
 }                                                                              \
 
-BINARY_OP(matrixMultiply, dMatrixMultiply, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(matrixMultiply, dMatrixMultiply,
+    [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
     return matrixMultiply(y, A, B);
 });
 
-BINARY_OP(matrixMultiplyT1, dMatrixMultiplyT1, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(matrixMultiplyT1, dMatrixMultiplyT1,
+    [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
     return matrixMultiplyT1(y, A, B);
 });
 
-BINARY_OP(matrixMultiplyT2, dMatrixMultiplyT2, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(matrixMultiplyT2, dMatrixMultiplyT2,
+    [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
     return matrixMultiplyT2(y, A, B);
 });
 
-BINARY_OP(innerProduct, dInnerProduct, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+BINARY_OP(innerProduct, dInnerProduct,
+    [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
 {
     return innerProduct(y, A, B);
 });

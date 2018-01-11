@@ -10,32 +10,32 @@ using T = float;
 template <class T>
 bool operator==(const Tensor<T>& a, const Tensor<T>& b)
 {
-    if (a.size() != b.size()) return false;
+    if (a.shape() != b.shape()) return false;
 
     auto aIt = a.begin();
     auto bIt = b.begin();
     while (aIt != a.end())
     {
-        if (abs(*aIt - *bIt) > 0.01) return false;
+        if (abs(*aIt - *bIt) > 0.25) return false;
         ++aIt;
         ++bIt;
     }
     return true;
 }
 
-void doValidate(Graph<T>& g, vector<Graph<T>>& targets,
+void doValidate(Graph<T> g, vector<Graph<T>>& targets,
     const Tensor<T>& expectedValue, const string& name)
 {
-    bool correctGradient = validate(g, targets, 1E-2);
-
-    if (g.evaluate(true) == expectedValue)
-         cout << "[x]  ";
-    else
+    bool correctGradient = validate(g, targets, 1E-1);
+    if (!(g() == expectedValue))
     {
-        cout << "[ ]  ";
-        // cout << "Expected: " << expectedValue << endl;
-        // cout << "Got:      " << g.evaluate(true) << endl;
+        cout << "Expected Value: " << endl << expectedValue << endl;
+        cout << "Actual Value:   " << endl << g()           << endl;
     }
+
+    if (g() == expectedValue)
+         cout << "[x]  ";
+    else cout << "[ ]  ";
 
     if (correctGradient)
          cout << "[x]  ";
@@ -47,16 +47,6 @@ void doValidate(Graph<T>& g, vector<Graph<T>>& targets,
 Tensor<T> scalar(T val)
 {
     return Tensor<T>::fromScalar(val);
-}
-
-Tensor<T> rowVec(T val1, T val2, T val3)
-{
-    return Tensor<T>::fromVector({val1, val2, val3});
-}
-
-Tensor<T> colVec(T val1, T val2)
-{
-    return Tensor<T>::fromVector({val1, val2});
 }
 
 void testUnaryOps()
@@ -342,14 +332,14 @@ void testReduceSum()
 
     vector<Graph<T>> targets({a, b, c});
     doValidate(y1, targets, scalar(15),               "reduceSum() Range");
-    doValidate(y2, targets, rowVec(3, 5, 7),          "reduceSum() Range axis 0");
-    doValidate(y3, targets, colVec(3, 12),            "reduceSum() Range axis 1");
+    doValidate(y2, targets, Tensor<T>::fromValues({3, 5, 7}, {1, 3}),          "reduceSum() Range axis 0");
+    doValidate(y3, targets, Tensor<T>::fromValues({3, 12}, {2, 1}),            "reduceSum() Range axis 1");
     doValidate(y4, targets, scalar(6),                "reduceSum() Uniform");
-    doValidate(y5, targets, rowVec(2, 2, 2),          "reduceSum() Uniform axis 0");
-    doValidate(y6, targets, colVec(3, 3),             "reduceSum() Uniform axis 1");
+    doValidate(y5, targets, Tensor<T>::fromValues({2, 2, 2}, {1, 3}),          "reduceSum() Uniform axis 0");
+    doValidate(y6, targets, Tensor<T>::fromValues({3, 3}, {2, 1}),             "reduceSum() Uniform axis 1");
     doValidate(y7, targets, scalar(1.91),             "reduceSum() Random");
-    doValidate(y8, targets, rowVec(0.27, 0.70, 0.94), "reduceSum() Random axis 0");
-    doValidate(y9, targets, colVec(1.07, 0.84),       "reduceSum() Random axis 1");
+    doValidate(y8, targets, Tensor<T>::fromValues({0.27, 0.70, 0.94}, {1, 3}), "reduceSum() Random axis 0");
+    doValidate(y9, targets, Tensor<T>::fromValues({1.07, 0.84}, {2, 1}),       "reduceSum() Random axis 1");
 }
 
 void testReduceProduct()
@@ -375,14 +365,14 @@ void testReduceProduct()
 
     vector<Graph<T>> targets({a, b, c});
     doValidate(y1, targets, scalar(0),                "reduceProduct() Range");
-    doValidate(y2, targets, rowVec(0, 4, 10),         "reduceProduct() Range axis 0");
-    doValidate(y3, targets, colVec(0, 60),            "reduceProduct() Range axis 1");
+    doValidate(y2, targets, Tensor<T>::fromValues({0, 4, 10}, {1, 3}),         "reduceProduct() Range axis 0");
+    doValidate(y3, targets, Tensor<T>::fromValues({0, 60}, {2, 1}),            "reduceProduct() Range axis 1");
     doValidate(y4, targets, scalar(1),                "reduceProduct() Uniform");
-    doValidate(y5, targets, rowVec(1, 1, 1),          "reduceProduct() Uniform axis 0");
-    doValidate(y6, targets, colVec(1, 1),             "reduceProduct() Uniform axis 1");
+    doValidate(y5, targets, Tensor<T>::fromValues({1, 1, 1}, {1, 3}),          "reduceProduct() Uniform axis 0");
+    doValidate(y6, targets, Tensor<T>::fromValues({1, 1}, {2, 1}),             "reduceProduct() Uniform axis 1");
     doValidate(y7, targets, scalar(0.00),             "reduceProduct() Random");
-    doValidate(y8, targets, rowVec(0.00, 0.12, 0.15), "reduceProduct() Random axis 0");
-    doValidate(y9, targets, colVec(0.00, 0.02),       "reduceProduct() Random axis 1");
+    doValidate(y8, targets, Tensor<T>::fromValues({0.00, 0.12, 0.15}, {1, 3}), "reduceProduct() Random axis 0");
+    doValidate(y9, targets, Tensor<T>::fromValues({0.00, 0.02}, {2, 1}),       "reduceProduct() Random axis 1");
 }
 
 void testReduceMin()
@@ -408,14 +398,14 @@ void testReduceMin()
 
     vector<Graph<T>> targets({a, b, c});
     doValidate(y1, targets, scalar(0),                "reduceMin() Range");
-    doValidate(y2, targets, rowVec(0, 1, 2),          "reduceMin() Range axis 0");
-    doValidate(y3, targets, colVec(0, 3),             "reduceMin() Range axis 1");
+    doValidate(y2, targets, Tensor<T>::fromValues({0, 1, 2}, {1, 3}),          "reduceMin() Range axis 0");
+    doValidate(y3, targets, Tensor<T>::fromValues({0, 3}, {2, 1}),             "reduceMin() Range axis 1");
     // doValidate(y4, targets, scalar(1),                "reduceMin() Uniform"); <-- validate() does not correctly estimate the gradient
     // doValidate(y5, targets, rowVec(1, 1, 1),          "reduceMin() Uniform axis 0");
     // doValidate(y6, targets, colVec(1, 1),             "reduceMin() Uniform axis 1");
     doValidate(y7, targets, scalar(0.01),             "reduceMin() Random");
-    doValidate(y8, targets, rowVec(0.01, 0.32, 0.20), "reduceMin() Random axis 0");
-    doValidate(y9, targets, colVec(0.01, 0.20),       "reduceMin() Random axis 1");
+    doValidate(y8, targets, Tensor<T>::fromValues({0.01, 0.32, 0.20}, {1, 3}), "reduceMin() Random axis 0");
+    doValidate(y9, targets, Tensor<T>::fromValues({0.01, 0.20}, {2, 1}),       "reduceMin() Random axis 1");
 }
 
 void testReduceMax()
@@ -441,14 +431,14 @@ void testReduceMax()
 
     vector<Graph<T>> targets({a, b, c});
     doValidate(y1, targets, scalar(5),                "reduceMax() Range");
-    doValidate(y2, targets, rowVec(3, 4, 5),          "reduceMax() Range axis 0");
-    doValidate(y3, targets, colVec(2, 5),             "reduceMax() Range axis 1");
+    doValidate(y2, targets, Tensor<T>::fromValues({3, 4, 5}, {1, 3}),          "reduceMax() Range axis 0");
+    doValidate(y3, targets, Tensor<T>::fromValues({2, 5}, {2, 1}),             "reduceMax() Range axis 1");
     // doValidate(y4, targets, scalar(1),                "reduceMax() Uniform"); <-- validate() does not correctly estimate the gradient
     // doValidate(y5, targets, rowVec(1, 1, 1),          "reduceMax() Uniform axis 0");
     // doValidate(y6, targets, colVec(1, 1),             "reduceMax() Uniform axis 1");
     doValidate(y7, targets, scalar(0.74),             "reduceMax() Random");
-    doValidate(y8, targets, rowVec(0.26, 0.38, 0.74), "reduceMax() Random axis 0");
-    doValidate(y9, targets, colVec(0.74, 0.38),       "reduceMax() Random axis 1");
+    doValidate(y8, targets, Tensor<T>::fromValues({0.26, 0.38, 0.74}, {1, 3}), "reduceMax() Random axis 0");
+    doValidate(y9, targets, Tensor<T>::fromValues({0.74, 0.38}, {2, 1}),       "reduceMax() Random axis 1");
 }
 
 void testReduceMean()
@@ -474,36 +464,194 @@ void testReduceMean()
 
     vector<Graph<T>> targets({a, b, c});
     doValidate(y1, targets, scalar(2.5),              "reduceMean() Range");
-    doValidate(y2, targets, rowVec(1.5, 2.5, 3.5),    "reduceMean() Range axis 0");
-    doValidate(y3, targets, colVec(1, 4),             "reduceMean() Range axis 1");
+    doValidate(y2, targets, Tensor<T>::fromValues({1.5, 2.5, 3.5}, {1, 3}),    "reduceMean() Range axis 0");
+    doValidate(y3, targets, Tensor<T>::fromValues({1, 4}, {2, 1}),             "reduceMean() Range axis 1");
     doValidate(y4, targets, scalar(1),                "reduceMean() Uniform");
-    doValidate(y5, targets, rowVec(1, 1, 1),          "reduceMean() Uniform axis 0");
-    doValidate(y6, targets, colVec(1, 1),             "reduceMean() Uniform axis 1");
+    doValidate(y5, targets, Tensor<T>::fromValues({1, 1, 1}, {1, 3}),          "reduceMean() Uniform axis 0");
+    doValidate(y6, targets, Tensor<T>::fromValues({1, 1}, {2, 1}),             "reduceMean() Uniform axis 1");
     doValidate(y7, targets, scalar(0.32),             "reduceMean() Random");
-    doValidate(y8, targets, rowVec(0.14, 0.35, 0.47), "reduceMean() Random axis 0");
-    doValidate(y9, targets, colVec(0.36, 0.28),       "reduceMean() Random axis 1");
+    doValidate(y8, targets, Tensor<T>::fromValues({0.14, 0.35, 0.47}, {1, 3}), "reduceMean() Random axis 0");
+    doValidate(y9, targets, Tensor<T>::fromValues({0.36, 0.28}, {2, 1}),       "reduceMean() Random axis 1");
 }
 
+void testNNOps()
+{
+    Tensor<T> random(Storage<T>({0.01, -0.32, 0.74, 0.26, -0.38, -0.20}), {2, 3});
+
+    auto a = make_variable<T>("a", range<T>({2, 3}));
+    auto b = make_variable<T>("b", ones<T>({2, 3}));
+    auto c = make_variable<T>("c", random);
+
+    auto y1  = relu(a);
+    auto y2  = relu(b);
+    auto y3  = relu(c);
+    auto y4  = logistic(a);
+    auto y5  = logistic(b);
+    auto y6  = logistic(c);
+    auto y7  = softplus(a);
+    auto y8  = softplus(b);
+    auto y9  = softplus(c);
+    auto y10 = bentIdentity(a);
+    auto y11 = bentIdentity(b);
+    auto y12 = bentIdentity(c);
+    auto y13 = softmax(a);
+    auto y14 = softmax(b);
+    auto y15 = softmax(c);
+
+    Tensor<T> res1  = range<T>({2, 3});
+    Tensor<T> res2  = ones<T>({2, 3});
+    Tensor<T> res3  = Tensor<T>::fromValues({0.010,  0.000, 0.740, 0.260,  0.000,  0.000}, {2, 3});
+    Tensor<T> res4  = Tensor<T>::fromValues({0.500,  0.731, 0.881, 0.953,  0.982,  0.993}, {2, 3});
+    Tensor<T> res5  = Tensor<T>::fromValues({0.731,  0.731, 0.731, 0.731,  0.731,  0.731}, {2, 3});
+    Tensor<T> res6  = Tensor<T>::fromValues({0.502,  0.421, 0.677, 0.565,  0.406,  0.450}, {2, 3});
+    Tensor<T> res7  = Tensor<T>::fromValues({0.693,  1.313, 2.127, 3.049,  4.018,  5.007}, {2, 3});
+    Tensor<T> res8  = Tensor<T>::fromValues({1.313,  1.313, 1.313, 1.313,  1.313,  1.313}, {2, 3});
+    Tensor<T> res9  = Tensor<T>::fromValues({0.698,  0.546, 1.130, 0.832,  0.521,  0.598}, {2, 3});
+    Tensor<T> res10 = Tensor<T>::fromValues({0.000,  1.207, 2.618, 4.081,  5.562,  7.050}, {2, 3});
+    Tensor<T> res11 = Tensor<T>::fromValues({1.207,  1.207, 1.207, 1.207,  1.207,  1.207}, {2, 3});
+    Tensor<T> res12 = Tensor<T>::fromValues({0.010, -0.295, 0.862, 0.277, -0.345, -0.190}, {2, 3});
+    Tensor<T> res13 = Tensor<T>::fromValues({0.090,  0.245, 0.665, 0.090,  0.245,  0.665}, {2, 3});
+    Tensor<T> res14 = Tensor<T>::fromValues({0.333,  0.333, 0.333, 0.333,  0.333,  0.333}, {2, 3});
+    Tensor<T> res15 = Tensor<T>::fromValues({0.264,  0.189, 0.547, 0.463,  0.244,  0.292}, {2, 3});
+
+
+    vector<Graph<T>> targets({a, b, c});
+    doValidate(y1,  targets, res1,  "relu() Range");
+    doValidate(y2,  targets, res2,  "relu() Ones");
+    doValidate(y3,  targets, res3,  "relu() Random");
+    doValidate(y4,  targets, res4,  "logistic() Range");
+    doValidate(y5,  targets, res5,  "logistic() Ones");
+    doValidate(y6,  targets, res6,  "logistic() Random");
+    doValidate(y7,  targets, res7,  "softplus() Range");
+    doValidate(y8,  targets, res8,  "softplus() Ones");
+    doValidate(y9,  targets, res9,  "softplus() Random");
+    doValidate(y10, targets, res10, "bentIdentity() Range");
+    doValidate(y11, targets, res11, "bentIdentity() Ones");
+    doValidate(y12, targets, res12, "bentIdentity() Random");
+    doValidate(y13, targets, res13, "softmax() Range");
+    doValidate(y14, targets, res14, "softmax() Ones");
+    doValidate(y15, targets, res15, "softmax() Random");
+}
+
+void testMatrixMath()
+{
+    Storage<T> storage({-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+
+    Tensor<T> x1 (storage, {3, 3});
+    Tensor<T> x2 (storage, {3, 3}, {3, 2});
+    Tensor<T> x3 (storage, {3, 3}, {6, 1});
+    Tensor<T> x4 (storage, {3, 3}, {6, 2});
+    Tensor<T> x5 (storage, {3, 2});
+    Tensor<T> x6 (storage, {3, 2}, {2, 2});
+    Tensor<T> x7 (storage, {3, 2}, {4, 1});
+    Tensor<T> x8 (storage, {3, 2}, {4, 2});
+    Tensor<T> x9 (storage, {3, 2}, {2, 0});
+    Tensor<T> x10(storage, {3, 2}, {0, 1});
+    Tensor<T> x11(storage, {3, 2}, {0, 0});
+
+    cout << "x1:  " << transpose(x1, 0, 1) << endl << endl;
+    cout << "x2:  " << x2  << endl << endl;
+    cout << "x3:  " << x3  << endl << endl;
+    cout << "x4:  " << x4  << endl << endl;
+    cout << "x5:  " << x5  << endl << endl;
+    cout << "x6:  " << x6  << endl << endl;
+    cout << "x7:  " << x7  << endl << endl;
+    cout << "x8:  " << x8  << endl << endl;
+    cout << "x9:  " << x9  << endl << endl;
+    cout << "x10: " << x10 << endl << endl;
+    cout << "x11: " << x11 << endl << endl;
+
+    auto a1  = make_variable<T>("a1",   x1);
+    auto a2  = make_variable<T>("a2",   x2);
+    auto a3  = make_variable<T>("a3",   x3);
+    auto a4  = make_variable<T>("a4",   x4);
+    auto a5  = make_variable<T>("a5",   x5);
+    auto a6  = make_variable<T>("a6",   x6);
+    auto a7  = make_variable<T>("a7",   x7);
+    auto a8  = make_variable<T>("a8",   x8);
+    auto a9  = make_variable<T>("a9",   x9);
+    auto a10 = make_variable<T>("a10", x10);
+    auto a11 = make_variable<T>("a11", x11);
+    vector<Graph<T>> targets({a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11});
+
+    Tensor<T> res1  = Tensor<T>::fromValues({3, 0, -3, 12, 18, 24, 21, 36, 51}, {3, 3});
+    Tensor<T> res2  = Tensor<T>::fromValues({3, -3, -9, 12, 24, 36, 21, 51, 81}, {3, 3});
+    Tensor<T> res3  = Tensor<T>::fromValues({0, -3, -6, 36, 42, 48, 72, 87, 102}, {3, 3});
+    Tensor<T> res4  = Tensor<T>::fromValues({0, -6, -12, 36, 48, 60, 72, 102, 132}, {3, 3});
+    Tensor<T> res5  = Tensor<T>::fromValues({4, 1, 4, 10, 4, 19}, {3, 2});
+    Tensor<T> res6  = Tensor<T>::fromValues({4, -2, 4, 16, 4, 34}, {3, 2});
+    Tensor<T> res7  = Tensor<T>::fromValues({2, -1, 20, 26, 38, 53}, {3, 2});
+    Tensor<T> res8  = Tensor<T>::fromValues({2, -4, 20, 32, 38, 68}, {3, 2});
+    Tensor<T> res9  = Tensor<T>::fromValues({4, 4, 4, 4, 4, 4}, {3, 2});
+    Tensor<T> res10 = Tensor<T>::fromValues({6, 3, -12, -6, -30, -15}, {3, 2});
+    Tensor<T> res11 = Tensor<T>::fromValues({6, 6, -12, -12, -30, -30}, {3, 2});
+
+    doValidate(matrixMultiply(a1, a1),  targets, res1,  "Matrix Multiply Square");
+    doValidate(matrixMultiply(a1, a2),  targets, res2,  "Matrix Multiply Square X stride");
+    doValidate(matrixMultiply(a1, a3),  targets, res3,  "Matrix multiply Square Y stride");
+    doValidate(matrixMultiply(a1, a4),  targets, res4,  "Matrix Multiply Square X,Y stride");
+    doValidate(matrixMultiply(a1, a5),  targets, res5,  "Matrix Multiply Rectangle");
+    doValidate(matrixMultiply(a1, a6),  targets, res6,  "Matrix Multiply Rectangle X stride");
+    doValidate(matrixMultiply(a1, a7),  targets, res7,  "Matrix multiply Rectangle Y stride");
+    doValidate(matrixMultiply(a1, a8),  targets, res8,  "Matrix Multiply Rectangle X,Y stride");
+    doValidate(matrixMultiply(a1, a9),  targets, res9,  "Matrix Multiply Rectangle 0 stride X");
+    doValidate(matrixMultiply(a1, a10), targets, res10, "Matrix multiply Rectangle 0 stride Y");
+    doValidate(matrixMultiply(a1, a11), targets, res11, "Matrix Multiply Rectangle 0 stride X,Y");
+
+    Tensor<T> res12 = Tensor<T>::fromValues({21, 24, 27, 24, 30, 36, 27, 36, 45}, {3, 3});
+    Tensor<T> res13 = Tensor<T>::fromValues({21, 27, 33, 24, 36, 48, 27, 45, 63}, {3, 3});
+    Tensor<T> res14 = Tensor<T>::fromValues({48, 51, 54, 60, 66, 72, 72, 81, 90}, {3, 3});
+    Tensor<T> res15 = Tensor<T>::fromValues({48, 54, 60, 60, 72, 84, 72, 90, 108}, {3, 3});
+    Tensor<T> res16 = Tensor<T>::fromValues({12, 15, 12, 18, 12, 21}, {3, 2});
+    Tensor<T> res17 = Tensor<T>::fromValues({12, 18, 12, 24, 12, 30}, {3, 2});
+    Tensor<T> res18 = Tensor<T>::fromValues({30, 33, 36, 42, 42, 51}, {3, 2});
+    Tensor<T> res19 = Tensor<T>::fromValues({30, 36, 36, 48, 42, 60}, {3, 2});
+    Tensor<T> res20 = Tensor<T>::fromValues({12, 12, 12, 12, 12, 12}, {3, 2});
+    Tensor<T> res21 = Tensor<T>::fromValues({-6, -3, -12, -6, -18, -9}, {3, 2});
+    Tensor<T> res22 = Tensor<T>::fromValues({-6, -6, -12, -12, -18, -18}, {3, 2});
+
+    doValidate(matrixMultiplyT1(a1, a1),  targets, res12, "Matrix Multiply T1 Square");
+    // doValidate(matrixMultiplyT1(a1, a2),  targets, res13, "Matrix Multiply T1 Square X stride");
+    // doValidate(matrixMultiplyT1(a1, a3),  targets, res14, "Matrix multiply T1 Square Y stride");
+    // doValidate(matrixMultiplyT1(a1, a4),  targets, res15, "Matrix Multiply T1 Square X,Y stride");
+    // doValidate(matrixMultiplyT1(a1, a5),  targets, res16, "Matrix Multiply T1 Rectangle");
+    // doValidate(matrixMultiplyT1(a1, a6),  targets, res17, "Matrix Multiply T1 Rectangle X stride");
+    // doValidate(matrixMultiplyT1(a1, a7),  targets, res18, "Matrix multiply T1 Rectangle Y stride");
+    // doValidate(matrixMultiplyT1(a1, a8),  targets, res19, "Matrix Multiply T1 Rectangle X,Y stride");
+    // doValidate(matrixMultiplyT1(a1, a9),  targets, res20, "Matrix Multiply T1 Rectangle 0 stride X");
+    // doValidate(matrixMultiplyT1(a1, a10), targets, res21, "Matrix multiply T1 Rectangle 0 stride Y");
+    // doValidate(matrixMultiplyT1(a1, a11), targets, res22, "Matrix Multiply T1 Rectangle 0 stride X,Y");
+    //
+    // doValidate(y1, targets, res1, "Matrix Multiply T2 Square");
+    // doValidate(y2, targets, res2, "Matrix Multiply T2 Square X stride");
+    // doValidate(y3, targets, res3, "Matrix multiply T2 Square Y stride");
+    // doValidate(y4, targets, res4, "Matrix Multiply T2 Square X,Y stride");
+    // doValidate(y5, targets, res5, "Matrix Multiply T2 Rectangle");
+    // doValidate(y6, targets, res6, "Matrix Multiply T2 Rectangle X stride");
+    // doValidate(y7, targets, res7, "Matrix multiply T2 Rectangle Y stride");
+    // doValidate(y8, targets, res8, "Matrix Multiply T2 Rectangle X,Y stride");
+}
 
 int main()
 {
     cout << "Op   Grad Name" << endl;
 
-     testUnaryOps();       cout << endl;
+    testUnaryOps();       cout << endl;
 
-     testAddition();       cout << endl;
-     testSubtraction();    cout << endl;
-     testMultiplication(); cout << endl;
-     testDivision();       cout << endl;
-     testMax();            cout << endl;
-     testMin();            cout << endl;
+    testAddition();       cout << endl;
+    testSubtraction();    cout << endl;
+    testMultiplication(); cout << endl;
+    testDivision();       cout << endl;
+    testMax();            cout << endl;
+    testMin();            cout << endl;
 
-     testReduceSum();      cout << endl;
-     testReduceProduct();  cout << endl;
-     testReduceMin();      cout << endl;
-     testReduceMax();      cout << endl;
-     testReduceMean();     cout << endl;
+    testReduceSum();      cout << endl;
+    testReduceProduct();  cout << endl;
+    testReduceMin();      cout << endl;
+    testReduceMax();      cout << endl;
+    testReduceMean();     cout << endl;
 
-
+    testNNOps();          cout << endl;
+    testMatrixMath();     cout << endl;
     return 0;
 }

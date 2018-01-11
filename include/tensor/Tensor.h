@@ -21,9 +21,9 @@ using std::vector;
 using std::initializer_list;
 using std::pair;
 
-using SmallVector = std::vector<size_t, BufferAllocator<size_t, 2048>>;
+// using SmallVector = std::vector<size_t, BufferAllocator<size_t, 2048>>;
 // using SmallVector = std::vector<size_t, HeapAllocator<size_t, 1024>>;
-// using SmallVector = std::vector<size_t>;
+using SmallVector = std::vector<size_t>;
 
 #include "tensor/TensorIterator.h"
 

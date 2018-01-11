@@ -63,7 +63,15 @@ public:
             return res;
 
         // No piece exists that is large enough.
-        else throw std::bad_alloc();
+        else
+        {
+            #ifndef NDEBUG
+                std::cerr << "Unable to allocate " << n << " bytes." << std::endl;
+                std::cerr << "Available Allocations: " << std::endl;
+                print(true);
+            #endif
+            throw std::bad_alloc();
+        }
     }
 
     void deallocate(T* ptr, const size_t n)

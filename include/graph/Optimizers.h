@@ -33,7 +33,7 @@ Graph<T> gradientDescent(
 }
 
 // Helper that is a bit easier to use
-template <class T, class U>
+template <class T, class U = T>
 Graph<T> gradientDescent(
     Graph<T> error,
     std::unordered_set<std::string> targets = {},
@@ -83,7 +83,7 @@ Graph<T> gradientDescentMomentum(
 }
 
 // Helper that is a bit easier to use
-template <class T, class U>
+template <class T, class U = T>
 Graph<T> gradientDescentMomentum(
     Graph<T> error,
     const std::unordered_set<std::string> targets = {},
@@ -155,7 +155,7 @@ Graph<T> adam(Graph<T> error,
 }
 
 // Helper that is a bit easier to use
-template <class T, class U>
+template <class T, class U = T>
 Graph<T> adam(
     Graph<T> error,
     std::unordered_set<std::string> targets = {},
@@ -214,7 +214,7 @@ Graph<T> rmsProp(Graph<T> error,
 }
 
 // Helper that is a bit easier to use
-template <class T, class U>
+template <class T, class U = T>
 Graph<T> rmsProp(
     Graph<T> error,
     std::unordered_set<std::string> targets = {},

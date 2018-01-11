@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <set>
 #include "tensor/Tensor.h"
 #include "util/Assert.h"
 

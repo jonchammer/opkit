@@ -229,7 +229,7 @@ Tensor<T> normalLike(const Tensor<U>& model, Rand& rand,
 template <class T>
 Tensor<T> xavier(std::initializer_list<size_t> shape, Rand& rand)
 {
-    T stdev = sqrt(T{2} / shape[0]);
+    T stdev = sqrt(T{2} / *shape.begin());
     return normal<T>(shape, rand, 0, stdev);
 }
 

@@ -40,7 +40,7 @@ SmallVector getBroadcastShape(const Tensor<T>& A, const Tensor<T>& B)
         if (*aIt == 1 || *bIt == 1 || *aIt == *bIt)
             res[index] = std::max(*aIt, *bIt);
         else ASSERT(false, "Unable to coerce a valid broadcast shape. A = " +
-            to_string(aShape) + ", B = " + to_string(bShape));
+            opkit::to_string(aShape) + ", B = " + opkit::to_string(bShape));
     }
 
     // Copy the remaining shape elements from A
