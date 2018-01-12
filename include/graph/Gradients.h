@@ -124,12 +124,10 @@ std::unordered_map<std::string, Tensor<T>> empiricalGradients(Graph<T> node,
         Graph<T>* ptr = node.find(name);
         if (ptr == nullptr) continue;
 
-        Variable<T>& variable = (Variable<T>&) ptr->node();
-
         // Work with a copy of the original tensor because other nodes in the
         // graph might share its storage. (Changing an element of this variable
         // might affect other variables unintentionally).
-        Tensor<T>& orig = variable.value();
+        Tensor<T>& orig = ((Variable<T>&) ptr->node()).value();
         Tensor<T> value = orig.clone();
         ptr->assign(value);
 

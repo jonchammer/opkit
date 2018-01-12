@@ -99,7 +99,7 @@ void dMatrixMultiplyT1(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gra
     Graph<T> right = node.getParent(1);
 
     // NOTE: Assumes 'left' is transposed and 'right' is not
-    gradients.push_back(matrixMultiplyT1(right, delta));
+    gradients.push_back(matrixMultiplyT2(right, delta));
     gradients.push_back(matrixMultiply(left, delta));
 }
 

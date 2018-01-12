@@ -14,7 +14,7 @@ namespace opkit
 // targets both empirically and using automatic differentiation. Returns true
 // when the gradients agree and false when they do not.
 template <class T>
-bool validate(Graph<T>& root, std::vector<Graph<T>>& targets, const double threshold = 1E-3)
+bool validate(Graph<T> root, std::vector<Graph<T>>& targets, const double threshold = 1E-3)
 {
     using namespace std;
 

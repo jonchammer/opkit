@@ -49,6 +49,11 @@ Tensor<T> scalar(T val)
     return Tensor<T>::fromScalar(val);
 }
 
+Tensor<T> matrix(initializer_list<T> values, const size_t M, const size_t N)
+{
+    return Tensor<T>::fromValues(values, {M, N});
+}
+
 void testUnaryOps()
 {
     Tensor<T> x1   (Storage<T>({5, 7, 2, 1, 0, 3}), {2, 3});
@@ -90,16 +95,16 @@ void testUnaryOps()
 
 void testAddition()
 {
-    Tensor<T> x1  (Storage<T>({5, 7, 2, 1, -1, 3}), {2, 3});
-    Tensor<T> x2  (Storage<T>({2, 9, 2, 3, -2, 0}), {2, 3});
-    Tensor<T> x3  (Storage<T>({1}), {1});
-    Tensor<T> x4  (Storage<T>({3, 1}), {2, 1});
-    Tensor<T> x5  (Storage<T>({-1, 2, 3, 8}), {1, 4});
+    Tensor<T> x1 = matrix({5, 7, 2, 1, -1, 3}, 2, 3);
+    Tensor<T> x2 = matrix({2, 9, 2, 3, -2, 0}, 2, 3);
+    Tensor<T> x3 = scalar(1);
+    Tensor<T> x4 = matrix({3, 1}, 2, 1);
+    Tensor<T> x5 = matrix({-1, 2, 3, 8}, 1, 4);
 
-    Tensor<T> res1(Storage<T>({7, 16, 4, 4, -3, 3}), {2, 3});
-    Tensor<T> res2(Storage<T>({6, 8, 3, 2, 0, 4}), {2, 3});
-    Tensor<T> res3(Storage<T>({2, 5, 6, 11, 0, 3, 4, 9}), {2, 4});
-    Tensor<T> res4(Storage<T>({10, 12, 7, 6, 4, 8}), {2, 3});
+    Tensor<T> res1 = matrix({7, 16, 4, 4, -3, 3}, 2, 3);
+    Tensor<T> res2 = matrix({6, 8, 3, 2, 0, 4}, 2, 3);
+    Tensor<T> res3 = matrix({2, 5, 6, 11, 0, 3, 4, 9}, 2, 4);
+    Tensor<T> res4 = matrix({10, 12, 7, 6, 4, 8}, 2, 3);
 
     auto a1  = make_variable<T>("a1", x1);
     auto a2  = make_variable<T>("a2", x2);
@@ -311,7 +316,7 @@ void testMin()
 
 void testReduceSum()
 {
-    Tensor<T> random(Storage<T>({0.01, 0.32, 0.74, 0.26, 0.38, 0.20}), {2, 3});
+    Tensor<T> random = Tensor<T>::fromValues({0.01, 0.32, 0.74, 0.26, 0.38, 0.20}, {2, 3});
 
     auto a = make_variable<T>("a", range<T>({2, 3}));
     auto b = make_variable<T>("b", ones<T>({2, 3}));
@@ -330,28 +335,38 @@ void testReduceSum()
     auto y8  = reduceSum(c, zero);
     auto y9  = reduceSum(c, one);
 
+    Tensor<T> res1 = scalar(15);
+    Tensor<T> res2 = Tensor<T>::fromValues({3, 5, 7}, {1, 3});
+    Tensor<T> res3 = Tensor<T>::fromValues({3, 12}, {2, 1});
+    Tensor<T> res4 = scalar(6);
+    Tensor<T> res5 = Tensor<T>::fromValues({2, 2, 2}, {1, 3});
+    Tensor<T> res6 = Tensor<T>::fromValues({3, 3}, {2, 1});
+    Tensor<T> res7 = scalar(1.91);
+    Tensor<T> res8 = Tensor<T>::fromValues({0.27, 0.70, 0.94}, {1, 3});
+    Tensor<T> res9 = Tensor<T>::fromValues({1.07, 0.84}, {2, 1});
+
     vector<Graph<T>> targets({a, b, c});
-    doValidate(y1, targets, scalar(15),               "reduceSum() Range");
-    doValidate(y2, targets, Tensor<T>::fromValues({3, 5, 7}, {1, 3}),          "reduceSum() Range axis 0");
-    doValidate(y3, targets, Tensor<T>::fromValues({3, 12}, {2, 1}),            "reduceSum() Range axis 1");
-    doValidate(y4, targets, scalar(6),                "reduceSum() Uniform");
-    doValidate(y5, targets, Tensor<T>::fromValues({2, 2, 2}, {1, 3}),          "reduceSum() Uniform axis 0");
-    doValidate(y6, targets, Tensor<T>::fromValues({3, 3}, {2, 1}),             "reduceSum() Uniform axis 1");
-    doValidate(y7, targets, scalar(1.91),             "reduceSum() Random");
-    doValidate(y8, targets, Tensor<T>::fromValues({0.27, 0.70, 0.94}, {1, 3}), "reduceSum() Random axis 0");
-    doValidate(y9, targets, Tensor<T>::fromValues({1.07, 0.84}, {2, 1}),       "reduceSum() Random axis 1");
+    doValidate(y1, targets, res1, "reduceSum() Range");
+    doValidate(y2, targets, res2, "reduceSum() Range axis 0");
+    doValidate(y3, targets, res3, "reduceSum() Range axis 1");
+    doValidate(y4, targets, res4, "reduceSum() Uniform");
+    doValidate(y5, targets, res5, "reduceSum() Uniform axis 0");
+    doValidate(y6, targets, res6, "reduceSum() Uniform axis 1");
+    doValidate(y7, targets, res7, "reduceSum() Random");
+    doValidate(y8, targets, res8, "reduceSum() Random axis 0");
+    doValidate(y9, targets, res9, "reduceSum() Random axis 1");
 }
 
 void testReduceProduct()
 {
-    Tensor<T> random(Storage<T>({0.01, 0.32, 0.74, 0.26, 0.38, 0.20}), {2, 3});
+    Tensor<T> random = Tensor<T>::fromValues({0.01, 0.32, 0.74, 0.26, 0.38, 0.20}, {2, 3});
 
     auto a = make_variable<T>("a", range<T>({2, 3}));
     auto b = make_variable<T>("b", ones<T>({2, 3}));
     auto c = make_variable<T>("c", random);
 
-    auto zero = make_constant<T>("0", Tensor<T>::fromScalar(0));
-    auto one  = make_constant<T>("1", Tensor<T>::fromScalar(1));
+    auto zero = make_constant<T>(0);
+    auto one  = make_constant<T>(1);
 
     auto y1 = reduceProduct(a);
     auto y2 = reduceProduct(a, zero);
@@ -363,16 +378,26 @@ void testReduceProduct()
     auto y8 = reduceProduct(c, zero);
     auto y9 = reduceProduct(c, one);
 
+    Tensor<T> res1 = scalar(0);
+    Tensor<T> res2 = Tensor<T>::fromValues({0, 4, 10}, {1, 3});
+    Tensor<T> res3 = Tensor<T>::fromValues({0, 60}, {2, 1});
+    Tensor<T> res4 = scalar(1);
+    Tensor<T> res5 = Tensor<T>::fromValues({1, 1, 1}, {1, 3});
+    Tensor<T> res6 = Tensor<T>::fromValues({1, 1}, {2, 1});
+    Tensor<T> res7 = scalar(0);
+    Tensor<T> res8 = Tensor<T>::fromValues({0.00, 0.12, 0.15}, {1, 3});
+    Tensor<T> res9 = Tensor<T>::fromValues({0.00, 0.02}, {2, 1});
+
     vector<Graph<T>> targets({a, b, c});
-    doValidate(y1, targets, scalar(0),                "reduceProduct() Range");
-    doValidate(y2, targets, Tensor<T>::fromValues({0, 4, 10}, {1, 3}),         "reduceProduct() Range axis 0");
-    doValidate(y3, targets, Tensor<T>::fromValues({0, 60}, {2, 1}),            "reduceProduct() Range axis 1");
-    doValidate(y4, targets, scalar(1),                "reduceProduct() Uniform");
-    doValidate(y5, targets, Tensor<T>::fromValues({1, 1, 1}, {1, 3}),          "reduceProduct() Uniform axis 0");
-    doValidate(y6, targets, Tensor<T>::fromValues({1, 1}, {2, 1}),             "reduceProduct() Uniform axis 1");
-    doValidate(y7, targets, scalar(0.00),             "reduceProduct() Random");
-    doValidate(y8, targets, Tensor<T>::fromValues({0.00, 0.12, 0.15}, {1, 3}), "reduceProduct() Random axis 0");
-    doValidate(y9, targets, Tensor<T>::fromValues({0.00, 0.02}, {2, 1}),       "reduceProduct() Random axis 1");
+    doValidate(y1, targets, res1, "reduceProduct() Range");
+    doValidate(y2, targets, res2, "reduceProduct() Range axis 0");
+    doValidate(y3, targets, res3, "reduceProduct() Range axis 1");
+    doValidate(y4, targets, res4, "reduceProduct() Uniform");
+    doValidate(y5, targets, res5, "reduceProduct() Uniform axis 0");
+    doValidate(y6, targets, res6, "reduceProduct() Uniform axis 1");
+    doValidate(y7, targets, res7, "reduceProduct() Random");
+    doValidate(y8, targets, res8, "reduceProduct() Random axis 0");
+    doValidate(y9, targets, res9, "reduceProduct() Random axis 1");
 }
 
 void testReduceMin()
@@ -548,18 +573,13 @@ void testMatrixMath()
     Tensor<T> x9 (storage, {3, 2}, {2, 0});
     Tensor<T> x10(storage, {3, 2}, {0, 1});
     Tensor<T> x11(storage, {3, 2}, {0, 0});
-
-    cout << "x1:  " << transpose(x1, 0, 1) << endl << endl;
-    cout << "x2:  " << x2  << endl << endl;
-    cout << "x3:  " << x3  << endl << endl;
-    cout << "x4:  " << x4  << endl << endl;
-    cout << "x5:  " << x5  << endl << endl;
-    cout << "x6:  " << x6  << endl << endl;
-    cout << "x7:  " << x7  << endl << endl;
-    cout << "x8:  " << x8  << endl << endl;
-    cout << "x9:  " << x9  << endl << endl;
-    cout << "x10: " << x10 << endl << endl;
-    cout << "x11: " << x11 << endl << endl;
+    Tensor<T> x12(storage, {2, 3});
+    Tensor<T> x13(storage, {2, 3}, {3, 2});
+    Tensor<T> x14(storage, {2, 3}, {6, 1});
+    Tensor<T> x15(storage, {2, 3}, {6, 2});
+    Tensor<T> x16(storage, {2, 3}, {3, 0});
+    Tensor<T> x17(storage, {2, 3}, {0, 1});
+    Tensor<T> x18(storage, {2, 3}, {0, 0});
 
     auto a1  = make_variable<T>("a1",   x1);
     auto a2  = make_variable<T>("a2",   x2);
@@ -572,7 +592,15 @@ void testMatrixMath()
     auto a9  = make_variable<T>("a9",   x9);
     auto a10 = make_variable<T>("a10", x10);
     auto a11 = make_variable<T>("a11", x11);
-    vector<Graph<T>> targets({a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11});
+    auto a12 = make_variable<T>("a12", x12);
+    auto a13 = make_variable<T>("a13", x13);
+    auto a14 = make_variable<T>("a14", x14);
+    auto a15 = make_variable<T>("a15", x15);
+    auto a16 = make_variable<T>("a16", x16);
+    auto a17 = make_variable<T>("a17", x17);
+    auto a18 = make_variable<T>("a18", x18);
+    vector<Graph<T>> targets({a1, a2, a3, a4, a5, a6, a7, a8, a9,
+        a10, a11, a12, a13, a14, a15, a16, a17, a18});
 
     Tensor<T> res1  = Tensor<T>::fromValues({3, 0, -3, 12, 18, 24, 21, 36, 51}, {3, 3});
     Tensor<T> res2  = Tensor<T>::fromValues({3, -3, -9, 12, 24, 36, 21, 51, 81}, {3, 3});
@@ -611,25 +639,40 @@ void testMatrixMath()
     Tensor<T> res22 = Tensor<T>::fromValues({-6, -6, -12, -12, -18, -18}, {3, 2});
 
     doValidate(matrixMultiplyT1(a1, a1),  targets, res12, "Matrix Multiply T1 Square");
-    // doValidate(matrixMultiplyT1(a1, a2),  targets, res13, "Matrix Multiply T1 Square X stride");
-    // doValidate(matrixMultiplyT1(a1, a3),  targets, res14, "Matrix multiply T1 Square Y stride");
-    // doValidate(matrixMultiplyT1(a1, a4),  targets, res15, "Matrix Multiply T1 Square X,Y stride");
-    // doValidate(matrixMultiplyT1(a1, a5),  targets, res16, "Matrix Multiply T1 Rectangle");
-    // doValidate(matrixMultiplyT1(a1, a6),  targets, res17, "Matrix Multiply T1 Rectangle X stride");
-    // doValidate(matrixMultiplyT1(a1, a7),  targets, res18, "Matrix multiply T1 Rectangle Y stride");
-    // doValidate(matrixMultiplyT1(a1, a8),  targets, res19, "Matrix Multiply T1 Rectangle X,Y stride");
-    // doValidate(matrixMultiplyT1(a1, a9),  targets, res20, "Matrix Multiply T1 Rectangle 0 stride X");
-    // doValidate(matrixMultiplyT1(a1, a10), targets, res21, "Matrix multiply T1 Rectangle 0 stride Y");
-    // doValidate(matrixMultiplyT1(a1, a11), targets, res22, "Matrix Multiply T1 Rectangle 0 stride X,Y");
-    //
-    // doValidate(y1, targets, res1, "Matrix Multiply T2 Square");
-    // doValidate(y2, targets, res2, "Matrix Multiply T2 Square X stride");
-    // doValidate(y3, targets, res3, "Matrix multiply T2 Square Y stride");
-    // doValidate(y4, targets, res4, "Matrix Multiply T2 Square X,Y stride");
-    // doValidate(y5, targets, res5, "Matrix Multiply T2 Rectangle");
-    // doValidate(y6, targets, res6, "Matrix Multiply T2 Rectangle X stride");
-    // doValidate(y7, targets, res7, "Matrix multiply T2 Rectangle Y stride");
-    // doValidate(y8, targets, res8, "Matrix Multiply T2 Rectangle X,Y stride");
+    doValidate(matrixMultiplyT1(a1, a2),  targets, res13, "Matrix Multiply T1 Square X stride");
+    doValidate(matrixMultiplyT1(a1, a3),  targets, res14, "Matrix multiply T1 Square Y stride");
+    doValidate(matrixMultiplyT1(a1, a4),  targets, res15, "Matrix Multiply T1 Square X,Y stride");
+    doValidate(matrixMultiplyT1(a1, a5),  targets, res16, "Matrix Multiply T1 Rectangle");
+    doValidate(matrixMultiplyT1(a1, a6),  targets, res17, "Matrix Multiply T1 Rectangle X stride");
+    doValidate(matrixMultiplyT1(a1, a7),  targets, res18, "Matrix multiply T1 Rectangle Y stride");
+    doValidate(matrixMultiplyT1(a1, a8),  targets, res19, "Matrix Multiply T1 Rectangle X,Y stride");
+    doValidate(matrixMultiplyT1(a1, a9),  targets, res20, "Matrix Multiply T1 Rectangle 0 stride X");
+    doValidate(matrixMultiplyT1(a1, a10), targets, res21, "Matrix multiply T1 Rectangle 0 stride Y");
+    doValidate(matrixMultiplyT1(a1, a11), targets, res22, "Matrix Multiply T1 Rectangle 0 stride X,Y");
+
+    Tensor<T> res23 = Tensor<T>::fromValues({5, -4, -13, -4, 14, 32, -13, 32, 77}, {3, 3});
+    Tensor<T> res24 = Tensor<T>::fromValues({4, -5, -14, 4, 22, 40, 4, 49, 94}, {3, 3});
+    Tensor<T> res25 = Tensor<T>::fromValues({5, -13, -31, -4, 32, 68, -13, 77, 167}, {3, 3});
+    Tensor<T> res26 = Tensor<T>::fromValues({4, -14, -32, 4, 40, 76, 4, 94, 184}, {3, 3});
+    Tensor<T> res27 = Tensor<T>::fromValues({5, -4, -4, 14, -13, 32}, {3, 2});
+    Tensor<T> res28 = Tensor<T>::fromValues({4, -5, 4, 22, 4, 49}, {3, 2});
+    Tensor<T> res29 = Tensor<T>::fromValues({5, -13, -4, 32, -13, 77}, {3, 2});
+    Tensor<T> res30 = Tensor<T>::fromValues({4, -14, 4, 40, 4, 94}, {3, 2});
+    Tensor<T> res31 = Tensor<T>::fromValues({6, -3, -12, 6, -30, 15}, {3, 2});
+    Tensor<T> res32 = Tensor<T>::fromValues({5, 5, -4, -4, -13, -13}, {3, 2});
+    Tensor<T> res33 = Tensor<T>::fromValues({6, 6, -12, -12, -30, -30}, {3, 2});
+
+    doValidate(matrixMultiplyT2(a1, a1),  targets, res23, "Matrix Multiply T2 Square");
+    doValidate(matrixMultiplyT2(a1, a2),  targets, res24, "Matrix Multiply T2 Square X stride");
+    doValidate(matrixMultiplyT2(a1, a3),  targets, res25, "Matrix multiply T2 Square Y stride");
+    doValidate(matrixMultiplyT2(a1, a4),  targets, res26, "Matrix Multiply T2 Square X,Y stride");
+    doValidate(matrixMultiplyT2(a1, a12), targets, res27, "Matrix Multiply T2 Rectangle");
+    doValidate(matrixMultiplyT2(a1, a13), targets, res28, "Matrix Multiply T2 Rectangle X stride");
+    doValidate(matrixMultiplyT2(a1, a14), targets, res29, "Matrix multiply T2 Rectangle Y stride");
+    doValidate(matrixMultiplyT2(a1, a15), targets, res30, "Matrix Multiply T2 Rectangle X,Y stride");
+    doValidate(matrixMultiplyT2(a1, a16), targets, res31, "Matrix Multiply T2 Rectangle 0 stride X");
+    doValidate(matrixMultiplyT2(a1, a17), targets, res32, "Matrix multiply T2 Rectangle 0 stride Y");
+    doValidate(matrixMultiplyT2(a1, a18), targets, res33, "Matrix Multiply T2 Rectangle 0 stride X,Y");
 }
 
 int main()

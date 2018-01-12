@@ -665,18 +665,27 @@ template <class T>
 template <class InputIt>
 void Tensor<T>::resize(InputIt shapeBegin, InputIt shapeEnd)
 {
-    // Only resize if the shape has actually changed
-    size_t index = 0;
-    for (InputIt it = shapeBegin; it != shapeEnd; ++it)
+    // Compare the iterator pair to the given shape. Returns true if the
+    // sizes are the same and the elements match.
+    static auto match = [](InputIt begin, InputIt end, SmallVector& shape)
     {
-        if (*it != mShape[index++])
+        if (std::distance(begin, end) != shape.size()) return false;
+
+        int index = 0;
+        for (InputIt it = begin; it != end; ++it)
         {
-            mShape.assign(shapeBegin, shapeEnd);
-            mStride      = calculateOptimalStride(mShape);
-            mNumElements = countElements(mShape);
-            mStorage.resize(mNumElements);
-            break;
+            if (*it != shape[index++]) return false;
         }
+        return true;
+    };
+
+    // Only resize if the shape has actually changed
+    if (!match(shapeBegin, shapeEnd, mShape))
+    {
+        mShape.assign(shapeBegin, shapeEnd);
+        mStride      = calculateOptimalStride(mShape);
+        mNumElements = countElements(mShape);
+        mStorage.resize(mNumElements);
     }
 }
 

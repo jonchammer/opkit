@@ -309,7 +309,7 @@ void reduceTo(Tensor<T>& y, const Tensor<T>& A, Fn&& func, const T& init,
 
 // Convenience overload for the graph methods that must work with tensors.
 template <class T, class Fn>
-Tensor<T> reduceTo(const Tensor<T>& A, Fn&& func, const T& init, const Tensor<T> shape)
+Tensor<T> reduceTo(const Tensor<T>& A, Fn&& func, const T& init, const Tensor<T>& shape)
 {
     Tensor<T> res;
     reduceTo(res, A, std::forward<Fn>(func), init, shape);
@@ -317,7 +317,7 @@ Tensor<T> reduceTo(const Tensor<T>& A, Fn&& func, const T& init, const Tensor<T>
 }
 
 template <class T, class Fn>
-void reduceTo(Tensor<T>& y, const Tensor<T>& A, Fn&& func, const T& init, const Tensor<T> shape)
+void reduceTo(Tensor<T>& y, const Tensor<T>& A, Fn&& func, const T& init, const Tensor<T>& shape)
 {
     SmallVector resShape(shape.size());
     auto resIt = resShape.begin();

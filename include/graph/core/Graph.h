@@ -34,12 +34,25 @@ public:
 
     // Construct a graph node with the proper data and type
     // Should only be used for low-level routines (e.g. make_constant())
-    Graph(Node<T>* ptr, Type type) : mNode(ptr), mType(type) {}
+    Graph(Node<T>* nodePtr, Type type) : mNode(nodePtr), mType(type) {}
 
     // Normal constructors
-    Graph() : mNode(nullptr), mType(INVALID) {}
-    Graph(const Graph<T>& orig) = default;
-    Graph(Graph<T>&& orig)      = default;
+    Graph() : mNode(nullptr, true), mType(INVALID) {}
+    Graph(const Graph<T>& orig, bool weak = false) :
+        mNode(orig.ptr(), weak), mType(orig.mType) {}
+    Graph(Graph<T>&& orig) = default;
+
+    ~Graph()
+    {
+        // Storing children nodes creates cycles in the dependency graph that
+        // prevent reference counting from being able to clean up the memory
+        // allocated by the nodes. We have to manually break those cycles in
+        // order to prevent memory leaks. Here we search all parent nodes for
+        // references to ourself and eliminate those references.
+        if (mNode != nullptr && getNumParents() > 0 &&
+            mNode->getRefCount() <= 1)
+            mNode->destroyReferences();
+    }
 
     // Assignment operators
     Graph<T>& operator=(const Graph<T>& rhs) = default;
@@ -56,10 +69,18 @@ public:
     }
 
     // Add a new node dependency. 'child' relies on the output of this node.
-    void addChild(const Graph<T>& child)
+    void addChild(Graph<T> child)
     {
         ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
         mNode->addChild(child);
+    }
+
+    // Removes any connection to the underlying node (used as an implementation
+    // detail.)
+    void reset()
+    {
+        mNode = nullptr;
+        mType = INVALID;
     }
 
     // Many graph nodes cache their most recent calculations to improve
@@ -74,6 +95,7 @@ public:
         {
             Graph<T>* cur = stack.back();
             stack.pop_back();
+            if (cur == nullptr || cur->type() == INVALID) continue;
 
             cur->node().invalidate();
             for (size_t i = 0; i < cur->getNumChildren(); ++i)
@@ -130,8 +152,7 @@ public:
     }
     size_t getNumParents() const
     {
-        ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
-        return mNode->getNumParents();
+        return (mNode != nullptr) ? mNode->getNumParents() : 0;
     }
 
     // Each graph node has either 0 or more children (dependents) depending on
@@ -149,8 +170,7 @@ public:
     }
     size_t getNumChildren() const
     {
-        ASSERT(mNode != nullptr, "Empty graph nodes cannot be used.");
-        return mNode->getNumChildren();
+        return (mNode != nullptr) ? mNode->getNumChildren() : 0;
     }
 
     // Returns the name for this node in the graph.

@@ -17,9 +17,28 @@ private:
 
 public:
 
-    void addChild(const Graph<T>& child)
+    void addChild(Graph<T> child)
     {
-        children.push_back(child);
+        // Add a weak reference to the child to avoid cycles in the dependency
+        // graph.
+        children.emplace_back(child, true);
+    }
+
+    void destroyReferences()
+    {
+        // Search each parent node for children that reference us. If we find
+        // any, eliminate those references so no one is left with an invalid
+        // reference after we are destroyed.
+        for (size_t i = 0; i < getNumParents(); ++i)
+        {
+            Graph<T>& parent = getParent(i);
+            Node<T>& parentNode = parent.node();
+            for (Graph<T>& child : parentNode.children)
+            {
+                if (child.ptr() == this)
+                    child.reset();
+            }
+        }
     }
 
     // Get the nth child for this node. Some nodes may have 0 children.

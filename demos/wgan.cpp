@@ -96,16 +96,17 @@ int main()
     auto dReal   = discriminator(      x, dW1, dB1, dW2, dB2);
     auto dFake   = discriminator(gSample, dW1, dB1, dW2, dB2);
 
-    if (validate(gSample, gVars))
-    {
-        cout << "PASSED" << endl;
-    }
-    else cout << "FAILED" << endl;
-
     // WGAN Loss
     auto dLoss = reduceMean(dFake) - reduceMean(dReal); // minimizing -(original loss)
     auto gLoss = -reduceMean(dFake);
     auto clipD = clipWeights(dVars, -0.01, 0.01);
+
+    // std::vector<Graph<T>> allVars({gW1, gB1, gW2, gB2, dW1, dB1, dW2, dB2, x, z});
+    // if (validate(gLoss, allVars, 1E-1))
+    // {
+    //     cout << "PASSED" << endl;
+    // }
+    // else cout << "FAILED" << endl;
 
     // Build the update rule
     auto dSolver = rmsProp(dLoss, dNames, 1E-4, 0.9, 0.0, 1E-10);
@@ -117,7 +118,6 @@ int main()
     Tensor<T>* batchLabels;
 
     printf("%5s, %8s, %8s, %8s\n", "It", "Time", "gLoss", "dLoss");
-
     Timer t;
     size_t j = 0;
     for (size_t i = 0; i < 1000000; ++i)

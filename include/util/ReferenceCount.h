@@ -13,6 +13,7 @@ public:                                // counted objects
     void markUnshareable();
     bool isShareable() const;
     bool isShared() const;
+    int getRefCount() const;
 
 protected:
     RCObject();
@@ -63,7 +64,8 @@ void RCObject::addReference()
 
 void RCObject::removeReference()
 {
-    if (--refCount == 0) delete this;
+    if (--refCount == 0)
+        delete this;
 }
 
 void RCObject::markUnshareable()
@@ -81,6 +83,10 @@ bool RCObject::isShared() const
     return refCount > 1;
 }
 
+int RCObject::getRefCount() const
+{
+    return refCount;
+}
 
 /******************************************************************************
 *                 Template Class RCPtr (from pp. 203, 206)                    *
@@ -89,7 +95,7 @@ template <class T>                     // template class for smart
 class RCPtr                            // pointers-to-T objects; T
 {
 public:                                // must support the RCObject interface
-    RCPtr(T* realPtr = nullptr);
+    RCPtr(T* realPtr = nullptr, bool weak = false);
     RCPtr(const RCPtr& rhs);
     RCPtr(RCPtr&& rhs) noexcept;
     ~RCPtr() noexcept;
@@ -106,6 +112,7 @@ public:                                // must support the RCObject interface
 
 private:
     T *pointee;
+    bool weak;    // Weak pointers do not update the reference count
     void init();
 };
 
@@ -117,34 +124,35 @@ void RCPtr<T>::init()
     if (!pointee->isShareable())
         pointee = pointee->clone(); //new T(*pointee);
 
-    pointee->addReference();
+    if (!weak) pointee->addReference();
 }
 
 template <class T>
-RCPtr<T>::RCPtr(T* realPtr)
-    : pointee(realPtr)
+RCPtr<T>::RCPtr(T* realPtr, bool weak)
+    : pointee(realPtr), weak(weak)
 {
     init();
 }
 
 template <class T>
 RCPtr<T>::RCPtr(const RCPtr& rhs)
-    : pointee(rhs.pointee)
+    : pointee(rhs.pointee), weak(rhs.weak)
 {
     init();
 }
 
 template <class T>
 RCPtr<T>::RCPtr(RCPtr&& rhs) noexcept
-    : pointee(rhs.pointee)
+    : pointee(rhs.pointee), weak(rhs.weak)
 {
     rhs.pointee = nullptr;
+    rhs.weak    = false;
 }
 
 template <class T>
 RCPtr<T>::~RCPtr() noexcept
 {
-    if (pointee != nullptr) pointee->removeReference();
+    if (pointee != nullptr && !weak) pointee->removeReference();
 }
 
 template <class T>
@@ -153,11 +161,13 @@ RCPtr<T>& RCPtr<T>::operator=(const RCPtr& rhs)
     if (pointee != rhs.pointee)
     {
         T* oldPointee = pointee;
+        bool oldWeak  = weak;
 
         pointee = rhs.pointee;
+        weak    = rhs.weak;
         init();
 
-        if (oldPointee != nullptr) oldPointee->removeReference();
+        if (oldPointee != nullptr && !oldWeak) oldPointee->removeReference();
     }
 
     return *this;
@@ -166,9 +176,11 @@ RCPtr<T>& RCPtr<T>::operator=(const RCPtr& rhs)
 template <class T>
 RCPtr<T>& RCPtr<T>::operator=(RCPtr&& rhs) noexcept
 {
-    if (pointee != nullptr) pointee->removeReference();
+    if (pointee != nullptr && !weak) pointee->removeReference();
     pointee     = rhs.pointee;
+    weak        = rhs.weak;
     rhs.pointee = nullptr;
+    rhs.weak    = false;
     return *this;
 }
 
