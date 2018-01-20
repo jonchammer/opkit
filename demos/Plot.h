@@ -116,6 +116,23 @@ public:
             }
         }
     }
+    
+    void drawCircle(const size_t x, const size_t y, const double radius, 
+        const uint8_t value, const bool yFlip = false)
+    {
+        for (int sy = y - radius; sy <= y + radius; ++sy)
+        {
+            for (int sx = x - radius; sx <= x + radius; ++sx)
+            {
+                if (sy < 0 || sy >= height() || sx < 0 || sx >= width()) continue;
+                
+                double dx = (double) sx - (double) x;
+                double dy = (double) sy - (double) y; ;
+                if (sqrt(dx * dx + dy * dy) <= radius)
+                    set(sx, sy, value, yFlip);
+            }
+        }
+    }
 
     size_t width()  const { return mWidth;  }
     size_t height() const { return mHeight; }
@@ -238,6 +255,52 @@ bool plotGrid(const string& filename, const Tensor<T>& images,
         }
     }
 
+    Image result;
+    result.addChannel(canvas);
+    return result.save(filename);
+}
+
+template <class T>
+bool plotScatter(const string& filename, const Tensor<T>& points,
+    const size_t xCol, const size_t yCol,
+    const size_t width, const size_t height,
+    const T windowMinX, const T windowMaxX,
+    const T windowMinY, const T windowMaxY)
+{
+    ASSERT(points.rank() == 2, "Points must be a matrix.");
+    
+    Channel canvas(width, height);
+    canvas.fill(255);
+    
+    // Draw the axes
+    for (size_t i = 0; i < width; ++i)
+    {
+        size_t sy = (-windowMinY / (windowMaxY - windowMinY)) * height;
+        canvas.set(i, sy, 70, false);
+    }
+    for (size_t i = 0; i < height; ++i)
+    {
+        size_t sx = (-windowMinX / (windowMaxX - windowMinX)) * width;
+        canvas.set(sx, i, 70, false);
+    }
+    
+    // Draw the points
+    const size_t N = points.shape(0);
+    for (size_t i = 0; i < N; ++i)
+    {
+        T x = points.at({i, xCol});
+        T y = points.at({i, yCol});
+        if (x >= windowMinX && x <= windowMaxX &&
+            y >= windowMinY && y <= windowMaxY)
+        {
+            size_t sx = ((x - windowMinX) / (windowMaxX - windowMinX)) * width;
+            size_t sy = ((y - windowMinY) / (windowMaxY - windowMinY)) * height;
+            
+            //printf("(%f, %f) -> (%zu, %zu)\n", x, y, sx, sy);
+            canvas.drawCircle(sx, sy, 5.0, 0, false);
+        }
+    }
+    
     Image result;
     result.addChannel(canvas);
     return result.save(filename);
