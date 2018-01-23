@@ -43,7 +43,7 @@ public:
     {
         Tensor<T>& value = ((Variable<T>&) mTarget.node()).value();
         mFunc(value, mValue());
-        // mTarget.node().invalidateAll();
+        mTarget.invalidate();
         return value;
     }
 
@@ -128,7 +128,7 @@ public:
     {
         Tensor<T>& value = ((Variable<T>&) mTarget.node()).value();
         mFunc(value, mValue(), mArg());
-        // mTarget.node().invalidateAll();
+        mTarget.invalidate();
         return value;
     }
 

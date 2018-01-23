@@ -48,7 +48,8 @@ Graph<T> gradientDescentMomentum(
     Graph<T> error,
     const std::unordered_set<std::string>& targets,
     Graph<T> lr,
-    Graph<T> momentum)
+    Graph<T> momentum,
+    bool useNesterov)
 {
     // Calculate the gradient graphs for each of the targets
     auto grads = gradients(error, targets);
@@ -62,23 +63,33 @@ Graph<T> gradientDescentMomentum(
 
         // Create a velocity vector per optimizable parameter
         Tensor<T>& value = ((Variable<T>&) x->node()).value();
-        Tensor<T> init   = ones<T>(value.shape());
+        Tensor<T> init   = zeroesLike<T>(value);
         auto velocity    = make_variable<T>(x->name() + "_velocity", init);
 
-        // Update the velocity, apply the Nesterov step, then update the
-        // parameters using the following equations:
-        //
-        // velocity = velocity * momentum + gradient
-        // x       -= lr * gradient + (momentum * velocity)
         vector<Graph<T>> assignments;
-        assignments.emplace_back(assign(velocity, velocity * momentum + pair.second));
-        assignments.emplace_back(axpy(*x, pair.second + momentum * velocity, -lr));
+        if (useNesterov)
+        {
+            // Update the velocity, apply the Nesterov step, then update the
+            // parameters using the following equations:
+            //
+            // velocity = velocity * momentum + gradient
+            // x       -= lr * gradient + (momentum * velocity)
+            assignments.emplace_back(assign(velocity, velocity * momentum + pair.second));
+            assignments.emplace_back(axpy(*x, pair.second + momentum * velocity, -lr));
+        }
+        else
+        {
+            assignments.emplace_back(assign(velocity, velocity * momentum + pair.second));
+            assignments.emplace_back(axpy(*x, velocity, -lr));
+        }
 
-        // Tie the rules together using another list
+        // Tie the individual rules together using another list
         updateRules.emplace_back(list(assignments));
     }
 
     // Tie all of the update rules together
+    auto res = list(updateRules);
+    
     return list(updateRules);
 }
 
@@ -88,11 +99,12 @@ Graph<T> gradientDescentMomentum(
     Graph<T> error,
     const std::unordered_set<std::string> targets = {},
     const U learningRate = 1E-3,
-    const U momentum = 1E-3)
+    const U momentum = 1E-3,
+    const bool useNesterov = false)
 {
     auto lr  = make_variable<T>("lr",       Tensor<T>::fromScalar(learningRate));
     auto mom = make_variable<T>("momentum", Tensor<T>::fromScalar(momentum));
-    return gradientDescentMomentum(error, targets, lr, mom);
+    return gradientDescentMomentum(error, targets, lr, mom, useNesterov);
 }
 
 template <class T>

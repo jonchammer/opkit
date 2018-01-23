@@ -109,6 +109,11 @@ public:
     {
         return mFunc;
     }
+
+    Tensor<T>& cachedResult()
+    {
+        return mCachedResult;
+    }
 };
 
 // Used for in-place function assignment

@@ -35,11 +35,11 @@ public:
     // Node class implementations
     const Tensor<T>& operator()() override
     {
-        // Evaluate each of the list elements
-        for (Graph<T>& dependent : mDependents)
-            dependent();
+        // Evaluate each of the first N - 1 list elements
+        for (size_t i = 0; i < mDependents.size() - 1; ++i)
+            mDependents[i]();
 
-        // Return the result of the last one, which should be cached.
+        // Return the result of the last one
         return mDependents.back()();
     }
 

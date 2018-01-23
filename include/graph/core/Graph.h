@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <vector>
+#include <unordered_set>
 #include <iostream>
 #include "tensor/Tensor.h"
 #include "util/ReferenceCount.h"
@@ -89,14 +90,17 @@ public:
     void invalidate()
     {
         static vector<Graph<T>*> stack;
+        std::unordered_set<Node<T>*> seen;
         stack.push_back(this);
 
         while (!stack.empty())
         {
             Graph<T>* cur = stack.back();
             stack.pop_back();
-            if (cur == nullptr || cur->type() == INVALID) continue;
+            if (cur == nullptr || cur->type() == INVALID ||
+                seen.find(cur->ptr()) != seen.end()) continue;
 
+            seen.insert(cur->ptr());
             cur->node().invalidate();
             for (size_t i = 0; i < cur->getNumChildren(); ++i)
                 stack.push_back(&cur->getChild(i));
