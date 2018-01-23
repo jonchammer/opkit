@@ -1,5 +1,7 @@
+// This file contains a simple test suite designed to ensure that each of the
+// available optimizers produces the correct results, as verified by comparing
+// the output from Tensorflow. 
 #include <iostream>
-
 #include "opkit/opkit.h"
 
 using namespace std;
@@ -18,7 +20,6 @@ void testbench(const string& name, const T* xTruth, const T* yTruth, Fn&& optimi
     auto y         = 2.0 * square(x) - 4.0;
     auto trainStep = optimizer(y, {"x"});
 
-    // cout << trainStep << endl << endl;
     // Run through the training steps
     static const int EPOCHS = 10;
     T xReal[EPOCHS];
@@ -26,20 +27,10 @@ void testbench(const string& name, const T* xTruth, const T* yTruth, Fn&& optimi
 
     for (int i = 0; i < EPOCHS; ++i)
     {
-        // cout << ((Variable<T>&) x.node()).value() << endl;
-        // cout << ((InPlaceBinaryFunction<T>&) y.node()).cachedResult() << endl;
-        // cout << T(x()) << endl;
-        // cout << T(y()) << endl << endl;
-
         trainStep();
 
-        // cout << ((Variable<T>&) x.node()).value() << endl;
-        // cout << ((InPlaceBinaryFunction<T>&) y.node()).cachedResult() << endl;
         xReal[i] = T(x());
         yReal[i] = T(y());
-
-        // cout << xReal[i] << endl;
-        // cout << yReal[i] << endl;
     }
 
     // Print the results
@@ -69,8 +60,10 @@ void testbench(const string& name, const T* xTruth, const T* yTruth, Fn&& optimi
 
 void testGradientDescent()
 {
-    T xTruth[] = {3.0, 1.8, 1.08, 0.648, 0.3888, 0.23328, 0.139968, 0.083981, 0.050388, 0.030233};
-    T yTruth[] = {14.0, 2.48, -1.6672, -3.160192, -3.697669, -3.891161, -3.960818, -3.985894, -3.994922, -3.99817181};
+    T xTruth[] = {3.0, 1.8, 1.08, 0.648, 0.3888,
+        0.23328, 0.139968, 0.083981, 0.050388, 0.030233};
+    T yTruth[] = {14.0, 2.48, -1.6672, -3.160192, -3.697669,
+        -3.891161, -3.960818, -3.985894, -3.994922, -3.99817181};
 
     testbench("GD", xTruth, yTruth,
     [](Graph<T> y, std::unordered_set<string> targets)
@@ -81,8 +74,10 @@ void testGradientDescent()
 
 void testGradientDescentMomentum()
 {
-    T xTruth[] = {3.0, 1.79799998, 1.07759798, 0.64583838, 0.38707128, 0.231984, 0.13903531, 0.08332824, 0.04994124, 0.02993136};
-    T yTruth[] = {14.0, 2.46560764, -1.6775651, -3.16578555, -3.70035172, -3.89236689, -3.96133828, -3.98611283, -3.99501181, -3.99820828};
+    T xTruth[] = {3.0, 1.79799998, 1.07759798, 0.64583838, 0.38707128,
+        0.231984, 0.13903531, 0.08332824, 0.04994124, 0.02993136};
+    T yTruth[] = {14.0, 2.46560764, -1.6775651, -3.16578555, -3.70035172,
+        -3.89236689, -3.96133828, -3.98611283, -3.99501181, -3.99820828};
 
     testbench("GD Momentum", xTruth, yTruth,
     [](Graph<T> y, std::unordered_set<string> targets)
@@ -93,8 +88,10 @@ void testGradientDescentMomentum()
 
 void testGradientDescentNesterovMomentum()
 {
-    T xTruth[] = {2.99799991, 1.79759872, 1.0778389, 0.64627147, 0.38750392, 0.2323471, 0.13931516, 0.08353327, 0.05008649, 0.03003183};
-    T yTruth[] = {13.97600746, 2.4627223, -1.67652655, -3.16466641, -3.69968152, -3.89202976, -3.96118259, -3.98604441, -3.99498272, -3.99819613};
+    T xTruth[] = {2.99799991, 1.79759872, 1.0778389, 0.64627147, 0.38750392,
+        0.2323471, 0.13931516, 0.08353327, 0.05008649, 0.03003183};
+    T yTruth[] = {13.97600746, 2.4627223, -1.67652655, -3.16466641, -3.69968152,
+        -3.89202976, -3.96118259, -3.98604441, -3.99498272, -3.99819613};
 
     testbench("GD Nesterov Momentum", xTruth, yTruth,
     [](Graph<T> y, std::unordered_set<string> targets)
@@ -105,13 +102,29 @@ void testGradientDescentNesterovMomentum()
 
 void testAdam()
 {
-    T xTruth[] = {4.9000001, 4.80005836, 4.70021439, 4.60050917, 4.50098467, 4.40168428, 4.30265093, 4.2039299, 4.10556602, 4.0076046};
-    T yTruth[] = {44.02000046, 42.08111954, 40.18403244, 38.32936859, 36.5177269, 34.74964905, 33.02561188, 31.34605408, 29.71134567, 28.12178802};
+    T xTruth[] = {4.9000001, 4.80005836, 4.70021439, 4.60050917, 4.50098467,
+        4.40168428, 4.30265093, 4.2039299, 4.10556602, 4.0076046};
+    T yTruth[] = {44.02000046, 42.08111954, 40.18403244, 38.32936859, 36.5177269,
+        34.74964905, 33.02561188, 31.34605408, 29.71134567, 28.12178802};
 
     testbench("Adam", xTruth, yTruth,
     [](Graph<T> y, std::unordered_set<string> targets)
     {
         return adam(y, targets, 0.1, 0.9, 0.999, 1E-8);
+    });
+}
+
+void testRMSProp()
+{
+    T xTruth[] = {4.68727112, 4.46625376, 4.2845645, 4.12570381, 3.98205543,
+        3.84939146, 3.72509122, 3.60740566, 3.49510384, 3.38728476};
+    T yTruth[] = {39.94102097, 35.89484406, 32.71498489, 30.04286575, 27.71353149,
+        25.63562965, 23.75260925, 22.02675056, 20.43150139, 18.94739532};
+
+    testbench("RMS Prop", xTruth, yTruth,
+    [](Graph<T> y, std::unordered_set<string> targets)
+    {
+        return rmsProp(y, targets, 0.1, 0.9, 0.0, 1E-10);
     });
 }
 
@@ -121,6 +134,7 @@ int main()
     testGradientDescentMomentum();
     testGradientDescentNesterovMomentum();
     testAdam();
+    testRMSProp();
 
     return 0;
 }

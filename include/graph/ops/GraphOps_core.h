@@ -30,6 +30,7 @@ template <class T> Graph<T> operator*(Graph<T>, Graph<T>);
 template <class T> Graph<T> operator/(Graph<T>, Graph<T>);
 template <class T> Graph<T> max(Graph<T>, Graph<T>);
 template <class T> Graph<T> min(Graph<T>, Graph<T>);
+template <class T> Graph<T> pow(Graph<T>, Graph<T>);
 
 template <class T, class U> Graph<T> operator+(Graph<T>, U);
 template <class T, class U> Graph<T> operator+(U, Graph<T>);
@@ -43,6 +44,8 @@ template <class T, class U> Graph<T> max(Graph<T>, U);
 template <class T, class U> Graph<T> max(U, Graph<T>);
 template <class T, class U> Graph<T> min(Graph<T>, U);
 template <class T, class U> Graph<T> min(U, Graph<T>);
+template <class T, class U> Graph<T> pow(Graph<T>, U);
+template <class T, class U> Graph<T> pow(U, Graph<T>);
 
 template <class T> Graph<T> reduceSumTo(Graph<T>, Graph<T>);
 template <class T> Graph<T> reduceProductTo(Graph<T>, Graph<T>);
@@ -223,6 +226,11 @@ BINARY_OP(min, dMin, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
     return min(y, A, B);
 });
 
+BINARY_OP(pow, dPow, [](Tensor<T>& y, const Tensor<T>& A, const Tensor<T>& B)
+{
+    return pow(y, A, B);
+});
+
 #undef BINARY_OP
 // -------------------------------------------------------------------------- //
 
@@ -300,6 +308,13 @@ void dMin(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
     gradients.push_back(reduceSumTo((rIndicators - overlap) * delta, shape(right)));
 }
 
+template <class T>
+void dPow(Graph<T> node, Graph<T> delta, std::vector<Graph<T>>& gradients)
+{
+    // TODO: Implement
+    ASSERT(false, "Not implemented");
+}
+
 // -------------------------------------------------------------------------- //
 #define SCALAR_OP_RIGHT(fnName, fn, derivFn)                                   \
 template <class T, class U>                                                    \
@@ -343,6 +358,8 @@ SCALAR_OP_LEFT(max, max, dMax);
 SCALAR_OP_RIGHT(max, max, dMax);
 SCALAR_OP_LEFT(min, min, dMin);
 SCALAR_OP_RIGHT(min, min, dMin);
+SCALAR_OP_LEFT(pow, pow, dPow);
+SCALAR_OP_RIGHT(pow, pow, dPow);
 
 #undef SCALAR_OP_LEFT
 #undef SCALAR_OP_RIGHT

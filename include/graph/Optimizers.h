@@ -89,7 +89,7 @@ Graph<T> gradientDescentMomentum(
 
     // Tie all of the update rules together
     auto res = list(updateRules);
-    
+
     return list(updateRules);
 }
 
@@ -127,22 +127,19 @@ Graph<T> adam(Graph<T> error,
         ASSERT(x->type() == Graph<T>::Type::VAR, "Target " + pair.first + " is not a variable");
 
         // Create a mean and variance vector per optimizable parameter. We also
-        // need two scalars, beta1p and beta2p.
-        const SmallVector& shape = ((Variable<T>&) x->node()).value().shape();
-        Tensor<T>& beta1Val      = ((Variable<T>&) beta1.node()).value();
-        Tensor<T>& beta2Val      = ((Variable<T>&) beta2.node()).value();
+        // need a scalar for the current timestep
+        const Tensor<T>& xVal     = (*x)();
+        const Tensor<T>& beta1Val = beta1();
+        const Tensor<T>& beta2Val = beta2();
 
-        Tensor<T> meanInit(shape.begin(), shape.end());
-        Tensor<T> varInit(shape.begin(), shape.end());
-        meanInit.fill(T{});
-        varInit.fill(T{1});
-
-        auto mean   = make_variable<T>(x->name() + "_mean",   meanInit);
-        auto var    = make_variable<T>(x->name() + "_var",    varInit);
-        auto beta1p = make_variable<T>(x->name() + "_beta1p", beta1Val);
-        auto beta2p = make_variable<T>(x->name() + "_beta2p", beta2Val);
+        auto mean   = make_variable<T>(x->name() + "_mean",   zeroesLike<T>(xVal));
+        auto var    = make_variable<T>(x->name() + "_var",    zeroesLike<T>(xVal));
+        auto t      = make_variable<T>(x->name() + "_time",   Tensor<T>::fromScalar(0));
 
         vector<Graph<T>> assignments;
+
+        // Update t
+        assignments.emplace_back(addTo(t, make_constant<T>(1)));
 
         // Update the biased estimates for the mean and variance of the computed
         // gradient.
@@ -151,12 +148,8 @@ Graph<T> adam(Graph<T> error,
 
         // Correct for the bias and compute a unique learning rate for each
         // parameter. Then descend the corrected gradient
-        auto alpha = learningRate * sqrt(1 - beta2p) / (1 - beta1p);
+        auto alpha = learningRate * sqrt(1 - pow(beta2, t)) / (1 - pow(beta1, t));
         assignments.emplace_back(subFrom(*x, alpha * mean / (sqrt(var) + epsilon)));
-
-        // Update beta1p and beta2p
-        assignments.emplace_back(multBy(beta1p, beta1));
-        assignments.emplace_back(multBy(beta2p, beta2));
 
         // Tie the rules together using another list
         updateRules.emplace_back(list(assignments));

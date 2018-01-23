@@ -798,7 +798,7 @@ void pow(Tensor<T>& res, const Tensor<T>& A, const U& power)
     A.copy(res);
     res.apply([&power](const T& x)
     {
-        return pow(x, T(power));
+        return std::pow(x, T(power));
     });
 }
 

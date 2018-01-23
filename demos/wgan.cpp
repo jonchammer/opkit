@@ -109,8 +109,8 @@ int main()
     // else cout << "FAILED" << endl;
 
     // Build the update rule
-    auto dSolver = rmsProp(dLoss, dNames, 1E-4, 0.9, 0.0, 1E-10);
-    auto gSolver = rmsProp(gLoss, gNames, 1E-4, 0.9, 0.0, 1E-10);
+    auto dSolver = rmsProp(dLoss, dNames, 1E-4);
+    auto gSolver = rmsProp(gLoss, gNames, 1E-4);
 
     Rand rand(42);
     BatchIterator<T> it(trainFeatures, trainLabels, batchSize, rand);
