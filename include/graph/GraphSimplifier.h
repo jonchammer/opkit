@@ -244,6 +244,17 @@ Graph<T> simplifyUpdateArg(Graph<T> root)
     else return copy_update(root, root.getParent(0), simplifiedValue, simplifiedArg);
 }
 
+// Performs simplification for components
+template <class T>
+Graph<T> simplifyComponent(Graph<T> root)
+{
+    Graph<T> simplifiedSubgraph = simplify(root.getParent(0));
+
+    if (simplifiedSubgraph == root.getParent(0))
+        return root;
+    else return make_component(root.name(), simplifiedSubgraph);
+}
+
 // Performs simplification for all graphs.
 template <class T>
 Graph<T> simplify(Graph<T> root)
@@ -259,6 +270,7 @@ Graph<T> simplify(Graph<T> root)
         case Graph<T>::Type::LIST:       return simplifyList(root);
         case Graph<T>::Type::UPDATE:     return simplifyUpdate(root);
         case Graph<T>::Type::UPDATE_ARG: return simplifyUpdateArg(root);
+        case Graph<T>::Type::COMPONENT:  return simplifyComponent(root);
 
         default:
             std::cerr << "simplify() - UNKNOWN GRAPH TYPE: " << root.type() << std::endl;

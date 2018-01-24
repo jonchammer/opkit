@@ -26,7 +26,7 @@ class Graph
 {
 public:
     enum Type {INVALID, CONSTANT, VAR, UNARY, BINARY_IN,
-        BINARY_OUT, LIST, UPDATE, UPDATE_ARG};
+        BINARY_OUT, LIST, UPDATE, UPDATE_ARG, COMPONENT};
 private:
     RCPtr<Node<T>> mNode; // Pointer to the actual node.
     Type mType;           // Type of the actual node.

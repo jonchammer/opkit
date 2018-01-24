@@ -55,6 +55,13 @@ std::unordered_map<std::string, Graph<T>> gradients(Graph<T> node,
             }
         }
 
+        // Components are differentiated by forwarding the request to the subgraph
+        else if (cur.type() == Graph<T>::Type::COMPONENT)
+        {
+            nodeQueue.push(cur.getParent(0));
+            gradQueue.push(delta);
+        }
+
         // When we see a function, we calculate its gradient by calling the
         // corresponding derivative function. We then push that node's parents
         // and their current gradients into the queues so the process can
