@@ -5,9 +5,7 @@
 #include <unordered_map>
 #include <set>
 #include <vector>
-
 #include "opkit/opkit.h"
-#include "Plot.h"
 
 using namespace std;
 using namespace opkit;
@@ -30,7 +28,6 @@ Tensor<T> fromTxt(const string& filename)
         return std::isspace(c);
     });
     din.seekg(0);
-    // cout << "Rows: " << rows << " Cols: " << cols << endl;
 
     // Read the data into a Storage object
     Storage<T> storage(rows * cols);
@@ -46,24 +43,33 @@ Tensor<T> fromTxt(const string& filename)
 template <class T>
 bool operator==(const Tensor<T>& a, const Tensor<T>& b)
 {
-    // cout << to_string(a, 4) << endl << "vs" << endl << to_string(b, 4) << endl << endl;
-    cout << to_string(reduceMean(sub(a, b)), 4) << endl;
     if (a.shape() == b.shape())
     {
         auto aIt = a.begin();
         auto bIt = b.begin();
         while (aIt != a.end())
         {
-            if (abs(*aIt - *bIt) > 1E-4)
+            if (abs(*aIt - *bIt) > 1)
+            {
+                cout << "A: " << endl << to_string(a, 8) << endl;
+                cout << "B: " << endl << to_string(b, 8) << endl;
+                cout << to_string(reduceMean(sub(a, b)), 8) << endl;
                 return false;
+            }
             ++aIt;
             ++bIt;
         }
 
         return true;
     }
-    else return false;
+    else
+    {
+        cout << "Shape Mismatch: " << a.shape() << " vs. " << b.shape() << endl;
+        return false;
+    }
 }
+
+//----------------------------------------------------------------------------//
 
 template <class T>
 Tensor<T> sampleZ(const size_t m, const size_t n, Rand& rand)
@@ -102,26 +108,40 @@ int main()
 {
     using T = float;
 
-    Tensor<T> dw1Vals  = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/dw1.txt");
-    Tensor<T> dw12Vals = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/dw12.txt");
-    Tensor<T> dw2Vals  = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/dw2.txt");
-    Tensor<T> dw22Vals = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/dw22.txt");
-    Tensor<T> db12Vals = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/db12.txt");
-    Tensor<T> db22Vals = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/db22.txt");
+    string dir = "../gan_test_files/";
+    Tensor<T> dw1Vals  = fromTxt<T>(dir + "dw1.txt");
+    Tensor<T> dw12Vals = fromTxt<T>(dir + "dw12.txt");
+    Tensor<T> dw2Vals  = fromTxt<T>(dir + "dw2.txt");
+    Tensor<T> dw22Vals = fromTxt<T>(dir + "dw22.txt");
+    Tensor<T> db12Vals = fromTxt<T>(dir + "db12.txt");
+    Tensor<T> db22Vals = fromTxt<T>(dir + "db22.txt");
     db12Vals.resize({1, 128});
 
-    Tensor<T> gw1Vals  = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/gw1.txt");
-    Tensor<T> gw12Vals = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/gw12.txt");
-    Tensor<T> gw2Vals  = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/gw2.txt");
-    Tensor<T> gw22Vals = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/gw22.txt");
-    Tensor<T> gb12Vals = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/gb12.txt");
-    Tensor<T> gb22Vals = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/gb22.txt");
+    Tensor<T> gw1Vals  = fromTxt<T>(dir + "gw1.txt");
+    Tensor<T> gw12Vals = fromTxt<T>(dir + "gw12.txt");
+    Tensor<T> gw2Vals  = fromTxt<T>(dir + "gw2.txt");
+    Tensor<T> gw22Vals = fromTxt<T>(dir + "gw22.txt");
+    Tensor<T> gb12Vals = fromTxt<T>(dir + "gb12.txt");
+    Tensor<T> gb22Vals = fromTxt<T>(dir + "gb22.txt");
     gb12Vals.resize({1, 128});
     gb22Vals.resize({1, 784});
 
-    Tensor<T> xmbVals  = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/xmb.txt");
-    Tensor<T> ZVals    = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/testZ.txt");
-    Tensor<T> Z2Vals   = fromTxt<T>("/home/jhammer/projects/Tensorflow-Tests/gans/testZ2.txt");
+    Tensor<T> xmbVals  = fromTxt<T>(dir + "xmb.txt");
+    Tensor<T> ZVals    = fromTxt<T>(dir + "testZ.txt");
+    Tensor<T> Z2Vals   = fromTxt<T>(dir + "testZ2.txt");
+
+    Tensor<T> gradDw1Vals = fromTxt<T>(dir + "grad_dw1.txt");
+    Tensor<T> gradDb1Vals = fromTxt<T>(dir + "grad_db1.txt");
+    Tensor<T> gradDw2Vals = fromTxt<T>(dir + "grad_dw2.txt");
+    Tensor<T> gradDb2Vals = fromTxt<T>(dir + "grad_db2.txt");
+    Tensor<T> gradGw1Vals = fromTxt<T>(dir + "grad_gw1.txt");
+    Tensor<T> gradGb1Vals = fromTxt<T>(dir + "grad_gb1.txt");
+    Tensor<T> gradGw2Vals = fromTxt<T>(dir + "grad_gw2.txt");
+    Tensor<T> gradGb2Vals = fromTxt<T>(dir + "grad_gb2.txt");
+    gradDb1Vals.resize({1, 128});
+    gradDb2Vals.resize({1, 1});
+    gradGb1Vals.resize({1, 128});
+    gradGb2Vals.resize({1, 784});
 
     // Construct the variables
     const size_t xDim        = 784;
@@ -163,43 +183,47 @@ int main()
     auto gLoss = make_component("gLoss", -reduceMean(dFake));
     auto clipD = clipWeights(dVars, -0.01, 0.01);
 
-    // std::vector<Graph<T>> allVars({gW1, gB1, gW2, gB2, dW1, dB1, dW2, dB2, x, z});
-    // if (validate(gLoss, allVars, 1E-1))
-    // {
-    //     cout << "PASSED" << endl;
-    // }
-    // else cout << "FAILED" << endl;
-
     // Build the update rule
-    auto dSolver = rmsProp(dLoss, dNames, 1E-4);
-    auto gSolver = rmsProp(gLoss, gNames, 1E-4);
+    auto dSolver = rmsProp(dLoss, dNames, 1E-4, 0.9, 0.0, 1E-10);
+    auto gSolver = rmsProp(gLoss, gNames, 1E-4, 0.9, 0.0, 1E-10);
 
+    // Check the gradients
     auto dGrads = gradients(dLoss, dNames);
-    for (auto& pair : dGrads)
-    {
-        cout << pair.first << " -> " << pair.second << endl;
-    }
+    cout << "1.  Grad DW1 " << (dGrads["dW1"]() == gradDw1Vals ? "Passed" : "Failed") << endl;
+    cout << "2.  Grad DB1 " << (dGrads["dB1"]() == gradDb1Vals ? "Passed" : "Failed") << endl;
+    cout << "3.  Grad DW2 " << (dGrads["dW2"]() == gradDw2Vals ? "Passed" : "Failed") << endl;
+    cout << "4.  Grad DB2 " << (dGrads["dB2"]() == gradDb2Vals ? "Passed" : "Failed") << endl;
+
+    auto gGrads = gradients(gLoss, gNames);
+    cout << "5.  Grad GW1 " << (gGrads["gW1"]() == gradGw1Vals ? "Passed" : "Failed") << endl;
+    cout << "6.  Grad GB1 " << (gGrads["gB1"]() == gradGb1Vals ? "Passed" : "Failed") << endl;
+    cout << "7.  Grad GW2 " << (gGrads["gW2"]() == gradGw2Vals ? "Passed" : "Failed") << endl;
+    cout << "8.  Grad GB2 " << (gGrads["gB2"]() == gradGb2Vals ? "Passed" : "Failed") << endl;
+
     // Update the discriminator
     dSolver();
     clipD();
 
-    cout << "DW1 " << (dW1() == dw12Vals ? "Passed" : "Failed") << endl;
-    cout << "DB1 " << (dB1() == db12Vals ? "Passed" : "Failed") << endl;
-    cout << "DW2 " << (dW2() == dw22Vals ? "Passed" : "Failed") << endl;
-    cout << "DB2 " << (dB2() == db22Vals ? "Passed" : "Failed") << endl;
+    cout << "9.  DW1 " << (dW1() == dw12Vals ? "Passed" : "Failed") << endl;
+    cout << "10. DB1 " << (dB1() == db12Vals ? "Passed" : "Failed") << endl;
+    cout << "11. DW2 " << (dW2() == dw22Vals ? "Passed" : "Failed") << endl;
+    cout << "12. DB2 " << (dB2() == db22Vals ? "Passed" : "Failed") << endl;
 
     // Update the generator
     z.assign(Z2Vals);
     gSolver();
 
-    cout << "GW1 " << (gW1() == gw12Vals ? "Passed" : "Failed") << endl;
-    cout << "GB1 " << (gB1() == gb12Vals ? "Passed" : "Failed") << endl;
-    cout << "GW2 " << (gW2() == gw22Vals ? "Passed" : "Failed") << endl;
-    cout << "GB2 " << (gB2() == gb22Vals ? "Passed" : "Failed") << endl;
+    cout << "13. GW1 " << (gW1() == gw12Vals ? "Passed" : "Failed") << endl;
+    cout << "14. GB1 " << (gB1() == gb12Vals ? "Passed" : "Failed") << endl;
+    cout << "15. GW2 " << (gW2() == gw22Vals ? "Passed" : "Failed") << endl;
+    cout << "16. GB2 " << (gB2() == gb22Vals ? "Passed" : "Failed") << endl;
+
+    cout << "17. GLoss " << (abs(T(gLoss()) -  0.018546745) < 0.01 ? "Passed" : "Failed") << endl;
+    cout << "18. DLoss " << (abs(T(dLoss()) - -0.015703537) < 0.01 ? "Passed" : "Failed") << endl;
 
     Timer t;
     printf("%5s, %8s, %8s, %8s\n", "It", "Time", "gLoss", "dLoss");
-    printf("%5zu, %8.2f, %8.4f, %8.4f\n",
+    printf("%5zu, %8.2f, %8.8f, %8.8f\n",
         0ul,
         t.getElapsedTimeSeconds(),
         T(gLoss()),

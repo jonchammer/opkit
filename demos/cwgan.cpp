@@ -49,18 +49,14 @@ int main()
 {
     using T = float;
 
-    // Load the training and testing data
-    Tensor<T> trainFeatures, trainLabels, testFeatures, testLabels;
+    // Load the training data
+    Tensor<T> trainFeatures, trainLabels;
     loadTensorRaw("/home/jhammer/data/mnist/mnist_train_features_float.raw", trainFeatures);
     loadTensorRaw("/home/jhammer/data/mnist/mnist_train_labels_float.raw",   trainLabels);
-    loadTensorRaw("/home/jhammer/data/mnist/mnist_test_features_float.raw",  testFeatures);
-    loadTensorRaw("/home/jhammer/data/mnist/mnist_test_labels_float.raw",    testLabels);
 
     // Perform preprocessing
     scale(trainFeatures, T{1.0 / 255.0});
-    scale(testFeatures, T{1.0 / 255.0});
     trainLabels = convertColumnToOneHot(trainLabels, 0);
-    testLabels  = convertColumnToOneHot(testLabels, 0);
 
     // Construct the variables
     const size_t xDim            = 784;
@@ -69,7 +65,7 @@ int main()
     const size_t batchSize       = 32;
     const size_t samplesPerClass = 5;
     const size_t labelDims       = 10;
-    Rand initializer(42);
+    Rand initializer(53);
 
     // Noise and labels used for plotting
     Tensor<T> testZ = sampleZ<T>(samplesPerClass * labelDims, zDim, initializer);
@@ -108,10 +104,8 @@ int main()
     auto clipD = clipWeights(dVars, -0.01, 0.01);
 
     // Build the update rule
-    auto dSolver = gradientDescentMomentum(dLoss, dNames, 5E-5);
-    auto gSolver = gradientDescentMomentum(gLoss, gNames, 5E-5);
-    // auto dSolver = rmsProp(dLoss, dNames, 1E-4, 0.9, 0.0, 1E-10);
-    // auto gSolver = rmsProp(gLoss, gNames, 1E-4, 0.9, 0.0, 1E-10);
+    auto dSolver = rmsProp(dLoss, dNames, 5E-4, 0.9, 0.0, 1E-10);
+    auto gSolver = rmsProp(gLoss, gNames, 5E-4, 0.9, 0.0, 1E-10);
 
     Rand rand(42);
     BatchIterator<T> it(trainFeatures, trainLabels, batchSize, rand);
