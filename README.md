@@ -1,7 +1,7 @@
 # opkit - A fast, comprehensive C++11 optimization toolkit
 
 ## Important Features
-* Intuitive graph-based API
+* Intuitive graph-based API featuring Automatic Differentiation
 * Templated
 * Header-only
 * Extensive support for training and using neural networks
@@ -76,6 +76,23 @@ example compilation command:
 ```bash
 g++ -std=c++11 -O3 -I /usr/include/openblas -DOPKIT_OPEN_BLAS test.cpp -o test -lopenblas
 ```
+
+## Threading
+Certain OpenBLAS operations can be accelerated locally by taking advantage of
+multiple threads. By default, the number of threads = the number of physical
+cores on the host machine, but this can be changed in two ways:
+
+1. Set the environment variable OPENBLAS_NUM_THREADS before executing the program:
+```bash
+export OPENBLAS_NUM_THREADS=n
+```
+2. Call one of the following functions in your source.
+```
+void useAllCores();
+void setNumCores(int n);
+```
+
+Note that these methods will only have an effect when compiling with OpenBlas.
 
 ## GPU Acceleration
 opkit can take advantage of a local GPU to accelerate certain operations by

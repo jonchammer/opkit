@@ -218,7 +218,8 @@ public:
         buffer(BufferAllocatorDetail::Buffer<T>::instance(Size)) {}
 
     template <class U, size_t size>
-    constexpr BufferAllocator(const BufferAllocator<U, size>&) noexcept {}
+    BufferAllocator(const BufferAllocator<U, size>&) :
+        buffer(BufferAllocatorDetail::Buffer<T>::instance(Size)) {}
 
     T* allocate(std::size_t n)
     {

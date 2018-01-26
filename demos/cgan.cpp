@@ -1,5 +1,5 @@
 // Comment to disable debug assertions
-// #define NDEBUG
+#define NDEBUG
 
 #include <iostream>
 #include <unordered_map>
@@ -40,18 +40,14 @@ int main()
 {
     using T = float;
 
-    // Load the training and testing data
-    Tensor<T> trainFeatures, trainLabels, testFeatures, testLabels;
+    // Load the training data
+    Tensor<T> trainFeatures, trainLabels;
     loadTensorRaw("/home/jhammer/data/mnist/mnist_train_features_float.raw", trainFeatures);
     loadTensorRaw("/home/jhammer/data/mnist/mnist_train_labels_float.raw",   trainLabels);
-    loadTensorRaw("/home/jhammer/data/mnist/mnist_test_features_float.raw",  testFeatures);
-    loadTensorRaw("/home/jhammer/data/mnist/mnist_test_labels_float.raw",    testLabels);
 
     // Perform preprocessing
     scale(trainFeatures, T{1.0 / 255.0});
-    scale(testFeatures,  T{1.0 / 255.0});
     trainLabels = convertColumnToOneHot(trainLabels, 0);
-    testLabels  = convertColumnToOneHot(testLabels, 0);
 
     // Construct the variables
     const size_t zDim            = 100;
@@ -96,10 +92,10 @@ int main()
     auto dLoss = -reduceMean(log(dReal) + log(T{1} - dFake));
     auto gLoss = -reduceMean(log(dFake));
 
-    auto dSolver = gradientDescentMomentum(dLoss, dNames);
-    auto gSolver = gradientDescentMomentum(gLoss, gNames);
-    // auto dSolver = adam(dLoss, dNames, T{1E-3});
-    // auto gSolver = adam(gLoss, gNames, T{1E-3});
+    // auto dSolver = gradientDescentMomentum(dLoss, dNames);
+    // auto gSolver = gradientDescentMomentum(gLoss, gNames);
+    auto dSolver = adam(dLoss, dNames, T{1E-3});
+    auto gSolver = adam(gLoss, gNames, T{1E-3});
 
     Rand rand(42);
     BatchIterator<T> it(trainFeatures, trainLabels, batchSize, rand);

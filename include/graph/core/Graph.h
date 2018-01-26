@@ -3,10 +3,10 @@
 
 #include <functional>
 #include <vector>
-#include <unordered_set>
 #include <iostream>
 #include "tensor/Tensor.h"
 #include "util/ReferenceCount.h"
+#include "util/TinySet.h"
 
 namespace opkit
 {
@@ -89,8 +89,10 @@ public:
     // well as the caches of any node that depend on this one (children).
     void invalidate()
     {
-        static vector<Graph<T>*> stack;
-        std::unordered_set<Node<T>*> seen;
+        const static int DEFAULT_CAPACITY = 128;
+        static vector<Graph<T>*> stack(DEFAULT_CAPACITY);
+        static TinySet<Node<T>*> seen(DEFAULT_CAPACITY);
+        seen.clear();
         stack.push_back(this);
 
         while (!stack.empty())
@@ -98,7 +100,7 @@ public:
             Graph<T>* cur = stack.back();
             stack.pop_back();
             if (cur == nullptr || cur->type() == INVALID ||
-                seen.find(cur->ptr()) != seen.end()) continue;
+                seen.search(cur->ptr())) continue;
 
             seen.insert(cur->ptr());
             cur->node().invalidate();

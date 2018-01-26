@@ -22,8 +22,19 @@ namespace opkit
 // switch between libraries, since some (e.g. OpenBLAS) do these conversions
 // automatically, but some (e.g. NVBlas) do not.
 
-#define USE_ALL_CORES() openblas_set_num_threads(openblas_get_num_procs())
-#define USE_ONE_CORE()  openblas_set_num_threads(1)
+// These functions can be used to allow clients to directly adjust the number of
+// threads that will be used at runtime
+inline void useAllCores()
+{
+    openblas_set_num_threads(openblas_get_num_procs());
+}
+inline void setNumCores(int n)
+{
+    openblas_set_num_threads(n);
+}
+
+#define USE_ALL_CORES()
+#define SET_NUM_CORES(n)
 
 template <class T>
 struct Acceleration_OpenBlas {};
@@ -36,7 +47,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const size_t ldA, const size_t ldB, const size_t ldC,
         const double alpha, const double beta)
     {
-        USE_ONE_CORE();
         cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
             N, M, K,
             alpha, B, ldB,
@@ -49,7 +59,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const size_t ldA, const size_t ldB, const size_t ldC,
         const double alpha, const double beta)
     {
-        USE_ONE_CORE();
         cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans,
             N, M, K,
             alpha, B, ldB,
@@ -62,7 +71,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const size_t ldA, const size_t ldB, const size_t ldC,
         const double alpha, const double beta)
     {
-        USE_ONE_CORE();
         cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans,
             N, M, K,
             alpha, B, ldB,
@@ -75,7 +83,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const double alpha, const double beta,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_dgemv(CblasColMajor, CblasTrans,
             N, M,
             alpha, A, N,
@@ -88,7 +95,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const double alpha, const double beta,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_dgemv(CblasColMajor, CblasNoTrans,
             N, M,
             alpha, A, N,
@@ -100,8 +106,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const size_t N, const double alpha, const double beta,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
-
         // NOTE: Either row-major order or column-major order can be used for
         // symmetric matrices.
         cblas_dsymv(CblasColMajor, CblasUpper,
@@ -115,7 +119,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const size_t M, const size_t N, const double alpha,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_dger(CblasColMajor, N, M,
             alpha, y, yInc,
             x, xInc,
@@ -126,27 +129,22 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const size_t N, const double alpha,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_daxpy(N, alpha, x, xInc, y, yInc);
     }
 
     static void vScale(double* x, const double alpha,
         const size_t N, const int xInc)
     {
-        USE_ONE_CORE();
         cblas_dscal(N, alpha, x, xInc);
     }
 
     static size_t vMaxIndex(const double* x, const size_t N, const int xInc)
     {
-        USE_ONE_CORE();
         return cblas_idamax(N, x, xInc);
     }
 
     static size_t vMinIndex(const double* x, const size_t N, const int xInc)
     {
-        USE_ONE_CORE();
-
         double* xTemp = (double*) x;
         for (size_t i = 0; i < N; ++i)
         {
@@ -169,7 +167,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
     static void vCopy(const double* x, double* y, const size_t N,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_dcopy(N, x, xInc, y, yInc);
     }
 
@@ -179,8 +176,6 @@ struct Acceleration_OpenBlas<double> : public Acceleration_CPU<double>
         const size_t cStrideX, const size_t cStrideY,
         const double alpha, const double beta)
     {
-        USE_ONE_CORE();
-
         // NOTE: We don't use geadd directly because it does not work when
         // aStrideY or cStrideY is 0.
 
@@ -209,7 +204,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const size_t ldA, const size_t ldB, const size_t ldC,
         const float alpha, const float beta)
     {
-        USE_ONE_CORE();
         cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
             N, M, K,
             alpha, B, ldB,
@@ -222,7 +216,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const size_t ldA, const size_t ldB, const size_t ldC,
         const float alpha, const float beta)
     {
-        USE_ONE_CORE();
         cblas_sgemm(CblasColMajor, CblasTrans, CblasNoTrans,
             N, M, K,
             alpha, B, ldB,
@@ -235,7 +228,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const size_t ldA, const size_t ldB, const size_t ldC,
         const float alpha, const float beta)
     {
-        USE_ONE_CORE();
         cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans,
             N, M, K,
             alpha, B, ldB,
@@ -248,7 +240,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const float alpha, const float beta,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_sgemv(CblasColMajor, CblasTrans,
             N, M,
             alpha, A, N,
@@ -261,7 +252,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const float alpha, const float beta,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_sgemv(CblasColMajor, CblasNoTrans,
             N, M,
             alpha, A, N,
@@ -273,8 +263,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const size_t N, const float alpha, const float beta,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
-
         // NOTE: Either row-major order or column-major order can be used for
         // symmetric matrices.
         cblas_ssymv(CblasColMajor, CblasUpper,
@@ -288,7 +276,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const size_t M, const size_t N, const float alpha,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_sger(CblasColMajor, N, M,
             alpha, y, yInc,
             x, xInc,
@@ -299,27 +286,22 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const size_t N, const float alpha,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_saxpy(N, alpha, x, xInc, y, yInc);
     }
 
     static void vScale(float* x, const float alpha,
         const size_t N, const int xInc)
     {
-        USE_ONE_CORE();
         cblas_sscal(N, alpha, x, xInc);
     }
 
     static size_t vMaxIndex(const float* x, const size_t N, const int xInc)
     {
-        USE_ONE_CORE();
         return cblas_isamax(N, x, xInc);
     }
 
     static size_t vMinIndex(const float* x, const size_t N, const int xInc)
     {
-        USE_ONE_CORE();
-
         float* xTemp = (float*) x;
         for (size_t i = 0; i < N; ++i)
         {
@@ -342,7 +324,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
     static void vCopy(const float* x, float* y, const size_t N,
         const int xInc, const int yInc)
     {
-        USE_ONE_CORE();
         cblas_scopy(N, x, xInc, y, yInc);
     }
 
@@ -352,8 +333,6 @@ struct Acceleration_OpenBlas<float> : public Acceleration_CPU<float>
         const size_t cStrideX, const size_t cStrideY,
         const float alpha, const float beta)
     {
-        USE_ONE_CORE();
-
         // NOTE: We don't use geadd directly because it does not work when
         // aStrideY or cStrideY is 0.
 

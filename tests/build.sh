@@ -51,7 +51,7 @@ if [[ $DEST_NAME == "" ]]; then
 fi
 
 DEBUG_FLAGS="-Wall -Wfatal-errors -Wno-unused-value -g -std=c++11 -rdynamic -O0"
-RELEASE_FLAGS="-O3 -std=c++11 -g -rdynamic"
+RELEASE_FLAGS="-O3 -std=c++11 -march=native -g -rdynamic"
 
 # Specify where to find OpenBLAS (if necessary)
 OPENBLAS_INCLUDE_DIR="/usr/local/include/openblas/"
