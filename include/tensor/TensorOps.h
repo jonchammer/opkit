@@ -519,5 +519,25 @@ Tensor<T> expandIfSmaller(const Tensor<T>& tensor, initializer_list<size_t> shap
     else return tensor;
 }
 
+// Returns a new view of this tensor with a different shape. It is only safe
+// to reshape contiguous tensors that have the same number of total elements
+// as the original.
+template <class T, class InputIt>
+Tensor<T> reshape(const Tensor<T>& tensor, InputIt shapeBegin, InputIt shapeEnd)
+{
+    // Verify the size hasn't changed and that the tensor is contiguous
+    size_t newSize = std::accumulate(shapeBegin, shapeEnd, 1, std::multiplies<size_t>());
+    ASSERT(newSize == tensor.size(), "Reshape cannot change the number of elements.");
+    ASSERT(tensor.contiguous(), "Reshape can only be used for contiguous tensors.");
+
+    return Tensor<T>(tensor.storage(), shapeBegin, shapeEnd);
+}
+
+template <class T>
+Tensor<T> reshape(const Tensor<T>& tensor, std::initializer_list<size_t> shape)
+{
+    return reshape(tensor, shape.begin(), shape.end());
+}
+
 }
 #endif
